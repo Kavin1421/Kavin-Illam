@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
+import { PaymentProofUpload } from "@/components/finance/payment-proof-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -150,15 +151,18 @@ export function PayPaymentRequestForm({
   remainingLabel,
   defaultAmountRupees,
   accounts,
+  cloudinaryReady,
 }: {
   slug: string;
   requestId: string;
   remainingLabel: string;
   defaultAmountRupees: string;
   accounts: Option[];
+  cloudinaryReady: boolean;
 }) {
   const action = payPaymentRequestAction.bind(null, slug, requestId);
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [paymentMethod, setPaymentMethod] = useState("BANK_TRANSFER");
 
   return (
     <form action={formAction} className="space-y-4">
@@ -208,7 +212,8 @@ export function PayPaymentRequestForm({
           <select
             id="paymentMethod"
             name="paymentMethod"
-            defaultValue="BANK_TRANSFER"
+            value={paymentMethod}
+            onChange={(event) => setPaymentMethod(event.target.value)}
             className="border-input bg-background h-8 w-full rounded-lg border px-2 text-sm"
           >
             <option value="BANK_TRANSFER">Bank transfer</option>
@@ -221,6 +226,11 @@ export function PayPaymentRequestForm({
           </select>
         </div>
       </div>
+      <PaymentProofUpload
+        slug={slug}
+        paymentMethod={paymentMethod}
+        cloudinaryReady={cloudinaryReady}
+      />
       <div className="space-y-2">
         <Label htmlFor="referenceNumber">Reference</Label>
         <Input id="referenceNumber" name="referenceNumber" />

@@ -419,6 +419,8 @@ model FinancialTransaction {
   referenceNumber   String?
   description       String?
   notes             String?
+  /// Screenshot / UTR proof required when paymentMethod is not CASH
+  proofDocumentId   String?              @db.ObjectId
   visibility        Visibility           @default(PROJECT_SHARED)
   allowedUserIds    String[]             @db.ObjectId
   createdById       String               @db.ObjectId
@@ -433,6 +435,7 @@ model FinancialTransaction {
   project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   category  Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   account   FinancialAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  proofDocument Document?     @relation("TransactionProof", fields: [proofDocumentId], references: [id], onDelete: SetNull)
   createdBy User              @relation("TransactionCreator", fields: [createdById], references: [id], onDelete: Cascade)
   paidBy    User?             @relation("TransactionPayer", fields: [paidByUserId], references: [id], onDelete: SetNull)
   approvedBy User?            @relation("TransactionApprover", fields: [approvedById], references: [id], onDelete: SetNull)
@@ -448,6 +451,7 @@ model FinancialTransaction {
   @@index([projectId, createdAt])
   @@index([projectId, visibility, createdById])
   @@index([projectId, type, status])
+  @@index([proofDocumentId])
 }
 
 model Advance {
@@ -618,6 +622,7 @@ model Document {
   uploadedBy User              @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
   versions   DocumentVersion[]
   access     DocumentAccess[]
+  proofForTransactions FinancialTransaction[] @relation("TransactionProof")
 
   @@unique([projectId, documentNumber])
   @@index([projectId, category])

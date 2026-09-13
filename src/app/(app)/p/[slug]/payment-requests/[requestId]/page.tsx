@@ -18,6 +18,7 @@ import { formatDate, formatDateTime } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
 import { withNotFound } from "@/lib/with-not-found";
 import { roleHasPermission } from "@/server/authorization";
+import { isCloudinaryConfigured } from "@/server/documents/cloudinary";
 import { listAccounts } from "@/server/finance/accounts";
 import { getPaymentRequest } from "@/server/payments/service";
 
@@ -148,6 +149,7 @@ export default async function PaymentRequestDetailPage({
               remainingLabel={formatInrFromPaise(remaining)}
               defaultAmountRupees={paiseToRupeeInput(remaining)}
               accounts={accounts.map((a) => ({ id: a.id, name: a.name }))}
+              cloudinaryReady={isCloudinaryConfigured()}
             />
           </CardContent>
         </Card>

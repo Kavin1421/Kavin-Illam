@@ -23,6 +23,10 @@ import {
 } from "@/validators/finance";
 
 import { allocateTransactionNumber } from "./numbering";
+import {
+  linkTransactionProofDocument,
+  resolvePaymentProofDocumentId,
+} from "./payment-proof";
 import { defaultDirectionForType, sumAuthorizedFinanceTotals } from "./totals";
 
 function toVisibleResource(tx: {
@@ -112,6 +116,15 @@ export async function getTransaction(slug: string, transactionId: string) {
     include: {
       category: true,
       account: true,
+      proofDocument: {
+        select: {
+          id: true,
+          title: true,
+          documentNumber: true,
+          fileName: true,
+          mimeType: true,
+        },
+      },
       createdBy: { select: { id: true, name: true, email: true } },
       paidBy: { select: { id: true, name: true, email: true } },
     },
@@ -134,7 +147,13 @@ export async function createTransaction(slug: string, input: unknown) {
   const ctx = await requireProjectPermissionBySlug(slug, "FINANCE_CREATE");
   const parsed = createTransactionSchema.safeParse(input);
   if (!parsed.success) {
-    throw new AppError("VALIDATION", "Please check the transaction details.");
+    const proofIssue = parsed.error.issues.find(
+      (issue) => issue.path[0] === "cloudinaryPublicId",
+    );
+    throw new AppError(
+      "VALIDATION",
+      proofIssue?.message || "Please check the transaction details.",
+    );
   }
 
   let amount: number;
@@ -195,6 +214,24 @@ export async function createTransaction(slug: string, input: unknown) {
 
   const direction = defaultDirectionForType(parsed.data.type);
 
+  const proofDocumentId = await resolvePaymentProofDocumentId({
+    actor: {
+      projectId: ctx.project.id,
+      projectSlug: ctx.project.slug,
+      userId: ctx.user.id,
+      userName: ctx.user.name,
+      userEmail: ctx.user.email,
+    },
+    paymentMethod: parsed.data.paymentMethod,
+    proof: parsed.data,
+    visibility: parsed.data.visibility as Visibility,
+    title: `Payment proof · ${parsed.data.paidTo || parsed.data.type}`,
+    description:
+      parsed.data.referenceNumber
+        ? `Ref: ${parsed.data.referenceNumber}`
+        : parsed.data.description || null,
+  });
+
   const tx = await prisma.financialTransaction.create({
     data: {
       projectId: ctx.project.id,
@@ -227,6 +264,10 @@ export async function createTransaction(slug: string, input: unknown) {
           : null,
     },
   });
+
+  if (proofDocumentId) {
+    await linkTransactionProofDocument(tx.id, proofDocumentId);
+  }
 
   logger.info("Transaction created", {
     projectId: ctx.project.id,

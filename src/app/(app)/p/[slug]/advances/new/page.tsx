@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { isCloudinaryConfigured } from "@/server/documents/cloudinary";
 import { listAccounts } from "@/server/finance/accounts";
 import { listCategoriesForProject } from "@/server/finance/categories";
 
@@ -48,6 +49,7 @@ export default async function NewAdvancePage({
             slug={slug}
             accounts={accounts.map((a) => ({ id: a.id, name: a.name }))}
             categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+            cloudinaryReady={isCloudinaryConfigured()}
           />
         </CardContent>
       </Card>

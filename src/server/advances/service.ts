@@ -20,6 +20,10 @@ import {
   allocateAdvanceNumber,
   allocateTransactionNumber,
 } from "@/server/finance/numbering";
+import {
+  linkTransactionProofDocument,
+  resolvePaymentProofDocumentId,
+} from "@/server/finance/payment-proof";
 import { defaultDirectionForType } from "@/server/finance/totals";
 import {
   createAdvanceSchema,
@@ -197,7 +201,13 @@ export async function createAdvance(slug: string, input: unknown) {
   const ctx = await requireProjectPermissionBySlug(slug, "FINANCE_CREATE");
   const parsed = createAdvanceSchema.safeParse(input);
   if (!parsed.success) {
-    throw new AppError("VALIDATION", "Please check the advance details.");
+    const proofIssue = parsed.error.issues.find(
+      (issue) => issue.path[0] === "cloudinaryPublicId",
+    );
+    throw new AppError(
+      "VALIDATION",
+      proofIssue?.message || "Please check the advance details.",
+    );
   }
 
   let amount: number;
@@ -245,6 +255,23 @@ export async function createAdvance(slug: string, input: unknown) {
         })
       : transactionNumber;
 
+  const proofDocumentId = await resolvePaymentProofDocumentId({
+    actor: {
+      projectId: ctx.project.id,
+      projectSlug: ctx.project.slug,
+      userId: ctx.user.id,
+      userName: ctx.user.name,
+      userEmail: ctx.user.email,
+    },
+    paymentMethod: parsed.data.paymentMethod,
+    proof: parsed.data,
+    visibility: parsed.data.visibility as Visibility,
+    title: `Payment proof · advance to ${parsed.data.recipientName}`,
+    description: parsed.data.referenceNumber
+      ? `Ref: ${parsed.data.referenceNumber}`
+      : parsed.data.description || null,
+  });
+
   const funding = await prisma.financialTransaction.create({
     data: {
       projectId: ctx.project.id,
@@ -271,6 +298,10 @@ export async function createAdvance(slug: string, input: unknown) {
       approvedAt: new Date(),
     },
   });
+
+  if (proofDocumentId) {
+    await linkTransactionProofDocument(funding.id, proofDocumentId);
+  }
 
   const result = await prisma.advance.create({
     data: {

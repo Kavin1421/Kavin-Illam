@@ -16,6 +16,10 @@ import {
   allocatePaymentRequestNumber,
   allocateTransactionNumber,
 } from "@/server/finance/numbering";
+import {
+  linkTransactionProofDocument,
+  resolvePaymentProofDocumentId,
+} from "@/server/finance/payment-proof";
 import { defaultDirectionForType } from "@/server/finance/totals";
 import {
   createPaymentRequestSchema,
@@ -400,7 +404,13 @@ export async function payPaymentRequest(
   );
   const parsed = payPaymentRequestSchema.safeParse(input);
   if (!parsed.success) {
-    throw new AppError("VALIDATION", "Please check the payment details.");
+    const proofIssue = parsed.error.issues.find(
+      (issue) => issue.path[0] === "cloudinaryPublicId",
+    );
+    throw new AppError(
+      "VALIDATION",
+      proofIssue?.message || "Please check the payment details.",
+    );
   }
 
   let payAmount: number;
@@ -463,6 +473,23 @@ export async function payPaymentRequest(
     type: "EXPENSE",
   });
 
+  const proofDocumentId = await resolvePaymentProofDocumentId({
+    actor: {
+      projectId: ctx.project.id,
+      projectSlug: ctx.project.slug,
+      userId: ctx.user.id,
+      userName: ctx.user.name,
+      userEmail: ctx.user.email,
+    },
+    paymentMethod: parsed.data.paymentMethod,
+    proof: parsed.data,
+    visibility: request.visibility,
+    title: `Payment proof · ${request.requestNumber}`,
+    description: parsed.data.referenceNumber
+      ? `Ref: ${parsed.data.referenceNumber}`
+      : request.title,
+  });
+
   const ledger = await prisma.financialTransaction.create({
     data: {
       projectId: ctx.project.id,
@@ -489,6 +516,10 @@ export async function payPaymentRequest(
       approvedAt: new Date(),
     },
   });
+
+  if (proofDocumentId) {
+    await linkTransactionProofDocument(ledger.id, proofDocumentId);
+  }
 
   const paidAmount = request.paidAmount + payAmount;
   let nextStatus: "PAID" | "PARTIALLY_PAID";

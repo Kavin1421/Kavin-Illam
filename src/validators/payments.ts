@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import { paymentMethodSchema, visibilitySchema } from "@/validators/finance";
+import {
+  paymentProofUploadSchema,
+  refineRequirePaymentProofUnlessCash,
+} from "@/validators/payment-proof";
 
 export const createPaymentRequestSchema = z.object({
   title: z.string().trim().min(2).max(160),
@@ -17,14 +21,19 @@ export const reviewPaymentRequestSchema = z.object({
   reviewNote: z.string().trim().max(2000).optional().or(z.literal("")),
 });
 
-export const payPaymentRequestSchema = z.object({
-  amountRupees: z.string().trim().min(1),
-  paymentDate: z.string().min(1),
-  accountId: z.string().optional().or(z.literal("")),
-  paymentMethod: paymentMethodSchema.optional(),
-  referenceNumber: z.string().trim().max(120).optional().or(z.literal("")),
-  notes: z.string().trim().max(2000).optional().or(z.literal("")),
-});
+export const payPaymentRequestSchema = z
+  .object({
+    amountRupees: z.string().trim().min(1),
+    paymentDate: z.string().min(1),
+    accountId: z.string().optional().or(z.literal("")),
+    paymentMethod: paymentMethodSchema.optional(),
+    referenceNumber: z.string().trim().max(120).optional().or(z.literal("")),
+    notes: z.string().trim().max(2000).optional().or(z.literal("")),
+  })
+  .merge(paymentProofUploadSchema)
+  .superRefine((data, ctx) => {
+    refineRequirePaymentProofUnlessCash(data, ctx);
+  });
 
 export const resubmitPaymentRequestSchema = z.object({
   title: z.string().trim().min(2).max(160).optional(),

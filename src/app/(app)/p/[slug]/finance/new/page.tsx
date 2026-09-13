@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { isCloudinaryConfigured } from "@/server/documents/cloudinary";
 import { listAccounts } from "@/server/finance/accounts";
 import { listCategoriesForProject } from "@/server/finance/categories";
 
@@ -46,6 +47,7 @@ export default async function NewTransactionPage({
             slug={slug}
             categories={categories.map((c) => ({ id: c.id, name: c.name }))}
             accounts={accounts.map((a) => ({ id: a.id, name: a.name }))}
+            cloudinaryReady={isCloudinaryConfigured()}
           />
         </CardContent>
       </Card>

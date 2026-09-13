@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  paymentProofUploadSchema,
+  refineRequirePaymentProofUnlessCash,
+} from "@/validators/payment-proof";
+
 export const transactionTypeSchema = z.enum([
   "EXPENSE",
   "INCOME",
@@ -54,6 +59,7 @@ export const createTransactionSchema = z
     status: transactionStatusSchema.default("PAID"),
     visibility: visibilitySchema.default("PROJECT_SHARED"),
   })
+  .merge(paymentProofUploadSchema)
   .superRefine((data, ctx) => {
     if (data.status === "PAID" && !data.transactionDate) {
       ctx.addIssue({
@@ -62,6 +68,7 @@ export const createTransactionSchema = z
         path: ["transactionDate"],
       });
     }
+    refineRequirePaymentProofUnlessCash(data, ctx);
   });
 
 export const softDeleteTransactionSchema = z.object({

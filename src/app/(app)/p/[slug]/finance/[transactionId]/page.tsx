@@ -62,6 +62,18 @@ export default async function TransactionDetailPage({
           <p>Paid to: {transaction.paidTo ?? "—"}</p>
           <p>Method: {transaction.paymentMethod ?? "—"}</p>
           <p>Reference: {transaction.referenceNumber ?? "—"}</p>
+          {transaction.proofDocument ? (
+            <p>
+              Payment proof:{" "}
+              <Link
+                href={`/p/${slug}/documents/${transaction.proofDocument.id}`}
+                className="text-foreground underline-offset-4 hover:underline"
+              >
+                {transaction.proofDocument.title} (
+                {transaction.proofDocument.documentNumber})
+              </Link>
+            </p>
+          ) : null}
           <p>
             Created by:{" "}
             {transaction.createdBy.name ?? transaction.createdBy.email} ·{" "}
