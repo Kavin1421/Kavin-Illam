@@ -1,12 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "../styles/design-tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
 /* -------------------------------------------------------------------------- */
-/* Phase 2 — Design tokens: Dark Teal / Emerald                               */
-/* Source of truth: UI_REDESIGN.md                                            */
+/* Design system — Dark Teal / Emerald (tokens in design-tokens.css)          */
 /* -------------------------------------------------------------------------- */
 
 @theme inline {
@@ -102,99 +102,20 @@
 }
 
 :root {
-  /* Raw brand palette — Dark Teal / Emerald */
-  --ki-bg: #063f3a;
-  --ki-teal-deep: #064e49;
-  --ki-teal-dark: #053532;
-  --ki-surface: #062d2a;
-  --ki-sidebar-base: #032825;
-  --ki-emerald: #047857;
-  --ki-emerald-bright: #00c875;
-  --ki-cta: #00d084;
-  --ki-mint: #5eead4;
-  --ki-mint-light: #a7f3d0;
-  --ki-cyan: #22d3ee;
-  --ki-blue: #3b82f6;
-  --ki-purple: #8b5cf6;
-  --ki-pink: #ec4899;
-  --ki-white: #ffffff;
-  --ki-off-white: #f1f5f9;
-  --ki-muted-white: #b8d6d1;
-  --ki-muted: #8fafac;
-  --ki-border: rgba(255, 255, 255, 0.1);
-  --ki-border-subtle: rgba(255, 255, 255, 0.06);
-  --ki-warning: #f59e0b;
-  --ki-danger: #ef4444;
-  --ki-success: #00c875;
-  --ki-info: #22d3ee;
+  /* Palette + gradients live in src/styles/design-tokens.css */
 
-  /* Glass surfaces */
-  --ki-glass: rgba(255, 255, 255, 0.055);
-  --ki-glass-hover: rgba(255, 255, 255, 0.08);
-  --ki-glass-strong: rgba(255, 255, 255, 0.09);
-
-  /* Shadows + glow (restrained) */
-  --ki-shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.18);
-  --ki-shadow-md: 0 10px 40px rgba(0, 0, 0, 0.22);
-  --ki-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.28);
-  --ki-shadow-focus: 0 0 0 3px rgba(0, 208, 132, 0.22);
-  --ki-glow-emerald: 0 0 24px rgba(0, 208, 132, 0.12);
-  --ki-glow-cyan: 0 0 24px rgba(34, 211, 238, 0.1);
-
-  /* Motion */
-  --ki-duration-fast: 160ms;
-  --ki-duration-normal: 200ms;
-  --ki-duration-slow: 400ms;
-  --ki-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* Gradients */
-  --ki-gradient-primary: linear-gradient(135deg, #047857 0%, #00c875 100%);
-  --ki-gradient-teal: linear-gradient(135deg, #063f3a 0%, #047857 100%);
-  --ki-gradient-cyan: linear-gradient(135deg, #0891b2 0%, #22d3ee 100%);
-  --ki-gradient-purple: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
-  --ki-gradient-nav-active: linear-gradient(
-    90deg,
-    rgba(0, 208, 132, 0.2),
-    rgba(0, 208, 132, 0.05)
-  );
-  --ki-gradient-premium: var(--ki-gradient-teal);
-  --ki-gradient-gold: var(--ki-gradient-primary);
-  --ki-app-wash:
-    radial-gradient(
-      circle at 10% 10%,
-      rgba(0, 200, 117, 0.18),
-      transparent 35%
-    ),
-    radial-gradient(
-      circle at 90% 20%,
-      rgba(34, 211, 238, 0.1),
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at 50% 100%,
-      rgba(139, 92, 246, 0.08),
-      transparent 35%
-    ),
-    linear-gradient(180deg, var(--ki-bg) 0%, var(--ki-teal-dark) 100%);
-
-  /* Layout */
-  --ki-sidebar-width: 16.5rem;
-  --ki-sidebar-collapsed: 4.5rem;
-  --ki-header-height: 4.5rem;
-  --ki-content-max: 93.75rem; /* 1500px */
-
-  /* Radius base ≈ 12px → cards 16–20 via lg/xl */
-  --radius: 0.75rem;
+  /* Radius base ≈ 10px → cards 16–20 via lg/xl */
+  --radius: 0.625rem;
 
   /* shadcn semantic mapping — dark teal product default */
   --background: var(--ki-bg);
   --foreground: var(--ki-white);
-  --card: color-mix(in srgb, var(--ki-white) 5.5%, var(--ki-surface));
+  --card: color-mix(in srgb, var(--ki-white) 4.5%, var(--ki-surface));
   --card-foreground: var(--ki-white);
   --popover: color-mix(in srgb, var(--ki-white) 7%, var(--ki-surface));
   --popover-foreground: var(--ki-white);
   --primary: var(--ki-cta);
-  --primary-foreground: var(--ki-teal-dark);
+  --primary-foreground: var(--ki-bg-deep);
   --secondary: color-mix(in srgb, var(--ki-white) 8%, var(--ki-teal-deep));
   --secondary-foreground: var(--ki-off-white);
   --muted: color-mix(in srgb, var(--ki-white) 6%, var(--ki-surface));
@@ -207,13 +128,13 @@
   --ring: color-mix(in srgb, var(--ki-cta) 55%, transparent);
 
   --brand: var(--ki-mint);
-  --brand-foreground: var(--ki-teal-dark);
+  --brand-foreground: var(--ki-bg-deep);
   --success: var(--ki-success);
-  --success-foreground: var(--ki-teal-dark);
+  --success-foreground: var(--ki-bg-deep);
   --warning: var(--ki-warning);
   --warning-foreground: #1a1205;
   --info: var(--ki-info);
-  --info-foreground: var(--ki-teal-dark);
+  --info-foreground: var(--ki-bg-deep);
 
   --chart-1: var(--ki-emerald-bright);
   --chart-2: var(--ki-cyan);
@@ -221,13 +142,13 @@
   --chart-4: var(--ki-purple);
   --chart-5: var(--ki-mint);
 
-  --sidebar: rgba(3, 40, 37, 0.92);
+  --sidebar: var(--ki-sidebar-top);
   --sidebar-foreground: color-mix(in srgb, var(--ki-white) 90%, transparent);
   --sidebar-primary: var(--ki-cta);
-  --sidebar-primary-foreground: var(--ki-teal-dark);
+  --sidebar-primary-foreground: var(--ki-bg-deep);
   --sidebar-accent: rgba(0, 208, 132, 0.12);
   --sidebar-accent-foreground: var(--ki-white);
-  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-border: rgba(255, 255, 255, 0.07);
   --sidebar-ring: color-mix(in srgb, var(--ki-mint) 50%, transparent);
 }
 
@@ -249,19 +170,12 @@
     @apply bg-background text-foreground antialiased;
     background-color: var(--ki-bg);
     background-image:
-      linear-gradient(
-        rgba(255, 255, 255, 0.025) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0.025) 1px,
-        transparent 1px
-      ),
+      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
       var(--ki-app-wash);
     background-size:
-      28px 28px,
-      28px 28px,
+      48px 48px,
+      48px 48px,
       auto;
     background-attachment: fixed;
   }
@@ -354,7 +268,7 @@
   /* Surfaces */
   .surface-card {
     background: var(--ki-glass);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(14px);
     box-shadow: var(--ki-shadow-md);
     border: 1px solid var(--ki-border);
     border-radius: var(--radius-xl);
@@ -362,14 +276,14 @@
 
   .surface-elevated {
     background: var(--ki-glass-strong);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(18px);
     box-shadow: var(--ki-shadow-lg);
     border: 1px solid var(--ki-border);
   }
 
   .surface-glass {
     background: var(--ki-glass);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(14px);
     border: 1px solid var(--ki-border-subtle);
   }
 
@@ -387,17 +301,44 @@
 
   .texture-blueprint {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 24px 24px;
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 48px 48px;
   }
 
   .glow-emerald {
     box-shadow: var(--ki-glow-emerald);
   }
 
+  .glow-cta {
+    box-shadow: var(--ki-glow-cta);
+  }
+
   .animate-page-in {
     animation: ki-page-in var(--ki-duration-slow) var(--ki-ease-out) both;
+  }
+
+  .stagger-in > * {
+    animation: ki-page-in var(--ki-duration-slow) var(--ki-ease-out) both;
+  }
+
+  .stagger-in > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .stagger-in > *:nth-child(2) {
+    animation-delay: 70ms;
+  }
+  .stagger-in > *:nth-child(3) {
+    animation-delay: 140ms;
+  }
+  .stagger-in > *:nth-child(4) {
+    animation-delay: 210ms;
+  }
+  .stagger-in > *:nth-child(5) {
+    animation-delay: 280ms;
+  }
+  .stagger-in > *:nth-child(6) {
+    animation-delay: 350ms;
   }
 }
 
@@ -506,7 +447,8 @@
     transition: none !important;
   }
 
-  .animate-page-in {
+  .animate-page-in,
+  .stagger-in > * {
     animation: none !important;
   }
 

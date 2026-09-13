@@ -34,3 +34,61 @@ export function rankCategorySpend(
     shareBps: total > 0 ? Math.round((row.amount * 10_000) / total) : 0,
   }));
 }
+
+const MONTH_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+export type MonthlyMoneyPoint = {
+  month: number; // 0–11
+  label: string;
+  spent: number;
+  committed: number;
+};
+
+/**
+ * Build a 12-month series for a calendar year (integer paise).
+ * Dates are interpreted in Asia/Kolkata for month bucketing.
+ */
+export function buildMonthlyMoneySeries(
+  spent: readonly { at: Date; amount: number }[],
+  committed: readonly { at: Date; amount: number }[],
+  year: number,
+): MonthlyMoneyPoint[] {
+  const spentByMonth = new Array<number>(12).fill(0);
+  const committedByMonth = new Array<number>(12).fill(0);
+
+  const bucket = (at: Date, amount: number, target: number[]) => {
+    if (!Number.isInteger(amount) || amount <= 0) return;
+    const parts = new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "numeric",
+    }).formatToParts(at);
+    const y = Number(parts.find((p) => p.type === "year")?.value);
+    const m = Number(parts.find((p) => p.type === "month")?.value) - 1;
+    if (y !== year || m < 0 || m > 11) return;
+    target[m]! += amount;
+  };
+
+  for (const row of spent) bucket(row.at, row.amount, spentByMonth);
+  for (const row of committed) bucket(row.at, row.amount, committedByMonth);
+
+  return MONTH_LABELS.map((label, month) => ({
+    month,
+    label,
+    spent: spentByMonth[month]!,
+    committed: committedByMonth[month]!,
+  }));
+}

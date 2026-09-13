@@ -1,15 +1,29 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import {
+  AlertTriangle,
+  Banknote,
+  CheckSquare,
+  FileUp,
+  Flag,
+  FolderOpen,
+  HandCoins,
+  PiggyBank,
+  Plus,
+  Receipt,
+  Wallet,
+} from "lucide-react";
 
+import {
+  AnimatedPercent,
+} from "@/components/dashboard/animated-money";
+import { MetricCard } from "@/components/dashboard/metric-card";
+import { MonthlySpendChart } from "@/components/dashboard/monthly-chart";
+import { ProgressBar } from "@/components/dashboard/progress-bar";
+import { SpendDonut } from "@/components/dashboard/spend-charts";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -19,22 +33,38 @@ export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-function Metric({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <p className="text-meta">{label}</p>
-      <p className="text-metric text-foreground">{value}</p>
-      {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
-    </div>
+function greetingForNow(now = new Date()) {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-IN", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: "Asia/Kolkata",
+    }).format(now),
   );
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function statusTone(status: string) {
+  switch (status) {
+    case "PAID":
+    case "COMPLETED":
+    case "APPROVED":
+      return "border-cta/30 bg-cta/15 text-mint";
+    case "PENDING":
+    case "CHANGES_REQUESTED":
+    case "IN_PROGRESS":
+      return "border-warning/30 bg-warning/15 text-warning";
+    case "REJECTED":
+    case "OVERDUE":
+    case "CANCELLED":
+      return "border-destructive/30 bg-destructive/15 text-destructive";
+    case "UPCOMING":
+      return "border-white/15 bg-white/[0.06] text-muted-white";
+    default:
+      return "border-white/15 bg-white/[0.06] text-muted-white";
+  }
 }
 
 export default async function ProjectDashboardPage({
@@ -44,167 +74,291 @@ export default async function ProjectDashboardPage({
 }) {
   const { slug } = await params;
   const data = await getProjectDashboard(slug);
-  const { summary, project, role } = data;
+  const { summary, project, role, milestoneProgress } = data;
+
+  const trackLabel =
+    milestoneProgress.percent >= 100
+      ? "Complete"
+      : milestoneProgress.percent >= 40
+        ? "On track"
+        : milestoneProgress.total === 0
+          ? "Planning"
+          : "In progress";
+
+  const nextMilestone = data.upcomingMilestones[0] ?? null;
+  const attentionEmpty =
+    data.pendingRequests.length === 0 &&
+    data.approvedToPay.length === 0 &&
+    data.overdueTasks.length === 0 &&
+    data.expiringDocuments.length === 0;
+
+  const quickActions = [
+    data.permissions.canCreateFinance
+      ? {
+          href: `/p/${slug}/finance/new`,
+          label: "Add expense",
+          icon: Plus,
+          tone: "bg-emerald-bright/15 text-emerald-bright",
+        }
+      : null,
+    {
+      href: `/p/${slug}/payment-requests/new`,
+      label: "Payment request",
+      icon: Receipt,
+      tone: "bg-cyan/15 text-cyan",
+    },
+    {
+      href: `/p/${slug}/documents/new`,
+      label: "Upload document",
+      icon: FileUp,
+      tone: "bg-purple/15 text-purple",
+    },
+    {
+      href: `/p/${slug}/tasks/new`,
+      label: "Add task",
+      icon: CheckSquare,
+      tone: "bg-blue/15 text-blue",
+    },
+    {
+      href: `/p/${slug}/advances/new`,
+      label: "Record advance",
+      icon: HandCoins,
+      tone: "bg-pink/15 text-pink",
+    },
+    {
+      href: `/p/${slug}/reports`,
+      label: "View reports",
+      icon: Wallet,
+      tone: "bg-warning/15 text-warning",
+    },
+  ].filter(Boolean) as Array<{
+    href: string;
+    label: string;
+    icon: typeof Plus;
+    tone: string;
+  }>;
+
+  const spentOfBudgetBps =
+    summary.planned > 0
+      ? Math.round((summary.spent * 10_000) / summary.planned)
+      : 0;
+
+  const sparkFromMonthly = (key: "spent" | "committed") =>
+    data.monthlySpend.map((m) => m[key]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{role}</Badge>
-            <Badge variant="outline">{project.status}</Badge>
-            <Badge variant="outline">
-              {project.projectType.replaceAll("_", " ")}
-            </Badge>
+    <div className="animate-page-in space-y-6">
+      {/* Hero with home imagery */}
+      <section className="relative min-h-[17rem] overflow-hidden rounded-[1.375rem] border border-white/[0.09] sm:min-h-[18.5rem]">
+        <Image
+          src="/brand/home-hero.jpg"
+          alt="Architectural render of a modern home"
+          width={1600}
+          height={720}
+          priority
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,38,36,0.92)_0%,rgba(3,38,36,0.72)_45%,rgba(3,38,36,0.25)_100%)]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(3,38,36,0.55)] via-transparent to-transparent" />
+        <div className="relative flex h-full min-h-[17rem] flex-col justify-between gap-6 p-5 sm:min-h-[18.5rem] sm:p-7 lg:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-2xl space-y-3">
+              <p className="text-meta text-mint/80">
+                {greetingForNow()}
+                {role ? ` · ${role}` : ""}
+              </p>
+              <h2 className="font-heading text-[2.25rem] leading-[1.08] tracking-[-0.03em] text-white sm:text-[2.75rem] lg:text-[3.125rem]">
+                Let&apos;s build something{" "}
+                <span className="text-cta">amazing</span>.
+              </h2>
+              <p className="max-w-xl text-sm text-muted-white sm:text-base">
+                Here&apos;s what&apos;s happening with {project.name} today —
+                shared figures only.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {data.permissions.canCreateFinance ? (
+                <Link
+                  href={`/p/${slug}/finance/new`}
+                  className={cn(buttonVariants(), "glow-cta")}
+                >
+                  Add expense
+                </Link>
+              ) : null}
+              <Link
+                href={`/p/${slug}/budget`}
+                className={cn(buttonVariants({ variant: "outline" }))}
+              >
+                View budget
+              </Link>
+            </div>
           </div>
-          <h2 className="text-page-title text-foreground">Dashboard</h2>
-          <p className="text-muted-foreground text-body max-w-2xl">
-            Shared project figures only — private expenses never appear in these
-            totals. Remaining is shown vs paid and vs committed separately.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {data.permissions.canCreateFinance ? (
-            <Link
-              href={`/p/${slug}/finance/new`}
-              className={cn(buttonVariants({ size: "sm" }))}
-            >
-              Add expense
-            </Link>
-          ) : null}
-          <Link
-            href={`/p/${slug}/payment-requests`}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          >
-            Requests
-          </Link>
-          <Link
-            href={`/p/${slug}/budget`}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          >
-            Budget
-          </Link>
-          <Link
-            href={`/p/${slug}/reports`}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          >
-            Reports
-          </Link>
-        </div>
-      </div>
 
-      <section className="grid gap-6 border-b pb-8 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric
-          label="Spent (shared)"
-          value={formatInrFromPaise(summary.spent)}
-          hint="Expenses + advances"
+          <div className="ml-auto w-full max-w-sm rounded-2xl border border-white/[0.08] bg-black/20 p-4 backdrop-blur-md sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-meta text-mint/80">Project progress</p>
+              <Badge className={statusTone("IN_PROGRESS")}>{trackLabel}</Badge>
+            </div>
+            <div className="mt-2 flex flex-wrap items-end gap-3">
+              <p className="font-heading text-4xl text-white sm:text-5xl">
+                <AnimatedPercent value={milestoneProgress.percent} />
+              </p>
+              <p className="pb-1 text-sm text-muted-white">
+                {milestoneProgress.completed}/{milestoneProgress.total}{" "}
+                milestones
+                {nextMilestone?.targetDate
+                  ? ` · Next ${formatDate(nextMilestone.targetDate)}`
+                  : ""}
+              </p>
+            </div>
+            <ProgressBar
+              value={milestoneProgress.percent}
+              glow
+              className="mt-3"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Metrics */}
+      <section className="stagger-in grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Total project budget"
+          paise={summary.planned}
+          hint="Planned / estimated"
+          accent="cyan"
+          icon={<PiggyBank className="size-4" />}
+          spark={sparkFromMonthly("committed")}
         />
-        <Metric
-          label="Budget remaining vs paid"
-          value={formatInrFromPaise(summary.remainingVsPaid)}
-          hint={`Planned ${formatInrFromPaise(summary.planned)}`}
+        <MetricCard
+          label="Total spent (shared)"
+          paise={summary.spent}
+          hint={
+            summary.planned > 0
+              ? `${(spentOfBudgetBps / 100).toFixed(1)}% of budget`
+              : "Shared expenses + advances"
+          }
+          accent="green"
+          icon={<Banknote className="size-4" />}
+          spark={sparkFromMonthly("spent")}
         />
-        <Metric
+        <MetricCard
           label="Outstanding advances"
-          value={formatInrFromPaise(summary.outstandingAdvances)}
+          paise={summary.outstandingAdvances}
+          hint={`${data.advanceRows.length} open advance${data.advanceRows.length === 1 ? "" : "s"}`}
+          accent="purple"
+          icon={<HandCoins className="size-4" />}
+          spark={sparkFromMonthly("spent")}
         />
-        <Metric
+        <MetricCard
           label="Open commitments"
-          value={formatInrFromPaise(summary.committed)}
+          paise={summary.committed}
           hint={`${summary.pendingRequestCount} pending · ${summary.approvedToPayCount} to pay`}
+          accent="amber"
+          icon={<Receipt className="size-4" />}
+          spark={sparkFromMonthly("committed")}
         />
       </section>
 
-      <section className="grid gap-8 lg:grid-cols-5">
-        <div className="space-y-4 lg:col-span-3">
+      {/* Charts + milestones — ~50 / 25 / 25 */}
+      <section className="grid gap-4 xl:grid-cols-12 xl:gap-5">
+        <div className="surface-card space-y-4 rounded-[1.125rem] p-5 xl:col-span-6">
+          <div>
+            <h3 className="text-section">Spending overview</h3>
+            <p className="mt-1 text-sm text-muted-white">
+              Monthly spent vs committed · Asia/Kolkata
+            </p>
+          </div>
+          <MonthlySpendChart
+            series={data.monthlySpend}
+            year={data.monthlySpendYear}
+          />
+        </div>
+
+        <div className="surface-card space-y-4 rounded-[1.125rem] p-5 xl:col-span-3">
           <div className="flex items-end justify-between gap-2">
             <div>
-              <h3 className="font-heading text-xl tracking-tight">
-                Where money went
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                Top shared spend by category
+              <h3 className="text-section">Expense by category</h3>
+              <p className="mt-1 text-sm text-muted-white">
+                Shared spend mix
               </p>
             </div>
             <Link
               href={`/p/${slug}/finance`}
-              className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+              className="text-sm text-mint hover:text-mint-light"
             >
               Ledger
             </Link>
           </div>
-
-          {data.topSpend.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No shared spend recorded yet.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {data.topSpend.map((row) => (
-                <div
-                  key={row.categoryId ?? row.categoryName}
-                  className="space-y-1.5"
-                >
-                  <div className="flex items-baseline justify-between gap-2 text-sm">
-                    <span className="font-medium">{row.categoryName}</span>
-                    <span className="tabular-nums">
-                      {formatInrFromPaise(row.amount)}
-                    </span>
-                  </div>
-                  <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
-                    <div
-                      className="bg-foreground/80 h-full rounded-full"
-                      style={{ width: `${Math.max(row.shareBps / 100, 4)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="grid gap-4 pt-4 sm:grid-cols-3">
-            <div className="border-border space-y-1 border-t pt-4">
-              <p className="text-muted-foreground text-xs uppercase">Paid</p>
-              <p className="text-lg font-medium tabular-nums">
-                {formatInrFromPaise(summary.paid)}
-              </p>
-            </div>
-            <div className="border-border space-y-1 border-t pt-4">
-              <p className="text-muted-foreground text-xs uppercase">
-                Remaining vs committed
-              </p>
-              <p className="text-lg font-medium tabular-nums">
-                {formatInrFromPaise(summary.remainingVsCommitted)}
-              </p>
-            </div>
-            <div className="border-border space-y-1 border-t pt-4">
-              <p className="text-muted-foreground text-xs uppercase">
-                Net cash
-              </p>
-              <p className="text-lg font-medium tabular-nums">
-                {formatInrFromPaise(summary.netCashFlow)}
-              </p>
-            </div>
-          </div>
+          <SpendDonut slices={data.topSpend} totalPaise={summary.spent} />
         </div>
 
-        <div className="space-y-4 lg:col-span-2">
-          <div>
-            <h3 className="font-heading text-xl tracking-tight">
-              Needs attention
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              Engineer requests, overdue work, expiries
-            </p>
+        <div className="surface-card space-y-4 rounded-[1.125rem] p-5 xl:col-span-3">
+          <div className="flex items-end justify-between gap-2">
+            <div>
+              <h3 className="text-section">Upcoming milestones</h3>
+              <p className="mt-1 text-sm text-muted-white">Build roadmap</p>
+            </div>
+            <Link
+              href={`/p/${slug}/milestones`}
+              className="text-sm text-mint hover:text-mint-light"
+            >
+              View all →
+            </Link>
+          </div>
+          {milestoneProgress.timeline.length === 0 ? (
+            <p className="text-sm text-muted-white">No milestones yet.</p>
+          ) : (
+            <ol className="relative ml-3 space-y-0 border-l border-white/15">
+              {milestoneProgress.timeline.map((ms) => {
+                const done = ms.status === "COMPLETED";
+                const current = ms.status === "IN_PROGRESS";
+                return (
+                  <li key={ms.id} className="relative pb-4 pl-5 last:pb-0">
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "absolute top-1 -left-[5px] size-2.5 rounded-full",
+                        done &&
+                          "bg-cta shadow-[0_0_10px_rgba(0,208,132,0.5)]",
+                        current &&
+                          "bg-cyan shadow-[0_0_10px_rgba(34,211,238,0.45)]",
+                        !done && !current && "bg-white/25",
+                      )}
+                    />
+                    <Link href={`/p/${slug}/milestones/${ms.id}`} className="block">
+                      <p className="text-sm font-medium text-white">{ms.title}</p>
+                      <Badge className={cn("mt-1", statusTone(ms.status))}>
+                        {ms.status.replaceAll("_", " ")}
+                      </Badge>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      </section>
+
+      {/* Attention + Transactions */}
+      <section className="grid gap-6 lg:grid-cols-5">
+        <div className="surface-card space-y-4 rounded-2xl p-5 lg:col-span-2">
+          <div className="flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-warning/15 text-warning">
+              <AlertTriangle className="size-4" />
+            </span>
+            <div>
+              <h3 className="text-section">Needs attention</h3>
+              <p className="text-sm text-muted-white">
+                Requests, overdue work, expiries
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {data.pendingRequests.length === 0 &&
-            data.approvedToPay.length === 0 &&
-            data.overdueTasks.length === 0 &&
-            data.expiringDocuments.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                Nothing urgent right now.
+          <div className="space-y-2.5">
+            {attentionEmpty ? (
+              <p className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6 text-sm text-muted-white">
+                Nothing urgent right now — you&apos;re clear for today.
               </p>
             ) : null}
 
@@ -212,16 +366,16 @@ export default async function ProjectDashboardPage({
               <Link
                 key={req.id}
                 href={`/p/${slug}/payment-requests/${req.id}`}
-                className="border-border block rounded-lg border p-3"
+                className="block rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-ki-fast hover:border-warning/40 hover:bg-white/[0.05]"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{req.title}</p>
-                    <p className="text-muted-foreground text-sm">
-                      Pending · {formatInrFromPaise(req.amount)}
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-white">{req.title}</p>
+                    <p className="text-sm text-muted-white">
+                      {formatInrFromPaise(req.amount)}
                     </p>
                   </div>
-                  <Badge variant="outline">REQUEST</Badge>
+                  <Badge className={statusTone("PENDING")}>Pending</Badge>
                 </div>
               </Link>
             ))}
@@ -230,16 +384,16 @@ export default async function ProjectDashboardPage({
               <Link
                 key={req.id}
                 href={`/p/${slug}/payment-requests/${req.id}`}
-                className="border-border block rounded-lg border p-3"
+                className="block rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-ki-fast hover:border-cta/40 hover:bg-white/[0.05]"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{req.title}</p>
-                    <p className="text-muted-foreground text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-white">{req.title}</p>
+                    <p className="text-sm text-muted-white">
                       Ready to pay · {formatInrFromPaise(req.amount)}
                     </p>
                   </div>
-                  <Badge>APPROVED</Badge>
+                  <Badge className={statusTone("APPROVED")}>Approved</Badge>
                 </div>
               </Link>
             ))}
@@ -248,17 +402,17 @@ export default async function ProjectDashboardPage({
               <Link
                 key={task.id}
                 href={`/p/${slug}/tasks/${task.id}`}
-                className="border-border block rounded-lg border p-3"
+                className="block rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-ki-fast hover:border-destructive/40 hover:bg-white/[0.05]"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{task.title}</p>
-                    <p className="text-muted-foreground text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-white">{task.title}</p>
+                    <p className="text-sm text-muted-white">
                       Overdue
                       {task.dueDate ? ` · ${formatDate(task.dueDate)}` : ""}
                     </p>
                   </div>
-                  <Badge variant="destructive">TASK</Badge>
+                  <Badge className={statusTone("OVERDUE")}>Task</Badge>
                 </div>
               </Link>
             ))}
@@ -267,159 +421,313 @@ export default async function ProjectDashboardPage({
               <Link
                 key={doc.id}
                 href={`/p/${slug}/documents/${doc.id}`}
-                className="border-border block rounded-lg border p-3"
+                className="block rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-ki-fast hover:border-warning/40 hover:bg-white/[0.05]"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{doc.title}</p>
-                    <p className="text-muted-foreground text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-white">{doc.title}</p>
+                    <p className="text-sm text-muted-white">
                       Expires{" "}
                       {doc.expiryDate ? formatDate(doc.expiryDate) : "soon"}
                     </p>
                   </div>
-                  <Badge variant="outline">DOC</Badge>
+                  <Badge className={statusTone("PENDING")}>Expiring</Badge>
                 </div>
               </Link>
             ))}
           </div>
         </div>
-      </section>
 
-      <section className="grid gap-8 border-t pt-8 lg:grid-cols-2">
-        <div className="space-y-4">
+        <div className="surface-card space-y-4 rounded-2xl p-5 lg:col-span-3">
           <div className="flex items-end justify-between gap-2">
             <div>
-              <h3 className="font-heading text-xl tracking-tight">
-                Outstanding advances
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                Server-computed balances
+              <h3 className="text-section">Recent transactions</h3>
+              <p className="mt-1 text-sm text-muted-white">
+                Latest shared ledger activity
+              </p>
+            </div>
+            <Link
+              href={`/p/${slug}/finance`}
+              className="text-sm text-mint hover:text-mint-light"
+            >
+              All
+            </Link>
+          </div>
+          {data.recentTransactions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/15 px-4 py-8 text-center">
+              <p className="text-sm text-muted-white">
+                No project expenses yet.
+              </p>
+              {data.permissions.canCreateFinance ? (
+                <Link
+                  href={`/p/${slug}/finance/new`}
+                  className={cn(buttonVariants({ size: "sm" }), "mt-3")}
+                >
+                  Add expense
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {data.recentTransactions.map((tx) => (
+                <li key={tx.id}>
+                  <Link
+                    href={`/p/${slug}/finance/${tx.id}`}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-ki-fast hover:bg-white/[0.05]"
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-bright/15 text-emerald-bright">
+                      <Banknote className="size-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-white">
+                        {tx.title}
+                      </span>
+                      <span className="block text-xs text-muted-white">
+                        {tx.categoryName} · {formatDate(tx.at)}
+                      </span>
+                    </span>
+                    <span className="text-right">
+                      <span className="block font-tabular text-sm text-white">
+                        {formatInrFromPaise(tx.amount)}
+                      </span>
+                      <Badge className={cn("mt-1", statusTone(tx.status))}>
+                        {tx.status}
+                      </Badge>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      {/* Advances + Documents */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="surface-card space-y-4 rounded-2xl p-5">
+          <div className="flex items-end justify-between gap-2">
+            <div>
+              <h3 className="text-section">Outstanding advances</h3>
+              <p className="mt-1 text-sm text-muted-white">
+                Server-computed remaining balances
               </p>
             </div>
             <Link
               href={`/p/${slug}/advances`}
-              className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+              className="text-sm text-mint hover:text-mint-light"
             >
               All
             </Link>
           </div>
           {data.advanceRows.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No open advances.</p>
+            <p className="text-sm text-muted-white">No open advances.</p>
           ) : (
-            <div className="space-y-2">
-              {data.advanceRows.map((advance) => (
-                <Link
-                  key={advance.id}
-                  href={`/p/${slug}/advances/${advance.id}`}
-                  className="border-border flex items-center justify-between gap-3 rounded-lg border p-3"
-                >
-                  <div>
-                    <p className="font-medium">
-                      {advance.recipientName ?? advance.advanceNumber}
-                    </p>
-                    <p className="text-muted-foreground font-mono text-xs">
-                      {advance.advanceNumber}
-                    </p>
-                  </div>
-                  <p className="font-medium tabular-nums">
-                    {formatInrFromPaise(advance.outstanding)}
-                  </p>
-                </Link>
-              ))}
+            <div className="space-y-3">
+              {data.advanceRows.map((advance) => {
+                const utilized =
+                  advance.originalAmount > 0
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          ((advance.originalAmount - advance.outstanding) *
+                            100) /
+                            advance.originalAmount,
+                        ),
+                      )
+                    : 0;
+                return (
+                  <Link
+                    key={advance.id}
+                    href={`/p/${slug}/advances/${advance.id}`}
+                    className="block rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-ki-fast hover:bg-white/[0.05]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-meta text-purple">Advance</p>
+                        <p className="font-medium text-white">
+                          {advance.recipientName ?? advance.advanceNumber}
+                        </p>
+                        <p className="font-mono text-xs text-muted-white">
+                          {advance.advanceNumber}
+                        </p>
+                      </div>
+                      <p className="text-right">
+                        <span className="block font-tabular text-sm text-white">
+                          {formatInrFromPaise(advance.outstanding)}
+                        </span>
+                        <span className="text-xs text-muted-white">
+                          remaining
+                        </span>
+                      </p>
+                    </div>
+                    <div className="mt-3 space-y-1.5">
+                      <div className="flex justify-between text-xs text-muted-white">
+                        <span>{utilized}% utilized</span>
+                        <span>
+                          of {formatInrFromPaise(advance.originalAmount)}
+                        </span>
+                      </div>
+                      <ProgressBar value={utilized} />
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>
 
-        <div className="space-y-4">
+        <div className="surface-card space-y-4 rounded-2xl p-5">
           <div className="flex items-end justify-between gap-2">
             <div>
-              <h3 className="font-heading text-xl tracking-tight">
-                Upcoming milestones
-              </h3>
-              <p className="text-muted-foreground text-sm">Next checkpoints</p>
+              <h3 className="text-section">Documents</h3>
+              <p className="mt-1 text-sm text-muted-white">
+                Recent project files
+              </p>
             </div>
             <Link
-              href={`/p/${slug}/milestones`}
-              className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+              href={`/p/${slug}/documents`}
+              className="text-sm text-mint hover:text-mint-light"
             >
-              All
+              Library
             </Link>
           </div>
-          {data.upcomingMilestones.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No upcoming milestones.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {data.upcomingMilestones.map((ms) => (
-                <Link
-                  key={ms.id}
-                  href={`/p/${slug}/milestones/${ms.id}`}
-                  className="border-border flex items-center justify-between gap-3 rounded-lg border p-3"
-                >
-                  <div>
-                    <p className="font-medium">{ms.title}</p>
-                    <p className="text-muted-foreground text-sm">
-                      {ms.targetDate ? formatDate(ms.targetDate) : "No date"}
-                    </p>
-                  </div>
-                  <Badge variant="outline">{ms.status}</Badge>
-                </Link>
-              ))}
+          {data.recentDocuments.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/15 px-4 py-8 text-center">
+              <p className="text-sm text-muted-white">
+                No documents uploaded yet.
+              </p>
+              <Link
+                href={`/p/${slug}/documents/new`}
+                className={cn(buttonVariants({ size: "sm" }), "mt-3")}
+              >
+                Upload document
+              </Link>
             </div>
+          ) : (
+            <ul className="space-y-2">
+              {data.recentDocuments.map((doc) => (
+                <li key={doc.id}>
+                  <Link
+                    href={`/p/${slug}/documents/${doc.id}`}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-ki-fast hover:bg-white/[0.05]"
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cyan/15 text-cyan">
+                      <FolderOpen className="size-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-white">
+                        {doc.title}
+                      </span>
+                      <span className="block text-xs text-muted-white">
+                        {doc.category.replaceAll("_", " ")} ·{" "}
+                        {formatDate(doc.at)}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </section>
 
-      <section className="space-y-4 border-t pt-8">
-        <div className="flex items-end justify-between gap-2">
-          <div>
-            <h3 className="font-heading text-xl tracking-tight">
-              Recent activity
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              Latest authorized project events
-            </p>
-          </div>
+      {/* Quick actions */}
+      <section className="space-y-4">
+        <div>
+          <h3 className="text-section">Quick actions</h3>
+          <p className="mt-1 text-sm text-muted-white">
+            Jump into the next construction task
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="surface-card group flex flex-col items-start gap-3 rounded-2xl p-4 transition-ki hover:-translate-y-1 hover:border-white/20"
+              >
+                <span
+                  className={cn(
+                    "flex size-10 items-center justify-center rounded-xl transition-ki group-hover:scale-105",
+                    action.tone,
+                  )}
+                >
+                  <Icon className="size-4" />
+                </span>
+                <span className="text-sm font-medium text-white">
+                  {action.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Activity */}
+      <section className="surface-card space-y-4 rounded-2xl p-5">
+        <div>
+          <h3 className="text-section">Recent activity</h3>
+          <p className="mt-1 text-sm text-muted-white">
+            Latest authorized project events
+          </p>
         </div>
         {data.activity.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No activity yet.</p>
+          <p className="text-sm text-muted-white">No activity yet.</p>
         ) : (
-          <div className="divide-border divide-y rounded-lg border">
+          <ul className="divide-y divide-white/10">
             {data.activity.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                className="hover:bg-muted/40 flex flex-wrap items-start justify-between gap-2 px-4 py-3"
-              >
-                <div>
-                  <p className="font-medium">{item.title}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {item.kind.replaceAll("_", " ")} · {item.subtitle}
+              <li key={item.id}>
+                <Link
+                  href={item.href}
+                  className="flex flex-wrap items-start justify-between gap-2 py-3 transition-ki-fast hover:bg-white/[0.02]"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-mint">
+                      <Flag className="size-3.5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-white">
+                        {item.title}
+                      </p>
+                      <p className="text-sm text-muted-white">
+                        {item.kind.replaceAll("_", " ")} · {item.subtitle}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs font-tabular text-muted-white">
+                    {formatDateTime(item.at)}
                   </p>
-                </div>
-                <p className="text-muted-foreground text-xs tabular-nums">
-                  {formatDateTime(item.at)}
-                </p>
-              </Link>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </section>
 
-      {project.address || project.description ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Project</CardTitle>
-            <CardDescription>
-              {project.description || "No description yet."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-muted-foreground text-sm">
-            Address: {project.address || "—"}
-          </CardContent>
-        </Card>
-      ) : null}
+      {/* Promo with home image */}
+      <section className="relative overflow-hidden rounded-2xl border border-white/10">
+        <Image
+          src="/brand/home-dusk.jpg"
+          alt="Modern villa at dusk"
+          width={1200}
+          height={480}
+          className="h-40 w-full object-cover sm:h-48"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[rgba(6,45,42,0.92)] via-[rgba(6,45,42,0.7)] to-transparent" />
+        <div className="absolute inset-0 flex items-center p-5 sm:p-6">
+          <div className="max-w-lg">
+            <p className="text-meta text-mint/80">Kavin Illam</p>
+            <p className="font-heading mt-2 text-2xl text-white">
+              Track. Manage. Build. Together.
+            </p>
+            <p className="mt-2 text-sm text-muted-white">
+              Every rupee. Every document. Every milestone.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

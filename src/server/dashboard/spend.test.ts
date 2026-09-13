@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { rankCategorySpend } from "@/server/dashboard/spend";
+import {
+  buildMonthlyMoneySeries,
+  rankCategorySpend,
+} from "@/server/dashboard/spend";
 
 describe("dashboard spend ranking", () => {
   it("aggregates and ranks categories by amount with basis-point share", () => {
@@ -29,5 +32,31 @@ describe("dashboard spend ranking", () => {
         { categoryId: "c2", categoryName: "Steel", amount: -100 },
       ]),
     ).toEqual([]);
+  });
+});
+
+describe("buildMonthlyMoneySeries", () => {
+  it("buckets spent and committed into calendar months", () => {
+    const series = buildMonthlyMoneySeries(
+      [
+        { at: new Date("2026-01-15T10:00:00+05:30"), amount: 100_000 },
+        { at: new Date("2026-01-20T10:00:00+05:30"), amount: 50_000 },
+        { at: new Date("2025-12-01T10:00:00+05:30"), amount: 999_000 },
+      ],
+      [{ at: new Date("2026-03-01T10:00:00+05:30"), amount: 200_000 }],
+      2026,
+    );
+
+    expect(series).toHaveLength(12);
+    expect(series[0]).toMatchObject({
+      label: "Jan",
+      spent: 150_000,
+      committed: 0,
+    });
+    expect(series[2]).toMatchObject({
+      label: "Mar",
+      spent: 0,
+      committed: 200_000,
+    });
   });
 });

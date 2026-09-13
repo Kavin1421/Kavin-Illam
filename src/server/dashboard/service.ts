@@ -20,7 +20,7 @@ import { prisma } from "@/server/db/prisma";
 import { sumAuthorizedFinanceTotals } from "@/server/finance/totals";
 import { isOpenTaskStatus } from "@/server/tasks/transitions";
 
-import { rankCategorySpend } from "./spend";
+import { rankCategorySpend, buildMonthlyMoneySeries } from "./spend";
 
 function toVisibleResource(row: {
   projectId: string;
@@ -235,7 +235,7 @@ export async function getProjectDashboard(slug: string) {
         "Uncategorized",
       amount: row.amount,
     }));
-  const topSpend = rankCategorySpend(spendSlices, 5);
+  const topSpend = rankCategorySpend(spendSlices, 6);
 
   const visibleRequests = paymentRequests.filter((row) =>
     canViewResource(viewer, toVisibleResource(row), projectId),
@@ -260,19 +260,43 @@ export async function getProjectDashboard(slug: string) {
     }))
     .filter((s) => s.amount > 0);
 
-  const paidSlices = sharedTx
-    .filter(
-      (row) =>
-        isBudgetConsumingLedgerType(row.type) &&
-        (row.status === "PAID" ||
-          row.status === "PARTIALLY_PAID" ||
-          row.status === "APPROVED"),
-    )
-    .map((row) => ({
-      categoryId: row.categoryId,
-      amount: row.amount,
-    }));
+  const budgetConsumingTx = sharedTx.filter(
+    (row) =>
+      isBudgetConsumingLedgerType(row.type) &&
+      (row.status === "PAID" ||
+        row.status === "PARTIALLY_PAID" ||
+        row.status === "APPROVED"),
+  );
 
+  const paidSlices = budgetConsumingTx.map((row) => ({
+    categoryId: row.categoryId,
+    amount: row.amount,
+  }));
+
+  const kolkataYear = Number(
+    new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+    }).format(now),
+  );
+
+  const monthlySpend = buildMonthlyMoneySeries(
+    budgetConsumingTx.map((row) => ({
+      at: row.transactionDate ?? row.createdAt,
+      amount: row.amount,
+    })),
+    sharedRequests
+      .map((row) => ({
+        at: row.dueDate ?? row.createdAt,
+        amount: openCommitmentFromRequest({
+          status: row.status,
+          amount: row.amount,
+          paidAmount: row.paidAmount,
+        }),
+      }))
+      .filter((row) => row.amount > 0),
+    kolkataYear,
+  );
   const budgetLines = (budget?.categories ?? []).map((line) => ({
     categoryId: line.categoryId,
     label: line.label,
@@ -352,6 +376,36 @@ export async function getProjectDashboard(slug: string) {
           m.status !== "CANCELLED"),
     )
     .slice(0, 5);
+
+  const milestoneActive = visibleMilestones.filter(
+    (m) => m.status !== "CANCELLED",
+  );
+  const milestoneCompleted = milestoneActive.filter(
+    (m) => m.status === "COMPLETED",
+  ).length;
+  const milestoneTotal = milestoneActive.length;
+  const milestonePercent =
+    milestoneTotal > 0
+      ? Math.round((milestoneCompleted * 100) / milestoneTotal)
+      : 0;
+
+  const recentTransactions = visibleTx.slice(0, 6).map((tx) => ({
+    id: tx.id,
+    title: tx.description || `${tx.type} ${tx.transactionNumber}`,
+    categoryName: tx.category?.name ?? "Uncategorized",
+    amount: tx.amount,
+    status: tx.status,
+    type: tx.type,
+    direction: tx.direction,
+    at: tx.transactionDate ?? tx.createdAt,
+  }));
+
+  const recentDocuments = visibleDocs.slice(0, 4).map((doc) => ({
+    id: doc.id,
+    title: doc.title,
+    category: doc.category,
+    at: doc.updatedAt,
+  }));
 
   const activity: DashboardActivityItem[] = [
     ...visibleTx.slice(0, 8).map((tx) => ({
@@ -434,6 +488,8 @@ export async function getProjectDashboard(slug: string) {
       expiringDocumentCount: expiringDocuments.length,
     },
     topSpend,
+    monthlySpend,
+    monthlySpendYear: kolkataYear,
     pendingRequests: pendingRequests.slice(0, 5),
     approvedToPay: approvedToPay.slice(0, 5),
     advanceRows: advanceRows.filter((a) => a.outstanding > 0).slice(0, 5),
@@ -441,5 +497,18 @@ export async function getProjectDashboard(slug: string) {
     upcomingMilestones,
     expiringDocuments: expiringDocuments.slice(0, 5),
     activity,
+    recentTransactions,
+    recentDocuments,
+    milestoneProgress: {
+      total: milestoneTotal,
+      completed: milestoneCompleted,
+      percent: milestonePercent,
+      timeline: milestoneActive.slice(0, 6).map((ms) => ({
+        id: ms.id,
+        title: ms.title,
+        status: ms.status,
+        targetDate: ms.targetDate,
+      })),
+    },
   };
 }

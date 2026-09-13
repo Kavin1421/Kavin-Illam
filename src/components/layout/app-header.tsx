@@ -30,7 +30,7 @@ export function AppHeader({
   ).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex h-[var(--ki-header-height)] items-center gap-3 border-b border-white/10 bg-[rgba(6,63,58,0.55)] px-4 backdrop-blur-xl sm:px-6">
+    <header className="sticky top-0 z-30 flex h-[var(--ki-header-height)] items-center gap-3 border-b border-white/[0.06] bg-[rgba(6,63,58,0.42)] px-4 backdrop-blur-xl sm:px-6 lg:px-8">
       <button
         type="button"
         className="inline-flex size-9 items-center justify-center rounded-lg text-white/80 transition-ki-fast hover:bg-white/[0.06] hover:text-white lg:hidden"
@@ -43,7 +43,10 @@ export function AppHeader({
       <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
         <ol className="flex min-w-0 items-center gap-1.5 text-sm">
           {crumbs.map((crumb, index) => (
-            <li key={crumb.href} className="flex min-w-0 items-center gap-1.5">
+            <li
+              key={`${index}-${crumb.label}-${crumb.href}`}
+              className="flex min-w-0 items-center gap-1.5"
+            >
               {index > 0 ? (
                 <span className="shrink-0 text-white/25">/</span>
               ) : null}
@@ -67,7 +70,7 @@ export function AppHeader({
       <div className="hidden items-center md:flex">
         <button
           type="button"
-          className="flex h-9 w-56 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 text-left text-sm text-muted-white transition-ki-fast hover:border-white/20 hover:text-white focus-visible:border-cta/50 focus-visible:ring-[3px] focus-visible:ring-[rgba(0,208,132,0.22)] focus-visible:outline-none disabled:opacity-70 lg:w-72"
+          className="flex h-10 w-[22rem] max-w-[min(100%,26.875rem)] items-center gap-2 rounded-xl border border-white/[0.09] bg-white/[0.04] px-3 text-left text-sm text-muted-white transition-ki-fast hover:border-white/20 hover:bg-white/[0.06] hover:text-white focus-visible:border-cta/50 focus-visible:ring-[3px] focus-visible:ring-[rgba(0,208,132,0.22)] focus-visible:outline-none disabled:opacity-70 lg:w-[26rem]"
           aria-label="Search (coming soon)"
           disabled
           title="Command palette arrives in a later phase"
@@ -168,9 +171,18 @@ function buildBreadcrumbs(pathname: string, slug: string | null) {
   const active =
     items.find((item) => isNavActive(pathname, item.href, item.exact)) ??
     items[0];
+  const projectHome = `/p/${slug}`;
+
+  // Dashboard shares the project root href — avoid duplicate crumbs/keys.
+  if (active.href === projectHome) {
+    return [
+      { href: "/projects", label: "Projects" },
+      { href: projectHome, label: active.label },
+    ];
+  }
 
   return [
-    { href: `/p/${slug}`, label: "Project" },
+    { href: projectHome, label: "Project" },
     { href: active.href, label: active.label },
   ];
 }

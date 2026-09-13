@@ -184,7 +184,8 @@ Improve existing shadcn `Button` / `Card` / `Input` / `Badge` via tokens before 
 | 7 | Header (transparent glass + search stub) | **Complete** (bundled with 5) |
 | 8 | Nav density | Pending |
 | 9 | Buttons / inputs / dropdowns | **Partial** (glass Card/Input/Button) |
-| 10 | Dashboard | Next |
+| 10 | Dashboard | **Complete** (+ charts, home imagery) |
+| 11 | Finance | **Complete** |
 | 11–21 | Finance → Settings feature pages | Pending |
 | 22–26 | Mobile · motion · a11y · perf · QA | Pending |
 

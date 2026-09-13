@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { Home, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 
 import {
   extractProjectSlug,
@@ -37,25 +38,25 @@ function NavLink({
       title={collapsed ? item.label : undefined}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-ki-fast",
+        "group relative flex min-h-[2.75rem] items-center gap-3 rounded-[0.7rem] px-3 py-2.5 text-sm transition-ki-fast",
         "focus-visible:ring-2 focus-visible:ring-mint/40 focus-visible:outline-none",
         collapsed && "justify-center px-2",
         active
-          ? "bg-[image:var(--ki-gradient-nav-active)] text-white shadow-[0_0_24px_rgba(0,208,132,0.12)]"
-          : "text-sidebar-foreground/75 hover:bg-white/[0.05] hover:text-white",
+          ? "bg-[image:var(--ki-gradient-nav-active)] text-white shadow-[0_0_20px_rgba(0,208,132,0.08)]"
+          : "text-sidebar-foreground/75 hover:bg-white/[0.045] hover:text-white",
       )}
     >
       {active ? (
         <span
           aria-hidden
-          className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-full bg-cta shadow-[0_0_10px_rgba(0,208,132,0.55)]"
+          className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-cta"
         />
       ) : null}
       <Icon
         className={cn(
           "size-[1.125rem] shrink-0 transition-ki-fast",
           active
-            ? "text-mint"
+            ? "text-cta"
             : "opacity-80 group-hover:translate-x-px group-hover:opacity-100",
         )}
       />
@@ -168,15 +169,16 @@ export function AppSidebar({
           onClick={onCloseMobile}
           className="flex min-w-0 items-center gap-3 rounded-lg focus-visible:ring-2 focus-visible:ring-mint/40 focus-visible:outline-none"
         >
-          <span className="gradient-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-lg font-heading text-sm font-semibold tracking-tight shadow-[0_0_20px_rgba(0,208,132,0.25)]">
-            KI
+          <span className="gradient-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-lg shadow-[0_0_18px_rgba(0,208,132,0.22)]">
+            <Home className="size-4" aria-hidden />
+            <span className="sr-only">Kavin Illam</span>
           </span>
           {!collapsed ? (
             <span className="min-w-0">
-              <span className="font-heading block truncate text-base tracking-[-0.02em] text-white">
+              <span className="block truncate text-[1.0625rem] font-semibold tracking-[-0.02em] text-white">
                 Kavin Illam
               </span>
-              <span className="block truncate text-[11px] tracking-[0.14em] text-mint/75 uppercase">
+              <span className="block truncate text-[10px] tracking-[0.12em] text-mint/75 uppercase">
                 Build · Track · Manage
               </span>
             </span>
@@ -241,17 +243,25 @@ export function AppSidebar({
         )}
       >
         {!collapsed ? (
-          <div className="gradient-premium relative overflow-hidden rounded-xl p-3.5 texture-blueprint">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,208,132,0.22),transparent_55%)]"
+          <div className="relative h-[9rem] overflow-hidden rounded-2xl border border-white/10">
+            <Image
+              src="/brand/home-sidebar.jpg"
+              alt="Modern home exterior"
+              width={400}
+              height={180}
+              className="h-full w-full object-cover"
             />
-            <p className="font-heading relative text-sm tracking-[-0.02em] text-white/95">
-              Every brick brings us closer.
-            </p>
-            <p className="relative mt-1 text-[11px] text-mint/60">
-              Build Dreams. Track Progress.
-            </p>
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(3,47,44,0.96)] via-[rgba(3,47,44,0.5)] to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-3.5">
+              <p className="font-heading text-sm leading-snug tracking-[-0.02em] text-white">
+                Every brick
+                <br />
+                brings us closer.
+              </p>
+              <p className="mt-1 text-[11px] text-mint/70">
+                Build Dreams. Track Progress.
+              </p>
+            </div>
           </div>
         ) : null}
 
@@ -289,7 +299,8 @@ export function AppSidebar({
     <>
       <aside
         className={cn(
-          "sticky top-0 hidden h-svh shrink-0 border-r border-white/[0.08] bg-[rgba(3,40,37,0.88)] text-sidebar-foreground backdrop-blur-[20px] transition-[width] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] lg:flex lg:flex-col",
+          "sticky top-0 hidden h-svh shrink-0 border-r border-white/[0.07] text-sidebar-foreground shadow-[0_0_40px_rgba(0,0,0,0.18)] transition-[width] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] lg:flex lg:flex-col",
+          "bg-[image:var(--ki-gradient-sidebar)]",
           collapsed
             ? "w-[var(--ki-sidebar-collapsed)]"
             : "w-[var(--ki-sidebar-width)]",
@@ -312,7 +323,7 @@ export function AppSidebar({
             aria-label="Close navigation"
             onClick={onCloseMobile}
           />
-          <aside className="animate-in slide-in-from-left absolute inset-y-0 left-0 flex w-[min(100%,var(--ki-sidebar-width))] flex-col border-r border-white/[0.08] bg-[rgba(3,40,37,0.96)] text-sidebar-foreground shadow-ki-lg backdrop-blur-xl duration-200">
+          <aside className="animate-in slide-in-from-left absolute inset-y-0 left-0 flex w-[min(100%,var(--ki-sidebar-width))] flex-col border-r border-white/[0.07] bg-[image:var(--ki-gradient-sidebar)] text-sidebar-foreground shadow-ki-lg duration-200">
             <div className="flex items-center justify-between border-b border-sidebar-border px-3 py-2">
               <span className="font-heading text-sm text-white">Menu</span>
               <button

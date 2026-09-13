@@ -1,0 +1,91 @@
+/**
+ * Kavin Illam design tokens — single source of truth.
+ * Imported by globals.css. Prefer these over scattered hex values.
+ */
+
+:root {
+  --ki-bg: #063f3a;
+  --ki-bg-deep: #032f2c;
+  --ki-teal-deep: #064e49;
+  --ki-teal-dark: #053532;
+  --ki-surface: #062d2a;
+  --ki-sidebar-top: #032f2c;
+  --ki-sidebar-bottom: #042b29;
+
+  --ki-emerald: #047857;
+  --ki-emerald-bright: #00c875;
+  --ki-cta: #00d084;
+  --ki-cta-bright: #00e59a;
+  --ki-mint: #5eead4;
+  --ki-mint-light: #a7f3d0;
+  --ki-cyan: #22d3ee;
+  --ki-blue: #3b82f6;
+  --ki-purple: #8b5cf6;
+  --ki-pink: #ec4899;
+  --ki-amber: #f59e0b;
+
+  --ki-white: #ffffff;
+  --ki-off-white: #f1f5f9;
+  --ki-muted-white: #b8d6d1;
+  --ki-muted: #86a8a3;
+
+  --ki-border: rgba(255, 255, 255, 0.09);
+  --ki-border-subtle: rgba(255, 255, 255, 0.06);
+
+  --ki-warning: #f59e0b;
+  --ki-danger: #ef4444;
+  --ki-success: #00c875;
+  --ki-info: #22d3ee;
+
+  --ki-glass: rgba(255, 255, 255, 0.045);
+  --ki-glass-hover: rgba(255, 255, 255, 0.065);
+  --ki-glass-strong: rgba(255, 255, 255, 0.08);
+  --ki-glass-active: rgba(0, 208, 132, 0.1);
+
+  --ki-shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.16);
+  --ki-shadow-md: 0 12px 40px rgba(0, 0, 0, 0.18);
+  --ki-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.24);
+  --ki-shadow-focus: 0 0 0 3px rgba(0, 208, 132, 0.22);
+  --ki-glow-emerald: 0 0 24px rgba(0, 208, 132, 0.1);
+  --ki-glow-cta: 0 8px 24px rgba(0, 208, 132, 0.18);
+  --ki-glow-cyan: 0 0 24px rgba(34, 211, 238, 0.08);
+
+  --ki-duration-fast: 160ms;
+  --ki-duration-normal: 200ms;
+  --ki-duration-slow: 400ms;
+  --ki-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --ki-gradient-primary: linear-gradient(135deg, #00c875 0%, #00e59a 100%);
+  --ki-gradient-teal: linear-gradient(135deg, #063f3a 0%, #047857 100%);
+  --ki-gradient-cyan: linear-gradient(135deg, #0891b2 0%, #22d3ee 100%);
+  --ki-gradient-purple: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
+  --ki-gradient-blue: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  --ki-gradient-amber: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  --ki-gradient-nav-active: linear-gradient(
+    90deg,
+    rgba(0, 208, 132, 0.2),
+    rgba(0, 208, 132, 0.06)
+  );
+  --ki-gradient-sidebar: linear-gradient(180deg, #032f2c 0%, #042b29 100%);
+  --ki-gradient-premium: var(--ki-gradient-teal);
+  --ki-gradient-gold: var(--ki-gradient-primary);
+
+  /* Subtle layered app canvas — not neon */
+  --ki-app-wash:
+    radial-gradient(
+      circle at 80% 0%,
+      rgba(0, 208, 132, 0.13),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 20% 60%,
+      rgba(34, 211, 238, 0.06),
+      transparent 30%
+    ),
+    linear-gradient(135deg, #042f2c 0%, #063f3a 45%, #053532 100%);
+
+  --ki-sidebar-width: 15.625rem; /* 250px */
+  --ki-sidebar-collapsed: 4.5rem;
+  --ki-header-height: 4.25rem; /* ~68px */
+  --ki-content-max: 93.75rem;
+}
