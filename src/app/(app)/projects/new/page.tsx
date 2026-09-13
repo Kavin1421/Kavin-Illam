@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { CreateProjectForm } from "@/components/projects/project-forms";
 import {
@@ -8,14 +9,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { requireAuthenticatedUser } from "@/server/auth/session";
+import { userCanCreateProject } from "@/server/projects/service";
 
 export const metadata: Metadata = {
   title: "New project",
 };
 
-export default function NewProjectPage() {
+export default async function NewProjectPage() {
+  const user = await requireAuthenticatedUser();
+  const allowed = await userCanCreateProject(user.id);
+  if (!allowed) {
+    redirect("/projects");
+  }
+
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-10 sm:px-6">
+    <div className="mx-auto w-full max-w-lg px-4 py-8 sm:px-6 sm:py-10">
       <Card>
         <CardHeader>
           <CardTitle className="font-heading text-2xl">New project</CardTitle>

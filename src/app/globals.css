@@ -71,6 +71,7 @@
   --color-blue: var(--ki-blue);
   --color-purple: var(--ki-purple);
   --color-pink: var(--ki-pink);
+  --color-amber: var(--ki-amber);
   --color-muted-white: var(--ki-muted-white);
 
   /* Compat aliases used by earlier shell classes */

@@ -11,6 +11,7 @@ import {
   requireProjectPermissionBySlug,
 } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
+import { canCreateProjectFromRoles } from "@/server/projects/create-policy";
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -83,6 +84,32 @@ export async function listMyProjects() {
     }));
 }
 
+/**
+ * Only project owners may create additional projects.
+ * Bootstrap exception: a user with zero memberships may create their first project.
+ * Engineers and other non-owner roles cannot add another project.
+ */
+export async function userCanCreateProject(userId: string): Promise<boolean> {
+  const memberships = await prisma.projectMember.findMany({
+    where: { userId, status: "ACTIVE" },
+    select: { role: true },
+  });
+
+  return canCreateProjectFromRoles(memberships.map((m) => m.role));
+}
+
+export async function requireCanCreateProject() {
+  const user = await requireAuthenticatedUser();
+  const allowed = await userCanCreateProject(user.id);
+  if (!allowed) {
+    throw new AppError(
+      "FORBIDDEN",
+      "Only project owners can create new projects. Ask an owner if you need another workspace.",
+    );
+  }
+  return user;
+}
+
 export async function getProjectForMember(slug: string) {
   const ctx = await requireProjectMemberBySlug(slug);
   return {
@@ -93,7 +120,7 @@ export async function getProjectForMember(slug: string) {
 }
 
 export async function createProject(input: unknown) {
-  const user = await requireAuthenticatedUser();
+  const user = await requireCanCreateProject();
   const parsed = createProjectSchema.safeParse(input);
   if (!parsed.success) {
     throw new AppError("VALIDATION", "Please check the project details.");

@@ -143,6 +143,7 @@ export function AppSidebar({
   onToggleCollapsed,
   mobileOpen,
   onCloseMobile,
+  canCreateProject = false,
 }: {
   projects: ShellProject[];
   user: { name?: string | null; email?: string | null };
@@ -150,6 +151,7 @@ export function AppSidebar({
   onToggleCollapsed: () => void;
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  canCreateProject?: boolean;
 }) {
   const pathname = usePathname();
   const slug = extractProjectSlug(pathname);
@@ -202,6 +204,7 @@ export function AppSidebar({
           currentSlug={slug}
           collapsed={collapsed}
           onNavigate={onCloseMobile}
+          canCreateProject={canCreateProject}
         />
       </div>
 

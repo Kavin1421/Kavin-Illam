@@ -19,7 +19,8 @@ export const kiColors = {
   white: "#FFFFFF",
   offWhite: "#F1F5F9",
   mutedWhite: "#B8D6D1",
-  muted: "#8FAFAC",
+  muted: "#86A8A3",
+  amber: "#F59E0B",
   warning: "#F59E0B",
   danger: "#EF4444",
   /** @deprecated Prefer kiColors.tealDark — kept for temporary call sites */
@@ -34,21 +35,21 @@ export const kiColors = {
   stone: "#064E49",
 } as const;
 
-/** Chart accents — emerald dominant, supporting cyan/blue/purple/pink/mint */
+/** Chart accents — emerald dominant, supporting cyan/blue/purple/pink/amber */
 export const kiChartPalette = [
   kiColors.emeraldBright,
   kiColors.cyan,
   kiColors.blue,
   kiColors.purple,
   kiColors.mint,
-  kiColors.pink,
+  kiColors.amber,
 ] as const;
 
 export const kiMetricAccents = {
   budget: kiColors.cyan,
   spent: kiColors.emeraldBright,
   advances: kiColors.purple,
-  commitments: kiColors.mint,
+  commitments: kiColors.amber,
 } as const;
 
 export const kiMotion = {
@@ -59,8 +60,8 @@ export const kiMotion = {
 } as const;
 
 export const kiLayout = {
-  sidebarWidthPx: 264,
+  sidebarWidthPx: 250,
   sidebarCollapsedPx: 72,
-  headerHeightPx: 72,
+  headerHeightPx: 68,
   contentMaxPx: 1500,
 } as const;

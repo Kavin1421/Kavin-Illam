@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppShellFrame } from "@/components/layout/app-shell";
 import { getOptionalUser } from "@/server/auth/session";
 import { prisma } from "@/server/db/prisma";
+import { userCanCreateProject } from "@/server/projects/service";
 
 export default async function AppSectionLayout({
   children,
@@ -15,17 +16,20 @@ export default async function AppSectionLayout({
     redirect("/login");
   }
 
-  const memberships = await prisma.projectMember.findMany({
-    where: { userId: user.id, status: "ACTIVE" },
-    select: {
-      role: true,
-      project: {
-        select: { name: true, slug: true, status: true, projectType: true },
+  const [memberships, canCreateProject] = await Promise.all([
+    prisma.projectMember.findMany({
+      where: { userId: user.id, status: "ACTIVE" },
+      select: {
+        role: true,
+        project: {
+          select: { name: true, slug: true, status: true, projectType: true },
+        },
       },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 30,
-  });
+      orderBy: { updatedAt: "desc" },
+      take: 30,
+    }),
+    userCanCreateProject(user.id),
+  ]);
 
   const projects = memberships
     .filter((m) => m.project.status !== "ARCHIVED")
@@ -41,6 +45,7 @@ export default async function AppSectionLayout({
     <AppShellFrame
       user={{ name: user.name, email: user.email }}
       projects={projects}
+      canCreateProject={canCreateProject}
     >
       {children}
     </AppShellFrame>

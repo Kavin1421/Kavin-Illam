@@ -15,11 +15,13 @@ export function SidebarProjectSwitcher({
   currentSlug,
   collapsed,
   onNavigate,
+  canCreateProject = false,
 }: {
   projects: ShellProject[];
   currentSlug: string | null;
   collapsed?: boolean;
   onNavigate?: () => void;
+  canCreateProject?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -102,9 +104,9 @@ export function SidebarProjectSwitcher({
         title={collapsed ? triggerLabel : undefined}
         onClick={toggleOpen}
         className={cn(
-          "flex w-full items-center gap-2 rounded-xl text-left text-sm text-white transition-ki-fast focus-visible:ring-2 focus-visible:ring-mint/40 focus-visible:outline-none",
-          "border border-white/10 bg-white/[0.05] hover:bg-white/[0.08]",
-          collapsed ? "justify-center px-2 py-2.5" : "px-2.5 py-2",
+          "flex w-full items-center gap-2 rounded-[0.875rem] text-left text-sm text-white transition-ki-fast focus-visible:ring-2 focus-visible:ring-mint/40 focus-visible:outline-none",
+          "border border-white/[0.09] bg-white/[0.04] hover:bg-white/[0.07]",
+          collapsed ? "justify-center px-2 py-2.5" : "px-2.5 py-2.5",
         )}
       >
         {collapsed ? (
@@ -202,14 +204,16 @@ export function SidebarProjectSwitcher({
               <FolderKanban className="size-4 opacity-70" />
               All projects
             </Link>
-            <Link
-              href="/projects/new"
-              onClick={closeAndNavigate}
-              className="text-sidebar-foreground/85 hover:bg-white/5 hover:text-white flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-ki-fast"
-            >
-              <Plus className="size-4 opacity-70" />
-              New project
-            </Link>
+            {canCreateProject ? (
+              <Link
+                href="/projects/new"
+                onClick={closeAndNavigate}
+                className="text-sidebar-foreground/85 hover:bg-white/5 hover:text-white flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-ki-fast"
+              >
+                <Plus className="size-4 opacity-70" />
+                New project
+              </Link>
+            ) : null}
           </div>
         </div>
       ) : null}

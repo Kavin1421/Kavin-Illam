@@ -30,10 +30,10 @@ export function AppHeader({
   ).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex h-[var(--ki-header-height)] items-center gap-3 border-b border-white/[0.06] bg-[rgba(6,63,58,0.42)] px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 flex h-[var(--ki-header-height)] items-center gap-2 border-b border-white/[0.06] bg-[rgba(6,63,58,0.42)] px-3 backdrop-blur-xl sm:gap-3 sm:px-6 lg:px-8 pt-[env(safe-area-inset-top)]">
       <button
         type="button"
-        className="inline-flex size-9 items-center justify-center rounded-lg text-white/80 transition-ki-fast hover:bg-white/[0.06] hover:text-white lg:hidden"
+        className="inline-flex size-10 items-center justify-center rounded-lg text-white/80 transition-ki-fast hover:bg-white/[0.06] hover:text-white lg:hidden"
         onClick={onOpenMobileNav}
         aria-label="Open navigation"
       >
@@ -84,6 +84,16 @@ export function AppHeader({
           </kbd>
         </button>
       </div>
+
+      <button
+        type="button"
+        className="inline-flex size-10 items-center justify-center rounded-lg text-muted-white transition-ki-fast hover:bg-white/[0.06] hover:text-white disabled:opacity-60 md:hidden"
+        aria-label="Search (coming soon)"
+        disabled
+        title="Search arrives in a later phase"
+      >
+        <Search className="size-4" />
+      </button>
 
       <button
         type="button"

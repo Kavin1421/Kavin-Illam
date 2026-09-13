@@ -1,9 +1,11 @@
+import { describe, expect, it } from "vitest";
+
 import {
   engineerAllowedSamplePermissions,
   engineerForbiddenPermissions,
   roleHasPermission,
 } from "@/server/authorization/permissions";
-import { describe, expect, it } from "vitest";
+import { canCreateProjectFromRoles } from "@/server/projects/create-policy";
 
 describe("engineer restriction matrix", () => {
   it("denies administrative and destructive finance permissions", () => {
@@ -22,5 +24,15 @@ describe("engineer restriction matrix", () => {
     expect(roleHasPermission("ENGINEER", "MEMBER_INVITE")).toBe(false);
     expect(roleHasPermission("ENGINEER", "MEMBER_REMOVE")).toBe(false);
     expect(roleHasPermission("OWNER", "MEMBER_INVITE")).toBe(true);
+  });
+});
+
+describe("engineer cannot create another project", () => {
+  it("denies project creation for engineer-only memberships", () => {
+    expect(canCreateProjectFromRoles(["ENGINEER"])).toBe(false);
+  });
+
+  it("allows owners to create additional projects", () => {
+    expect(canCreateProjectFromRoles(["OWNER"])).toBe(true);
   });
 });

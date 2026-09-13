@@ -108,7 +108,7 @@ export default async function FinancePage({
           label="Shared project expenses"
           paise={sharedTotals.totalExpenses}
           hint="Visible to collaborators"
-          accent="mint"
+          accent="amber"
           icon={<Wallet className="size-4" />}
         />
         <MetricCard

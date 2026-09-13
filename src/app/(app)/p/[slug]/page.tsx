@@ -340,9 +340,72 @@ export default async function ProjectDashboardPage({
         </div>
       </section>
 
-      {/* Attention + Transactions */}
-      <section className="grid gap-6 lg:grid-cols-5">
-        <div className="surface-card space-y-4 rounded-2xl p-5 lg:col-span-2">
+      {/* Transactions · Attention · Quick actions */}
+      <section className="grid gap-4 lg:grid-cols-12 lg:gap-5">
+        <div className="surface-card space-y-4 rounded-[1.125rem] p-5 lg:col-span-5">
+          <div className="flex items-end justify-between gap-2">
+            <div>
+              <h3 className="text-section">Recent transactions</h3>
+              <p className="mt-1 text-sm text-muted-white">
+                Latest shared ledger activity
+              </p>
+            </div>
+            <Link
+              href={`/p/${slug}/finance`}
+              className="text-sm text-mint hover:text-mint-light"
+            >
+              All
+            </Link>
+          </div>
+          {data.recentTransactions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/15 px-4 py-8 text-center">
+              <p className="text-sm text-muted-white">
+                No project expenses yet.
+              </p>
+              {data.permissions.canCreateFinance ? (
+                <Link
+                  href={`/p/${slug}/finance/new`}
+                  className={cn(buttonVariants({ size: "sm" }), "mt-3")}
+                >
+                  Add expense
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            <ul className="divide-y divide-white/[0.06]">
+              {data.recentTransactions.map((tx) => (
+                <li key={tx.id}>
+                  <Link
+                    href={`/p/${slug}/finance/${tx.id}`}
+                    className="flex items-center gap-3 px-1 py-3 transition-ki-fast hover:bg-white/[0.035]"
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-bright/15 text-emerald-bright">
+                      <Banknote className="size-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-white">
+                        {tx.title}
+                      </span>
+                      <span className="block text-xs text-muted-white">
+                        {tx.categoryName} · {formatDate(tx.at)}
+                      </span>
+                    </span>
+                    <span className="text-right">
+                      <span className="block font-tabular text-sm text-white">
+                        {formatInrFromPaise(tx.amount)}
+                      </span>
+                      <Badge className={cn("mt-1", statusTone(tx.status))}>
+                        {tx.status}
+                      </Badge>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="surface-card space-y-4 rounded-[1.125rem] p-5 lg:col-span-4">
           <div className="flex items-center gap-2">
             <span className="flex size-8 items-center justify-center rounded-lg bg-warning/15 text-warning">
               <AlertTriangle className="size-4" />
@@ -438,73 +501,43 @@ export default async function ProjectDashboardPage({
           </div>
         </div>
 
-        <div className="surface-card space-y-4 rounded-2xl p-5 lg:col-span-3">
-          <div className="flex items-end justify-between gap-2">
-            <div>
-              <h3 className="text-section">Recent transactions</h3>
-              <p className="mt-1 text-sm text-muted-white">
-                Latest shared ledger activity
-              </p>
-            </div>
-            <Link
-              href={`/p/${slug}/finance`}
-              className="text-sm text-mint hover:text-mint-light"
-            >
-              All
-            </Link>
+        <div className="surface-card space-y-4 rounded-[1.125rem] p-5 lg:col-span-3">
+          <div>
+            <h3 className="text-section">Quick actions</h3>
+            <p className="mt-1 text-sm text-muted-white">
+              Jump into the next task
+            </p>
           </div>
-          {data.recentTransactions.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-white/15 px-4 py-8 text-center">
-              <p className="text-sm text-muted-white">
-                No project expenses yet.
-              </p>
-              {data.permissions.canCreateFinance ? (
+          <div className="grid grid-cols-2 gap-2.5">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
                 <Link
-                  href={`/p/${slug}/finance/new`}
-                  className={cn(buttonVariants({ size: "sm" }), "mt-3")}
+                  key={action.href}
+                  href={action.href}
+                  className="group flex flex-col items-start gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 transition-ki hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.05]"
                 >
-                  Add expense
-                </Link>
-              ) : null}
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {data.recentTransactions.map((tx) => (
-                <li key={tx.id}>
-                  <Link
-                    href={`/p/${slug}/finance/${tx.id}`}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-ki-fast hover:bg-white/[0.05]"
+                  <span
+                    className={cn(
+                      "flex size-9 items-center justify-center rounded-lg transition-ki group-hover:scale-105",
+                      action.tone,
+                    )}
                   >
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-bright/15 text-emerald-bright">
-                      <Banknote className="size-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-white">
-                        {tx.title}
-                      </span>
-                      <span className="block text-xs text-muted-white">
-                        {tx.categoryName} · {formatDate(tx.at)}
-                      </span>
-                    </span>
-                    <span className="text-right">
-                      <span className="block font-tabular text-sm text-white">
-                        {formatInrFromPaise(tx.amount)}
-                      </span>
-                      <Badge className={cn("mt-1", statusTone(tx.status))}>
-                        {tx.status}
-                      </Badge>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="text-xs font-medium leading-snug text-white">
+                    {action.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {/* Advances + Documents */}
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="surface-card space-y-4 rounded-2xl p-5">
+      <section className="grid gap-4 lg:grid-cols-2 lg:gap-5">
+        <div className="surface-card space-y-4 rounded-[1.125rem] p-5">
           <div className="flex items-end justify-between gap-2">
             <div>
               <h3 className="text-section">Outstanding advances</h3>
@@ -576,7 +609,7 @@ export default async function ProjectDashboardPage({
           )}
         </div>
 
-        <div className="surface-card space-y-4 rounded-2xl p-5">
+        <div className="surface-card space-y-4 rounded-[1.125rem] p-5">
           <div className="flex items-end justify-between gap-2">
             <div>
               <h3 className="text-section">Documents</h3>
@@ -631,42 +664,8 @@ export default async function ProjectDashboardPage({
         </div>
       </section>
 
-      {/* Quick actions */}
-      <section className="space-y-4">
-        <div>
-          <h3 className="text-section">Quick actions</h3>
-          <p className="mt-1 text-sm text-muted-white">
-            Jump into the next construction task
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="surface-card group flex flex-col items-start gap-3 rounded-2xl p-4 transition-ki hover:-translate-y-1 hover:border-white/20"
-              >
-                <span
-                  className={cn(
-                    "flex size-10 items-center justify-center rounded-xl transition-ki group-hover:scale-105",
-                    action.tone,
-                  )}
-                >
-                  <Icon className="size-4" />
-                </span>
-                <span className="text-sm font-medium text-white">
-                  {action.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
       {/* Activity */}
-      <section className="surface-card space-y-4 rounded-2xl p-5">
+      <section className="surface-card space-y-4 rounded-[1.125rem] p-5">
         <div>
           <h3 className="text-section">Recent activity</h3>
           <p className="mt-1 text-sm text-muted-white">
@@ -707,7 +706,7 @@ export default async function ProjectDashboardPage({
       </section>
 
       {/* Promo with home image */}
-      <section className="relative overflow-hidden rounded-2xl border border-white/10">
+      <section className="relative overflow-hidden rounded-[1.375rem] border border-white/[0.09]">
         <Image
           src="/brand/home-dusk.jpg"
           alt="Modern villa at dusk"
@@ -715,7 +714,7 @@ export default async function ProjectDashboardPage({
           height={480}
           className="h-40 w-full object-cover sm:h-48"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[rgba(6,45,42,0.92)] via-[rgba(6,45,42,0.7)] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[rgba(3,38,36,0.92)] via-[rgba(3,38,36,0.7)] to-transparent" />
         <div className="absolute inset-0 flex items-center p-5 sm:p-6">
           <div className="max-w-lg">
             <p className="text-meta text-mint/80">Kavin Illam</p>
