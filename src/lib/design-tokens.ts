@@ -3,28 +3,53 @@
  * CSS remains the source of truth — see globals.css + UI_REDESIGN.md.
  */
 export const kiColors = {
-  navy: "#101828",
-  midnight: "#172033",
-  ivory: "#F8F6F1",
+  bg: "#063F3A",
+  tealDeep: "#064E49",
+  tealDark: "#053532",
+  surface: "#062D2A",
+  emerald: "#047857",
+  emeraldBright: "#00C875",
+  cta: "#00D084",
+  mint: "#5EEAD4",
+  mintLight: "#A7F3D0",
+  cyan: "#22D3EE",
+  blue: "#3B82F6",
+  purple: "#8B5CF6",
+  pink: "#EC4899",
   white: "#FFFFFF",
-  stone: "#E9E5DC",
-  champagne: "#C9A86A",
-  gold: "#B89455",
-  charcoal: "#252A34",
-  muted: "#667085",
-  success: "#168A63",
-  warning: "#C98522",
-  danger: "#C94B4B",
-  info: "#3E6FA8",
+  offWhite: "#F1F5F9",
+  mutedWhite: "#B8D6D1",
+  muted: "#8FAFAC",
+  warning: "#F59E0B",
+  danger: "#EF4444",
+  /** @deprecated Prefer kiColors.tealDark — kept for temporary call sites */
+  navy: "#053532",
+  midnight: "#062D2A",
+  ivory: "#063F3A",
+  champagne: "#00C875",
+  gold: "#00D084",
+  charcoal: "#F1F5F9",
+  success: "#00C875",
+  info: "#22D3EE",
+  stone: "#064E49",
 } as const;
 
+/** Chart accents — emerald dominant, supporting cyan/blue/purple/pink/mint */
 export const kiChartPalette = [
-  kiColors.navy,
-  kiColors.champagne,
-  kiColors.info,
-  kiColors.success,
-  kiColors.muted,
+  kiColors.emeraldBright,
+  kiColors.cyan,
+  kiColors.blue,
+  kiColors.purple,
+  kiColors.mint,
+  kiColors.pink,
 ] as const;
+
+export const kiMetricAccents = {
+  budget: kiColors.cyan,
+  spent: kiColors.emeraldBright,
+  advances: kiColors.purple,
+  commitments: kiColors.mint,
+} as const;
 
 export const kiMotion = {
   fastMs: 160,
@@ -37,5 +62,5 @@ export const kiLayout = {
   sidebarWidthPx: 264,
   sidebarCollapsedPx: 72,
   headerHeightPx: 72,
-  contentMaxPx: 1440,
+  contentMaxPx: 1500,
 } as const;

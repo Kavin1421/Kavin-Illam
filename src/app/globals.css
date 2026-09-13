@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* -------------------------------------------------------------------------- */
-/* Phase 1 — Design tokens: Luxury Contemporary Architecture                  */
+/* Phase 2 — Design tokens: Dark Teal / Emerald                               */
 /* Source of truth: UI_REDESIGN.md                                            */
 /* -------------------------------------------------------------------------- */
 
@@ -48,7 +48,6 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
-  /* Brand + semantic extensions */
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-success: var(--success);
@@ -57,12 +56,30 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
-  --color-navy: var(--ki-navy);
-  --color-midnight: var(--ki-midnight);
-  --color-ivory: var(--ki-ivory);
-  --color-stone: var(--ki-stone);
-  --color-champagne: var(--ki-champagne);
-  --color-charcoal: var(--ki-charcoal);
+
+  /* Named brand surfaces (Tailwind: bg-teal-dark, text-mint, etc.) */
+  --color-teal-bg: var(--ki-bg);
+  --color-teal-deep: var(--ki-teal-deep);
+  --color-teal-dark: var(--ki-teal-dark);
+  --color-surface: var(--ki-surface);
+  --color-emerald: var(--ki-emerald);
+  --color-emerald-bright: var(--ki-emerald-bright);
+  --color-cta: var(--ki-cta);
+  --color-mint: var(--ki-mint);
+  --color-mint-light: var(--ki-mint-light);
+  --color-cyan: var(--ki-cyan);
+  --color-blue: var(--ki-blue);
+  --color-purple: var(--ki-purple);
+  --color-pink: var(--ki-pink);
+  --color-muted-white: var(--ki-muted-white);
+
+  /* Compat aliases used by earlier shell classes */
+  --color-navy: var(--ki-teal-dark);
+  --color-midnight: var(--ki-surface);
+  --color-ivory: var(--ki-bg);
+  --color-stone: var(--ki-teal-deep);
+  --color-champagne: var(--ki-emerald-bright);
+  --color-charcoal: var(--ki-off-white);
 
   --radius-sm: calc(var(--radius) * 0.8);
   --radius-md: var(--radius);
@@ -76,6 +93,7 @@
   --shadow-md: var(--ki-shadow-md);
   --shadow-lg: var(--ki-shadow-lg);
   --shadow-focus: var(--ki-shadow-focus);
+  --shadow-glow: var(--ki-glow-emerald);
 
   --ease-out-premium: var(--ki-ease-out);
   --animate-duration-fast: var(--ki-duration-fast);
@@ -84,30 +102,44 @@
 }
 
 :root {
-  /* Raw brand palette */
-  --ki-navy: #101828;
-  --ki-midnight: #172033;
-  --ki-navy-mid: #1b263b;
-  --ki-navy-soft: #283a52;
-  --ki-ivory: #f8f6f1;
+  /* Raw brand palette — Dark Teal / Emerald */
+  --ki-bg: #063f3a;
+  --ki-teal-deep: #064e49;
+  --ki-teal-dark: #053532;
+  --ki-surface: #062d2a;
+  --ki-sidebar-base: #032825;
+  --ki-emerald: #047857;
+  --ki-emerald-bright: #00c875;
+  --ki-cta: #00d084;
+  --ki-mint: #5eead4;
+  --ki-mint-light: #a7f3d0;
+  --ki-cyan: #22d3ee;
+  --ki-blue: #3b82f6;
+  --ki-purple: #8b5cf6;
+  --ki-pink: #ec4899;
   --ki-white: #ffffff;
-  --ki-stone: #e9e5dc;
-  --ki-champagne: #c9a86a;
-  --ki-gold: #b89455;
-  --ki-gold-soft: #d8bd83;
-  --ki-charcoal: #252a34;
-  --ki-muted: #667085;
+  --ki-off-white: #f1f5f9;
+  --ki-muted-white: #b8d6d1;
+  --ki-muted: #8fafac;
+  --ki-border: rgba(255, 255, 255, 0.1);
+  --ki-border-subtle: rgba(255, 255, 255, 0.06);
+  --ki-warning: #f59e0b;
+  --ki-danger: #ef4444;
+  --ki-success: #00c875;
+  --ki-info: #22d3ee;
 
-  --ki-success: #168a63;
-  --ki-warning: #c98522;
-  --ki-danger: #c94b4b;
-  --ki-info: #3e6fa8;
+  /* Glass surfaces */
+  --ki-glass: rgba(255, 255, 255, 0.055);
+  --ki-glass-hover: rgba(255, 255, 255, 0.08);
+  --ki-glass-strong: rgba(255, 255, 255, 0.09);
 
-  /* Shadows */
-  --ki-shadow-sm: 0 4px 20px rgba(16, 24, 40, 0.06);
-  --ki-shadow-md: 0 12px 40px rgba(16, 24, 40, 0.06);
-  --ki-shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.1);
-  --ki-shadow-focus: 0 0 0 3px rgba(16, 24, 40, 0.08);
+  /* Shadows + glow (restrained) */
+  --ki-shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.18);
+  --ki-shadow-md: 0 10px 40px rgba(0, 0, 0, 0.22);
+  --ki-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.28);
+  --ki-shadow-focus: 0 0 0 3px rgba(0, 208, 132, 0.22);
+  --ki-glow-emerald: 0 0 24px rgba(0, 208, 132, 0.12);
+  --ki-glow-cyan: 0 0 24px rgba(34, 211, 238, 0.1);
 
   /* Motion */
   --ki-duration-fast: 160ms;
@@ -115,130 +147,97 @@
   --ki-duration-slow: 400ms;
   --ki-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Gradients (use sparingly) */
-  --ki-gradient-premium: linear-gradient(
-    135deg,
-    #101828 0%,
-    #1b263b 55%,
-    #283a52 100%
+  /* Gradients */
+  --ki-gradient-primary: linear-gradient(135deg, #047857 0%, #00c875 100%);
+  --ki-gradient-teal: linear-gradient(135deg, #063f3a 0%, #047857 100%);
+  --ki-gradient-cyan: linear-gradient(135deg, #0891b2 0%, #22d3ee 100%);
+  --ki-gradient-purple: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
+  --ki-gradient-nav-active: linear-gradient(
+    90deg,
+    rgba(0, 208, 132, 0.2),
+    rgba(0, 208, 132, 0.05)
   );
-  --ki-gradient-gold: linear-gradient(135deg, #b89455 0%, #d8bd83 100%);
-  --ki-gradient-warm: linear-gradient(135deg, #f8f6f1 0%, #ffffff 100%);
+  --ki-gradient-premium: var(--ki-gradient-teal);
+  --ki-gradient-gold: var(--ki-gradient-primary);
+  --ki-app-wash:
+    radial-gradient(
+      circle at 10% 10%,
+      rgba(0, 200, 117, 0.18),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 90% 20%,
+      rgba(34, 211, 238, 0.1),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 50% 100%,
+      rgba(139, 92, 246, 0.08),
+      transparent 35%
+    ),
+    linear-gradient(180deg, var(--ki-bg) 0%, var(--ki-teal-dark) 100%);
 
   /* Layout */
   --ki-sidebar-width: 16.5rem;
   --ki-sidebar-collapsed: 4.5rem;
   --ki-header-height: 4.5rem;
-  --ki-content-max: 90rem;
+  --ki-content-max: 93.75rem; /* 1500px */
 
-  /* Radius base ≈ 10px */
-  --radius: 0.625rem;
+  /* Radius base ≈ 12px → cards 16–20 via lg/xl */
+  --radius: 0.75rem;
 
-  /* shadcn semantic mapping — light / ivory canvas */
-  --background: var(--ki-ivory);
-  --foreground: var(--ki-navy);
-  --card: var(--ki-white);
-  --card-foreground: var(--ki-charcoal);
-  --popover: var(--ki-white);
-  --popover-foreground: var(--ki-charcoal);
-  --primary: var(--ki-navy);
-  --primary-foreground: var(--ki-white);
-  --secondary: color-mix(in srgb, var(--ki-stone) 70%, var(--ki-white));
-  --secondary-foreground: var(--ki-navy);
-  --muted: color-mix(in srgb, var(--ki-stone) 55%, var(--ki-white));
+  /* shadcn semantic mapping — dark teal product default */
+  --background: var(--ki-bg);
+  --foreground: var(--ki-white);
+  --card: color-mix(in srgb, var(--ki-white) 5.5%, var(--ki-surface));
+  --card-foreground: var(--ki-white);
+  --popover: color-mix(in srgb, var(--ki-white) 7%, var(--ki-surface));
+  --popover-foreground: var(--ki-white);
+  --primary: var(--ki-cta);
+  --primary-foreground: var(--ki-teal-dark);
+  --secondary: color-mix(in srgb, var(--ki-white) 8%, var(--ki-teal-deep));
+  --secondary-foreground: var(--ki-off-white);
+  --muted: color-mix(in srgb, var(--ki-white) 6%, var(--ki-surface));
   --muted-foreground: var(--ki-muted);
-  --accent: color-mix(in srgb, var(--ki-champagne) 18%, var(--ki-white));
-  --accent-foreground: var(--ki-navy);
+  --accent: color-mix(in srgb, var(--ki-emerald-bright) 14%, var(--ki-surface));
+  --accent-foreground: var(--ki-mint-light);
   --destructive: var(--ki-danger);
-  --border: color-mix(in srgb, var(--ki-stone) 85%, var(--ki-navy) 8%);
-  --input: color-mix(in srgb, var(--ki-stone) 75%, var(--ki-white));
-  --ring: color-mix(in srgb, var(--ki-navy) 35%, transparent);
+  --border: var(--ki-border);
+  --input: rgba(255, 255, 255, 0.05);
+  --ring: color-mix(in srgb, var(--ki-cta) 55%, transparent);
 
-  --brand: var(--ki-champagne);
-  --brand-foreground: var(--ki-navy);
+  --brand: var(--ki-mint);
+  --brand-foreground: var(--ki-teal-dark);
   --success: var(--ki-success);
-  --success-foreground: #ffffff;
+  --success-foreground: var(--ki-teal-dark);
   --warning: var(--ki-warning);
-  --warning-foreground: #ffffff;
+  --warning-foreground: #1a1205;
   --info: var(--ki-info);
-  --info-foreground: #ffffff;
+  --info-foreground: var(--ki-teal-dark);
 
-  /* Charts — calm navy / gold / stone */
-  --chart-1: var(--ki-navy);
-  --chart-2: var(--ki-champagne);
-  --chart-3: var(--ki-info);
-  --chart-4: var(--ki-success);
-  --chart-5: var(--ki-muted);
+  --chart-1: var(--ki-emerald-bright);
+  --chart-2: var(--ki-cyan);
+  --chart-3: var(--ki-blue);
+  --chart-4: var(--ki-purple);
+  --chart-5: var(--ki-mint);
 
-  /* Sidebar is navy even in light mode (brand structure) */
-  --sidebar: var(--ki-navy);
-  --sidebar-foreground: color-mix(in srgb, var(--ki-white) 88%, transparent);
-  --sidebar-primary: var(--ki-champagne);
-  --sidebar-primary-foreground: var(--ki-navy);
-  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar: rgba(3, 40, 37, 0.92);
+  --sidebar-foreground: color-mix(in srgb, var(--ki-white) 90%, transparent);
+  --sidebar-primary: var(--ki-cta);
+  --sidebar-primary-foreground: var(--ki-teal-dark);
+  --sidebar-accent: rgba(0, 208, 132, 0.12);
   --sidebar-accent-foreground: var(--ki-white);
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: color-mix(in srgb, var(--ki-champagne) 50%, transparent);
+  --sidebar-ring: color-mix(in srgb, var(--ki-mint) 50%, transparent);
 }
 
+/* Optional deeper night variant — same family, slightly darker */
 .dark {
-  --ki-navy: #0b0f17;
-  --ki-midnight: #111827;
-  --ki-ivory: #0b0f17;
-  --ki-white: #111827;
-  --ki-stone: #1f2937;
-  --ki-champagne: #d6b875;
-  --ki-gold: #c9a86a;
-  --ki-charcoal: #f8fafc;
-  --ki-muted: #98a2b3;
-
-  --background: #0b0f17;
-  --foreground: #f8fafc;
-  --card: #111827;
-  --card-foreground: #f8fafc;
-  --popover: #111827;
-  --popover-foreground: #f8fafc;
-  --primary: #f8fafc;
-  --primary-foreground: #0b0f17;
-  --secondary: #172033;
-  --secondary-foreground: #f8fafc;
-  --muted: #172033;
-  --muted-foreground: #98a2b3;
-  --accent: color-mix(in srgb, #d6b875 16%, #111827);
-  --accent-foreground: #f8fafc;
-  --destructive: #e06a6a;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: rgba(214, 184, 117, 0.35);
-
-  --brand: #d6b875;
-  --brand-foreground: #0b0f17;
-  --success: #2aa87a;
-  --success-foreground: #04140f;
-  --warning: #d9a045;
-  --warning-foreground: #1a1205;
-  --info: #5b8fd4;
-  --info-foreground: #071018;
-
-  --chart-1: #d6b875;
-  --chart-2: #5b8fd4;
-  --chart-3: #2aa87a;
-  --chart-4: #98a2b3;
-  --chart-5: #c9a86a;
-
-  --sidebar: #0b0f17;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #d6b875;
-  --sidebar-primary-foreground: #0b0f17;
-  --sidebar-accent: rgba(255, 255, 255, 0.08);
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: rgba(214, 184, 117, 0.4);
-
-  --ki-shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.35);
-  --ki-shadow-md: 0 12px 40px rgba(0, 0, 0, 0.4);
-  --ki-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
-  --ki-shadow-focus: 0 0 0 3px rgba(214, 184, 117, 0.2);
+  --ki-bg: #042e2b;
+  --background: #042e2b;
+  --card: color-mix(in srgb, white 4.5%, #041f1d);
+  --popover: color-mix(in srgb, white 6%, #041f1d);
+  --sidebar: rgba(2, 28, 26, 0.94);
 }
 
 @layer base {
@@ -248,19 +247,36 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background-image: var(--ki-gradient-warm);
+    background-color: var(--ki-bg);
+    background-image:
+      linear-gradient(
+        rgba(255, 255, 255, 0.025) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.025) 1px,
+        transparent 1px
+      ),
+      var(--ki-app-wash);
+    background-size:
+      28px 28px,
+      28px 28px,
+      auto;
     background-attachment: fixed;
   }
 
   html {
     @apply font-sans;
+    color-scheme: dark;
   }
 
-  /* Display / brand / project titles — Playfair only */
   .font-heading {
     font-family:
       var(--font-heading), ui-serif, Georgia, "Times New Roman", serif;
-    font-feature-settings: "kern" 1, "liga" 1;
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1;
     letter-spacing: -0.02em;
   }
 
@@ -270,13 +286,13 @@
       monospace;
   }
 
-  /* Tabular figures for money */
   .font-tabular {
     font-variant-numeric: tabular-nums lining-nums;
-    font-feature-settings: "tnum" 1, "lnum" 1;
+    font-feature-settings:
+      "tnum" 1,
+      "lnum" 1;
   }
 
-  /* Typography scale utilities (Phase 2) */
   .text-display {
     font-family:
       var(--font-heading), ui-serif, Georgia, "Times New Roman", serif;
@@ -284,6 +300,7 @@
     line-height: 1.15;
     letter-spacing: -0.03em;
     font-weight: 500;
+    color: var(--ki-white);
   }
 
   .text-page-title {
@@ -293,6 +310,7 @@
     line-height: 1.2;
     letter-spacing: -0.025em;
     font-weight: 500;
+    color: var(--ki-white);
   }
 
   .text-section {
@@ -301,6 +319,17 @@
     line-height: 1.35;
     letter-spacing: -0.015em;
     font-weight: 600;
+    color: var(--ki-white);
+  }
+
+  .text-lede {
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--ki-muted-white);
+  }
+
+  .text-accent-mint {
+    color: var(--ki-mint);
   }
 
   .text-body {
@@ -322,32 +351,64 @@
     text-wrap: balance;
   }
 
-  /* Premium surfaces */
+  /* Surfaces */
   .surface-card {
-    background-color: var(--card);
-    box-shadow: var(--ki-shadow-sm);
-    border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
+    background: var(--ki-glass);
+    backdrop-filter: blur(16px);
+    box-shadow: var(--ki-shadow-md);
+    border: 1px solid var(--ki-border);
+    border-radius: var(--radius-xl);
   }
 
   .surface-elevated {
-    background-color: var(--card);
-    box-shadow: var(--ki-shadow-md);
+    background: var(--ki-glass-strong);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--ki-shadow-lg);
+    border: 1px solid var(--ki-border);
+  }
+
+  .surface-glass {
+    background: var(--ki-glass);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--ki-border-subtle);
   }
 
   .gradient-premium {
-    background-image: var(--ki-gradient-premium);
+    background-image: var(--ki-gradient-teal);
+  }
+
+  .gradient-primary {
+    background-image: var(--ki-gradient-primary);
   }
 
   .gradient-gold {
-    background-image: var(--ki-gradient-gold);
+    background-image: var(--ki-gradient-primary);
   }
 
-  /* Subtle blueprint grid (architectural, optional utility) */
   .texture-blueprint {
     background-image:
-      linear-gradient(rgba(16, 24, 40, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(16, 24, 40, 0.03) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 24px 24px;
+  }
+
+  .glow-emerald {
+    box-shadow: var(--ki-glow-emerald);
+  }
+
+  .animate-page-in {
+    animation: ki-page-in var(--ki-duration-slow) var(--ki-ease-out) both;
+  }
+}
+
+@keyframes ki-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -385,11 +446,14 @@
   .text-metric {
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
     font-variant-numeric: tabular-nums lining-nums;
-    font-feature-settings: "tnum" 1, "lnum" 1;
+    font-feature-settings:
+      "tnum" 1,
+      "lnum" 1;
     font-size: 1.75rem;
     line-height: 1.1;
     letter-spacing: -0.03em;
     font-weight: 600;
+    color: var(--ki-white);
   }
 
   @media (min-width: 640px) {
@@ -398,10 +462,31 @@
     }
   }
 
+  .text-metric-lg {
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings:
+      "tnum" 1,
+      "lnum" 1;
+    font-size: 2rem;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    color: var(--ki-white);
+  }
+
+  @media (min-width: 640px) {
+    .text-metric-lg {
+      font-size: 2.25rem;
+    }
+  }
+
   .text-metric-sm {
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
     font-variant-numeric: tabular-nums lining-nums;
-    font-feature-settings: "tnum" 1, "lnum" 1;
+    font-feature-settings:
+      "tnum" 1,
+      "lnum" 1;
     font-size: 1.25rem;
     line-height: 1.2;
     letter-spacing: -0.02em;
@@ -419,5 +504,13 @@
   .transition-ki,
   .transition-ki-fast {
     transition: none !important;
+  }
+
+  .animate-page-in {
+    animation: none !important;
+  }
+
+  .group\/card:hover {
+    transform: none !important;
   }
 }

@@ -1,11 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { ProjectSwitcher } from "@/components/projects/project-switcher";
-import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { AppError } from "@/lib/errors";
-import { cn } from "@/lib/utils";
 import { requireProjectMemberBySlug } from "@/server/authorization";
 
 type ProjectLayoutProps = {
@@ -20,9 +17,13 @@ export default async function ProjectLayout({
   const { slug } = await params;
 
   let projectName = slug;
+  let projectType = "PROJECT";
+  let status = "ACTIVE";
   try {
     const ctx = await requireProjectMemberBySlug(slug);
     projectName = ctx.project.name;
+    projectType = ctx.project.projectType;
+    status = ctx.project.status;
   } catch (error) {
     if (
       error instanceof AppError &&
@@ -33,48 +34,43 @@ export default async function ProjectLayout({
     throw error;
   }
 
-  const nav = [
-    { href: `/p/${slug}`, label: "Dashboard" },
-    { href: `/p/${slug}/finance`, label: "Finance" },
-    { href: `/p/${slug}/budget`, label: "Budget" },
-    { href: `/p/${slug}/advances`, label: "Advances" },
-    { href: `/p/${slug}/payment-requests`, label: "Requests" },
-    { href: `/p/${slug}/documents`, label: "Documents" },
-    { href: `/p/${slug}/tasks`, label: "Tasks" },
-    { href: `/p/${slug}/milestones`, label: "Milestones" },
-    { href: `/p/${slug}/reports`, label: "Reports" },
-    { href: `/p/${slug}/activity`, label: "Activity" },
-    { href: `/p/${slug}/members`, label: "Members" },
-    { href: `/p/${slug}/settings`, label: "Settings" },
-  ];
-
   return (
-    <>
-      <div className="border-border/80 border-b">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                Project
-              </p>
-              <h1 className="text-page-title text-foreground">{projectName}</h1>
-            </div>
-            <ProjectSwitcher currentSlug={slug} />
-          </div>
-          <nav className="flex flex-wrap gap-2">
-            {nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+    <div className="space-y-6">
+      <header className="surface-card relative overflow-hidden rounded-2xl border border-white/10 p-5 sm:p-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,208,132,0.16),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(34,211,238,0.08),transparent_45%)]"
+        />
+        <div
+          aria-hidden
+          className="texture-blueprint pointer-events-none absolute inset-0 opacity-40"
+        />
+        <div className="relative z-10 flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium tracking-[0.14em] text-mint/70 uppercase">
+              Project
+            </p>
+            <h1 className="font-heading text-3xl tracking-[-0.03em] text-white sm:text-[2.125rem]">
+              {projectName}
+            </h1>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Badge className="border-cta/30 bg-cta/15 text-mint hover:bg-cta/20">
+                {status}
+              </Badge>
+              <Badge
+                variant="outline"
+                className="border-white/15 bg-transparent text-muted-white"
               >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+                {projectType.replaceAll("_", " ")}
+              </Badge>
+            </div>
+          </div>
+          <p className="max-w-xs text-sm text-muted-white">
+            Every rupee. Every document. Every milestone.
+          </p>
         </div>
-      </div>
+      </header>
       {children}
-    </>
+    </div>
   );
 }

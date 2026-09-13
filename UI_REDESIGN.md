@@ -1,229 +1,218 @@
 # Kavin Illam — UI Redesign
 
-**Direction:** Luxury Contemporary Architecture  
-**Goal:** Evolve from a plain white admin panel into a premium architectural finance + project portal — without changing backend, routes, or authz.
+**Direction:** Dark Teal / Emerald Premium SaaS  
+**Tagline:** Building a home, beautifully organized.  
+**Goal:** Visual + UX transform of the existing product — **no** backend, route, authz, finance, or document-security rewrites.
 
-**Stack (current):** Next.js 16 App Router · React 19 · Tailwind 4 · shadcn (radix-nova) · Lucide · CVA · Source Sans 3 + Source Serif 4 · no Framer Motion (CSS / tw-animate)
-
----
-
-## 1. Current visual problems
-
-| Issue                                    | Evidence                                                            |
-| ---------------------------------------- | ------------------------------------------------------------------- |
-| Flat white / neutral-only theme          | `globals.css` `:root` is pure oklch white/gray                      |
-| No application shell                     | Global header + footer only; project nav is a wrap of ghost buttons |
-| Weak brand signal                        | “Kavin Illam” as plain heading; no monogram, no navy sidebar        |
-| Flat metric cards                        | Dashboard uses identical `Card` blocks with little hierarchy        |
-| Sparse empty white                       | `max-w-6xl` + large padding without denser composition              |
-| Generic status chrome                    | Default shadcn badges; no semantic financial palette                |
-| No design tokens for gold / ivory / navy | Only neutral shadcn mapping                                         |
-| Limited motion                           | Almost no intentional entrance / hover systems                      |
-| Mobile = shrunk desktop                  | Horizontal wrap-nav; no drawer / bottom nav                         |
-| Charts not present / unstyled if added   | No chart color tokens                                               |
+**Stack:** Next.js 16 App Router · React 19 · Tailwind 4 · shadcn (radix-nova) · Lucide · CVA · Inter + Playfair Display + JetBrains Mono · CSS / `tw-animate` (no Framer Motion unless later required)
 
 ---
 
-## 2. New visual direction
+## Phase 1 — Codebase inspection (2026-09-13)
 
-**Name:** Luxury Contemporary Architecture
+### What already works (do not rebuild)
 
-**Feels like:** Calm private command center for building a home — trust, money, craftsmanship, long-term value.
+| Area | Location | Notes |
+|------|----------|--------|
+| Auth | `(auth)/*`, Auth.js credentials JWT | Login/register/reset/verify/invite |
+| Projects | `(app)/projects`, `/p/[slug]/*` | CRUD, membership, roles |
+| Authz / visibility | `src/server/authorization/` | PRIVATE / SHARED / RESTRICTED; NOT_FOUND for outsiders |
+| Finance | `src/server/finance/`, `/finance` | Integer paise; accounts; transactions |
+| Advances / PRs / Budget / Docs / Tasks / Milestones | matching `src/server/*` + pages | Server-enforced |
+| Reports / Activity / Audit | `/reports`, `/activity`, `/audit` | Visibility-filtered |
+| Money helpers | `src/lib/money.ts` | Keep integer paise |
 
-**Not:** Generic CRM, neon SaaS, banking purple, glassmorphism circus.
+### Current UI inventory
 
-**Principles**
+| Layer | Status |
+|-------|--------|
+| Design tokens | Present but **navy / ivory / champagne** (prior redesign) — **superseded** by this brief |
+| Typography | Playfair (headings) + Inter + JetBrains Mono in `layout.tsx` |
+| App shell | `AppShellFrame`, `AppSidebar`, `AppHeader`, `SidebarProjectSwitcher`, `AuthChrome` |
+| Nav | `nav-config.ts` — grouped Overview / Money / Build / Admin |
+| shadcn UI | `button`, `card`, `input`, `badge`, `label`, `separator`, `skeleton`, `sonner` only |
+| Domain UI | Mostly page-local + `*-forms.tsx`; **no** MetricCard / ChartCard / StatusBadge system yet |
+| Dashboard | `/p/[slug]/page.tsx` — flat `Card` metrics; no charts, progress hero, glass, counters |
+| Charts | Not installed / not used |
+| Command palette | Header search disabled placeholder |
+| Theme config | `src/app/globals.css` + `src/lib/design-tokens.ts` |
 
-1. Restraint first — decoration earns its place
-2. Navy for structure; gold for rare accent
-3. Ivory canvas + white surfaces
-4. Financial numbers dominate hierarchy
-5. Micro-interactions communicate state, never spectacle
-6. Server remains security boundary — UI never hides unauthorized data with CSS
+### Gap vs this brief
 
----
+1. Identity must pivot: **dark teal + emerald**, not ivory canvas + navy sidebar + champagne.
+2. Layered teal background + faint blueprint — missing.
+3. Glass metric cards, progress hero, charts, attention panel — missing.
+4. Emerald active nav / green CTAs — partial (sidebar is navy + champagne).
+5. Command palette — not built.
+6. Feature pages still read as light admin forms.
+7. Missing reusable design-system components listed in brief §81.
 
-## 3. Color system
+### Hard constraints (unchanged)
 
-### Brand
-
-| Token            | Hex       | Role                                |
-| ---------------- | --------- | ----------------------------------- |
-| `--ki-navy`      | `#101828` | Primary / sidebar / primary buttons |
-| `--ki-midnight`  | `#172033` | Sidebar hover / elevated navy       |
-| `--ki-ivory`     | `#F8F6F1` | App background                      |
-| `--ki-white`     | `#FFFFFF` | Cards / surfaces                    |
-| `--ki-stone`     | `#E9E5DC` | Borders / muted fills               |
-| `--ki-champagne` | `#C9A86A` | Premium accent (sparingly)          |
-| `--ki-gold`      | `#B89455` | Accent hover / muted gold           |
-| `--ki-charcoal`  | `#252A34` | Strong body text                    |
-| `--ki-muted`     | `#667085` | Secondary text                      |
-
-### Semantic
-
-| Token          | Hex       | Use                              |
-| -------------- | --------- | -------------------------------- |
-| `--ki-success` | `#168A63` | Income / completed / paid        |
-| `--ki-warning` | `#C98522` | Pending / expiring               |
-| `--ki-danger`  | `#C94B4B` | Rejected / overdue / destructive |
-| `--ki-info`    | `#3E6FA8` | Neutral informational            |
-
-### Mapped shadcn tokens (light)
-
-- `background` → ivory
-- `foreground` → navy/charcoal
-- `card` → white
-- `primary` → deep navy
-- `accent` (brand) → champagne (new `--brand` / premium variant)
-- `muted` → stone-tinted
-- `destructive` → danger
-- `sidebar` → deep navy family
-
-### Gradients (rare)
-
-- Premium navy: `135deg, #101828 → #1B263B → #283A52`
-- Gold accent: `135deg, #B89455 → #D8BD83`
-- Warm wash: `135deg, #F8F6F1 → #FFFFFF`
-
-### Dark mode (token-ready)
-
-Background `#0B0F17` · surface `#111827` · secondary `#172033` · text `#F8FAFC` · muted `#98A2B3` · gold `#D6B875` · borders `rgba(255,255,255,0.08)`
+- No fake data for polish  
+- No floating-point money  
+- No client-side privacy filtering  
+- No Cloudinary URL exposure  
+- Routes and permissions stay as-is  
 
 ---
 
-## 4. Typography system
+## 2. Visual direction
 
-| Role                    | Face                      | Size           | Notes                             |
-| ----------------------- | ------------------------- | -------------- | --------------------------------- |
-| Display / project title | Playfair Display          | 32–42px        | Brand + project hero only         |
-| Page title              | Playfair or Inter         | 28–34px        | Prefer Playfair for project names |
-| Section                 | Inter                     | 18–22px        | Sans                              |
-| Metric                  | Inter (tabular)           | 28–36px        | Never serif for money             |
-| Body                    | Inter                     | 14–16px        | UI default                        |
-| Secondary               | Inter                     | 12–13px        | Labels, meta                      |
-| Mono                    | Geist Mono / ui-monospace | numbers, codes | Transaction numbers               |
+**Name:** Dark Teal / Emerald Construction OS  
 
-**Migration:** Source Serif 4 → **Playfair Display**; Source Sans 3 → **Inter**; mono → **JetBrains Mono**. Serif reserved for brand/project/page titles — never buttons, tables, or money.
+**Feels like:** Premium dark SaaS command center for building a home — progress, money, trust, craft.
 
----
+**Not:** Corporate banking · 2015 ERP · neon gaming · rainbow glass circus · clone of any reference mock.
 
-## 5. Spacing system
+**Rules**
 
-| Token        | Value |
-| ------------ | ----- |
-| `--space-1`  | 4px   |
-| `--space-2`  | 8px   |
-| `--space-3`  | 12px  |
-| `--space-4`  | 16px  |
-| `--space-5`  | 20px  |
-| `--space-6`  | 24px  |
-| `--space-8`  | 32px  |
-| `--space-10` | 40px  |
-| `--space-12` | 48px  |
-
-**Shell:** Sidebar 250–280px · Header 72px · Content max ~1440px · Page pad 24–40px
+1. ~70% deep teal / dark surfaces · ~20% white / muted mint text · ~10% green / cyan / purple / blue / mint accents  
+2. Green is the dominant accent; cyan / blue / purple / pink are supporting only  
+3. Glass + glow used **selectively** (header, sidebar, metrics, modals) — not everywhere  
+4. Financial numbers dominate hierarchy  
+5. Micro-interactions communicate state; respect `prefers-reduced-motion`  
+6. Server remains the security boundary  
 
 ---
 
-## 6. Border radius system
+## 3. Color system (tokens)
 
-| Token         | Value    | Use                 |
-| ------------- | -------- | ------------------- |
-| `--radius-sm` | 8px      | Compact controls    |
-| `--radius`    | 10px     | Buttons / inputs    |
-| `--radius-lg` | 14–16px  | Cards               |
-| `--radius-xl` | 20–24px  | Hero / large panels |
-| Pill          | `9999px` | Status badges only  |
+### Core palette
 
----
+| Token | Hex / value | Role |
+|-------|-------------|------|
+| `--ki-bg` | `#063F3A` | Primary app background |
+| `--ki-teal-deep` | `#064E49` | Elevated teal |
+| `--ki-teal-dark` | `#053532` | Deep panels |
+| `--ki-surface` | `#062D2A` | Darker surface |
+| `--ki-sidebar` | `rgba(3, 40, 37, 0.92)` | Sidebar glass base |
+| `--ki-emerald` | `#047857` | Emerald |
+| `--ki-emerald-bright` | `#00C875` | Bright emerald |
+| `--ki-cta` | `#00D084` | Primary CTA |
+| `--ki-mint` | `#5EEAD4` | Mint accent / active icons |
+| `--ki-mint-light` | `#A7F3D0` | Soft mint |
+| `--ki-cyan` | `#22D3EE` | Info / budget accents |
+| `--ki-blue` | `#3B82F6` | Supporting |
+| `--ki-purple` | `#8B5CF6` | Advances / secondary |
+| `--ki-pink` | `#EC4899` | Rare accent |
+| `--ki-white` | `#FFFFFF` | Primary text |
+| `--ki-off-white` | `#F1F5F9` | Soft text |
+| `--ki-muted-white` | `#B8D6D1` | Secondary text |
+| `--ki-muted` | `#8FAFAC` | Muted labels |
+| `--ki-border` | `rgba(255,255,255,0.10)` | Default border |
+| `--ki-border-subtle` | `rgba(255,255,255,0.06)` | Soft border |
+| `--ki-warning` | `#F59E0B` | Pending / expiring |
+| `--ki-danger` | `#EF4444` | Rejected / overdue / over budget |
 
-## 7. Shadow system
+### Usage ratio
 
-| Level            | Value                                |
-| ---------------- | ------------------------------------ |
-| `--shadow-sm`    | `0 4px 20px rgba(16, 24, 40, 0.06)`  |
-| `--shadow-md`    | `0 12px 40px rgba(16, 24, 40, 0.06)` |
-| `--shadow-lg`    | `0 16px 40px rgba(16, 24, 40, 0.10)` |
-| `--shadow-focus` | `0 0 0 3px rgba(16, 24, 40, 0.08)`   |
+70% teal/dark · 20% white/muted · 10% accents (green dominant).
 
-No multi-layer glow. Flat sections allowed.
+### shadcn mapping (default theme = dark teal product)
 
----
+- `background` → `--ki-bg`  
+- `foreground` → white  
+- `card` → translucent / surface elevated  
+- `primary` → CTA green  
+- `muted-foreground` → muted teal-gray  
+- `destructive` → danger  
+- `sidebar` → dark teal glass family  
+- `brand` → mint / bright emerald  
 
-## 8. Animation system
+### Gradients
 
-| Token               | Value                           |
-| ------------------- | ------------------------------- |
-| `--duration-fast`   | 160ms                           |
-| `--duration-normal` | 200ms                           |
-| `--duration-slow`   | 400ms                           |
-| `--ease-out`        | `cubic-bezier(0.16, 1, 0.3, 1)` |
+- Primary: `135deg, #047857 → #00C875`  
+- Teal: `135deg, #063F3A → #047857`  
+- Cyan / purple: supporting only  
+- App wash: layered radials (emerald / cyan / purple) at low opacity  
 
-**Patterns:** Card fade-up stagger · count-up metrics · tab underline · sidebar width · dialog scale · drawer slide · chart once-on-view
+### Architectural pattern
 
-**Rules:** No bounce · no infinite decoration · always honor `prefers-reduced-motion`
-
-**Tech:** Prefer CSS + `tw-animate-css`; add Motion only if needed later.
-
----
-
-## 9. Component system (planned)
-
-Shell: `AppShell`, `Sidebar`, `MobileSidebar`, `TopHeader`, `ProjectSwitcher`, `GlobalSearch` / `CommandPalette`, `UserMenu`, `Breadcrumbs`, `MobileBottomNav`
-
-Content: `PageHeader`, `MetricCard`, `FinancialMetricCard`, `SectionHeader`, `StatusBadge`, `ProgressBar`, `EmptyState`, `Skeleton`, `QuickAction`, `ActivityTimeline`, `FilterBar`, `DataTable`
-
-Domain: `TransactionRow`, `DocumentCard`, `PaymentRequestCard`, `AdvanceCard`, `MilestoneTimeline`, `TaskCard`, `ChartCard`
-
-Improve existing shadcn `Button` / `Card` / `Input` / `Badge` / `Dialog` via tokens before inventing duplicates.
-
----
-
-## 10. Responsive strategy
-
-| Breakpoint      | Shell                                                                    |
-| --------------- | ------------------------------------------------------------------------ |
-| ≥1280           | Expanded navy sidebar + header                                           |
-| 1024–1279       | Collapsible sidebar                                                      |
-| &lt;768         | Drawer + optional bottom nav (Home / Finance / Documents / Tasks / More) |
-| Tables          | Card rows on mobile                                                      |
-| Dashboard order | Status → budget → spent → advances → attention → charts → lists          |
-
-QA widths: 1440 · 1280 · 1024 · 768 · 430 · 390 · 375 · 320
+Blueprint grid / faint geometry at **0.02–0.05** opacity on teal — never wallpaper-loud.
 
 ---
 
-## 11. Accessibility strategy
+## 4. Typography
 
-- Visible focus rings (`--shadow-focus` / ring tokens)
-- Semantic landmarks (`nav`, `main`, `aside`)
-- ARIA for sidebar collapse, command palette, drawers
-- Contrast: navy on ivory, white on navy; gold never sole status signal
-- Keyboard: Cmd/Ctrl+K search, Esc close, arrow menus
-- `prefers-reduced-motion: reduce` disables transforms / count-up
-
----
-
-## Implementation phases
-
-| Phase | Focus                                      | Status          |
-| ----- | ------------------------------------------ | --------------- |
-| 1     | Design tokens                              | **Complete**    |
-| 2     | Global typography                          | **Complete**    |
-| 3     | Application shell                          | Next            |
-| 3–6   | App shell / sidebar / header / project nav | Pending         |
-| 7     | Buttons / forms / dialogs                  | Pending         |
-| 8–19  | Feature pages                              | Pending         |
-| 20–24 | Mobile / motion / a11y / perf / QA         | Pending         |
-
-**Gate after each phase:** `pnpm lint` · `pnpm typecheck` · `pnpm build` (+ tests when logic touched)
+| Role | Face | Notes |
+|------|------|--------|
+| Brand / hero titles | Playfair Display (existing) or confident Inter | White; large |
+| UI / body | Inter | Default |
+| Metrics | Inter tabular | 32–38px, weight 600–700, **never** serif for money |
+| Meta | Inter | Uppercase tracking for labels |
+| Mono | JetBrains Mono | Codes / refs |
 
 ---
 
-## Architectural decisions
+## 5. Layout shell
 
-1. **Token-first:** Remap shadcn CSS variables so existing `bg-primary`, `bg-card`, etc. inherit the new language without rewriting every page immediately.
-2. **No backend changes** for redesign.
-3. **CSS motion first** — avoid new animation deps until shell needs them.
-4. **Sidebar is navy** even in light mode (brand structure, not “dark mode”).
-5. **Private data:** redesign never client-filters unauthorized rows.
+| Token | Value |
+|-------|--------|
+| Sidebar | 250–280px (expanded) / icons-only collapsed |
+| Header | 68–76px |
+| Content max | ~1500px |
+| Page pad | 24–40px |
+
+Shell files to evolve (not replace routes):  
+`app-shell.tsx` · `app-sidebar.tsx` · `app-header.tsx` · `project-switcher.tsx` · `auth-chrome.tsx` · `(app)/layout.tsx`
+
+---
+
+## 6. Component roadmap (build / improve, don’t duplicate)
+
+**Shell:** AppShell, Sidebar, MobileDrawer, TopHeader, ProjectSwitcher, GlobalSearch, CommandPalette, UserMenu, Breadcrumbs  
+
+**Content:** PageHeader, MetricCard, FinancialMetricCard, StatusBadge, ProgressBar, EmptyState, Skeleton, QuickAction, ActivityTimeline, FilterBar, DataTable, FormDrawer, ChartCard  
+
+**Domain:** TransactionRow, DocumentCard, PaymentRequestCard, AdvanceCard, MilestoneTimeline, TaskCard, BudgetCard  
+
+Improve existing shadcn `Button` / `Card` / `Input` / `Badge` via tokens before inventing twins.
+
+---
+
+## 7. Implementation phases (this brief)
+
+| Phase | Focus | Status |
+|-------|--------|--------|
+| 1 | Inspect codebase | **Complete** |
+| 2 | Design tokens | **Complete** |
+| 3 | Global background / theme surfaces | **Complete** |
+| 4 | Typography tune for dark teal | **Complete** |
+| 5 | App shell frame | **Complete** |
+| 6 | Sidebar polish (emerald active, footer user) | **Complete** (bundled with 5) |
+| 7 | Header (transparent glass + search stub) | **Complete** (bundled with 5) |
+| 8 | Nav density | Pending |
+| 9 | Buttons / inputs / dropdowns | **Partial** (glass Card/Input/Button) |
+| 10 | Dashboard | Next |
+| 11–21 | Finance → Settings feature pages | Pending |
+| 22–26 | Mobile · motion · a11y · perf · QA | Pending |
+
+**Gate after each phase:** `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm build` when appropriate.
+
+### Prior navy/ivory redesign
+
+Phases completed under the previous “Luxury Contemporary Architecture” direction are **visually superseded**. Keep the shell architecture (sidebar + header + switcher); retoken and restyle to teal/emerald.
+
+---
+
+## 8. Architectural decisions
+
+1. **Token-first** — Remap shadcn CSS variables so `bg-primary`, `bg-card`, etc. inherit the new language.  
+2. **Default theme is dark teal** — product identity is dark; do not treat this as an optional `.dark` bolt-on.  
+3. **No backend changes** for redesign.  
+4. **CSS motion first** — `tw-animate` / CSS; avoid new animation deps until needed.  
+5. **Reuse shell** — evolve Phase 3–4 shell components; don’t delete working navigation.  
+6. **Private data** — never client-filter unauthorized rows.  
+
+---
+
+## 9. Design review checklist (per page)
+
+- [ ] Still look like a generic admin panel? → redesign  
+- [ ] Teal/emerald intentional, not rainbow?  
+- [ ] Cards not over-colored?  
+- [ ] Gradients / glow restrained?  
+- [ ] Financial numbers obvious?  
+- [ ] Readable contrast?  
+- [ ] Feels like a real construction project home?  
