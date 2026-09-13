@@ -165,6 +165,12 @@ model User {
   advancesReceived    Advance[] @relation("AdvanceRecipient")
   paymentRequestsCreated PaymentRequest[] @relation("PaymentRequestCreator")
   paymentRequestsReviewed PaymentRequest[] @relation("PaymentRequestReviewer")
+  documentsCreated Document[] @relation("DocumentCreator")
+  documentsUploaded Document[] @relation("DocumentUploader")
+  documentVersionsUploaded DocumentVersion[] @relation("DocumentVersionUploader")
+  documentAccesses DocumentAccess[] @relation("DocumentAccessUser")
+  documentAccessesGranted DocumentAccess[] @relation("DocumentAccessGranter")
+  budgetsCreated Budget[] @relation("BudgetCreator")
 }
 
 model Account {
@@ -231,6 +237,8 @@ model Project {
   advances Advance[]
   advanceSettlements AdvanceSettlement[]
   paymentRequests PaymentRequest[]
+  documents Document[]
+  budgets Budget[]
 
   @@index([ownerId, status])
   @@index([status, updatedAt])
@@ -326,6 +334,7 @@ model Category {
   project      Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   transactions FinancialTransaction[]
   paymentRequests PaymentRequest[]
+  budgetCategories BudgetCategory[]
 
   @@index([projectId, isActive])
   @@index([code])
@@ -492,4 +501,163 @@ model PaymentRequest {
   @@index([projectId, createdAt])
   @@index([projectId, visibility, createdById])
   @@index([linkedTransactionId])
+}
+
+enum DocumentCategory {
+  CONTRACT
+  BOND
+  AGREEMENT
+  INVOICE
+  RECEIPT
+  PAYMENT_PROOF
+  QUOTATION
+  ESTIMATE
+  PLAN
+  DRAWING
+  APPROVAL
+  GOVERNMENT_DOCUMENT
+  IDENTITY_DOCUMENT
+  WARRANTY
+  CERTIFICATE
+  PHOTO
+  OTHER
+}
+
+enum DocumentStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model Document {
+  id                     String           @id @default(auto()) @map("_id") @db.ObjectId
+  projectId              String           @db.ObjectId
+  documentNumber         String
+  title                  String
+  description            String?
+  category               DocumentCategory @default(OTHER)
+  tags                   String[]
+  status                 DocumentStatus   @default(ACTIVE)
+  visibility             Visibility       @default(PROJECT_SHARED)
+  allowedUserIds         String[]         @db.ObjectId
+  currentVersion         Int              @default(1)
+  fileName               String
+  mimeType               String
+  fileSize               Int
+  cloudinaryPublicId     String
+  cloudinaryResourceType String
+  cloudinaryDeliveryType String           @default("authenticated")
+  format                 String?
+  issueDate              DateTime?
+  expiryDate             DateTime?
+  renewalDate            DateTime?
+  createdById            String           @db.ObjectId
+  uploadedById           String           @db.ObjectId
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  archivedAt             DateTime?
+
+  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy  User              @relation("DocumentCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  uploadedBy User              @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  versions   DocumentVersion[]
+  access     DocumentAccess[]
+
+  @@unique([projectId, documentNumber])
+  @@index([projectId, category])
+  @@index([projectId, createdAt])
+  @@index([projectId, status])
+  @@index([projectId, visibility, createdById])
+}
+
+model DocumentVersion {
+  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+  documentId             String   @db.ObjectId
+  projectId              String   @db.ObjectId
+  versionNumber          Int
+  fileName               String
+  mimeType               String
+  fileSize               Int
+  cloudinaryPublicId     String
+  cloudinaryResourceType String
+  cloudinaryDeliveryType String   @default("authenticated")
+  format                 String?
+  changeDescription      String?
+  uploadedById           String   @db.ObjectId
+  createdAt              DateTime @default(now())
+  isCurrent              Boolean  @default(false)
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation("DocumentVersionUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, versionNumber])
+  @@index([projectId, documentId])
+  @@index([documentId, isCurrent])
+}
+
+model DocumentAccess {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  documentId  String   @db.ObjectId
+  userId      String   @db.ObjectId
+  grantedById String   @db.ObjectId
+  createdAt   DateTime @default(now())
+
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user      User     @relation("DocumentAccessUser", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy User     @relation("DocumentAccessGranter", fields: [grantedById], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([userId])
+}
+
+enum BudgetStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+/// Explicit remaining modes — never mix committed and paid in one "remaining" figure without labeling.
+enum BudgetRemainingMode {
+  VS_PAID
+  VS_COMMITTED
+}
+
+model Budget {
+  id            String              @id @default(auto()) @map("_id") @db.ObjectId
+  projectId     String              @db.ObjectId
+  name          String
+  currency      String              @default("INR")
+  /// Optional override total; when null, sum of category planned amounts is used
+  totalPlanned  Int?
+  status        BudgetStatus        @default(ACTIVE)
+  defaultRemainingMode BudgetRemainingMode @default(VS_PAID)
+  notes         String?
+  createdById   String              @db.ObjectId
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  project    Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy  User             @relation("BudgetCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  categories BudgetCategory[]
+
+  @@index([projectId, status])
+}
+
+model BudgetCategory {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  budgetId      String   @db.ObjectId
+  projectId     String   @db.ObjectId
+  categoryId    String?  @db.ObjectId
+  /// Display label (defaults to linked category name)
+  label         String
+  /// Planned amount in minor units (paise)
+  plannedAmount Int
+  sortOrder     Int      @default(0)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  budget   Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([budgetId, sortOrder])
+  @@index([projectId, categoryId])
 }

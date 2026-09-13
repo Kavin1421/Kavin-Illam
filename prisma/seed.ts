@@ -4,9 +4,15 @@ import {
   computeAdvanceOutstanding,
   deriveAdvanceStatus,
 } from "../src/server/advances/outstanding";
+import {
+  buildDocumentPublicId,
+  getCloudinary,
+  isCloudinaryConfigured,
+} from "../src/server/documents/cloudinary";
 import { ensureSystemCategories } from "../src/server/finance/categories";
 import {
   allocateAdvanceNumber,
+  allocateDocumentNumber,
   allocatePaymentRequestNumber,
   allocateTransactionNumber,
 } from "../src/server/finance/numbering";
@@ -437,12 +443,170 @@ async function main() {
     });
   }
 
-  console.log("Seeded users + project + finance + advances + payment requests:");
+  // Phase 8 — sample authenticated Cloudinary document (when configured).
+  const existingDocCount = await prisma.document.count({
+    where: { projectId: project.id },
+  });
+
+  if (existingDocCount === 0 && isCloudinaryConfigured()) {
+    try {
+      const cld = getCloudinary();
+      const publicId = buildDocumentPublicId(project.id, "site-photo");
+      const uploaded = await cld.uploader.upload(
+        "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+        {
+          public_id: publicId,
+          type: "authenticated",
+          resource_type: "image",
+        },
+      );
+
+      const documentNumber = await allocateDocumentNumber({
+        projectId: project.id,
+        projectSlug: project.slug,
+      });
+
+      await prisma.document.create({
+        data: {
+          projectId: project.id,
+          documentNumber,
+          title: "Site progress photo",
+          description: "Seeded sample (authenticated Cloudinary asset)",
+          category: "PHOTO",
+          tags: ["seed", "site"],
+          status: "ACTIVE",
+          visibility: "PROJECT_SHARED",
+          allowedUserIds: [],
+          currentVersion: 1,
+          fileName: "site-progress.jpg",
+          mimeType: "image/jpeg",
+          fileSize: uploaded.bytes ?? 0,
+          cloudinaryPublicId: uploaded.public_id,
+          cloudinaryResourceType: uploaded.resource_type ?? "image",
+          cloudinaryDeliveryType: "authenticated",
+          format: uploaded.format ?? "jpg",
+          createdById: kevin.id,
+          uploadedById: kevin.id,
+          versions: {
+            create: {
+              projectId: project.id,
+              versionNumber: 1,
+              fileName: "site-progress.jpg",
+              mimeType: "image/jpeg",
+              fileSize: uploaded.bytes ?? 0,
+              cloudinaryPublicId: uploaded.public_id,
+              cloudinaryResourceType: uploaded.resource_type ?? "image",
+              cloudinaryDeliveryType: "authenticated",
+              format: uploaded.format ?? "jpg",
+              changeDescription: "Initial upload",
+              uploadedById: kevin.id,
+              isCurrent: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      console.warn(
+        "Skipping Cloudinary document seed:",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+
+  // Phase 9 — active project budget with category lines.
+  const existingBudget = await prisma.budget.findFirst({
+    where: { projectId: project.id, status: "ACTIVE" },
+  });
+
+  if (!existingBudget) {
+    const materials = await prisma.category.findFirst({
+      where: { code: "MATERIALS", isSystem: true },
+    });
+    const misc = await prisma.category.findFirst({
+      where: { code: "MISCELLANEOUS", isSystem: true },
+    });
+
+    const lines = [
+      engineering && {
+        categoryId: engineering.id,
+        label: "Engineering",
+        plannedAmount: 80_000_000,
+        sortOrder: 0,
+      },
+      cement && {
+        categoryId: cement.id,
+        label: "Cement",
+        plannedAmount: 40_000_000,
+        sortOrder: 1,
+      },
+      steel && {
+        categoryId: steel.id,
+        label: "Steel",
+        plannedAmount: 50_000_000,
+        sortOrder: 2,
+      },
+      labour && {
+        categoryId: labour.id,
+        label: "Labour",
+        plannedAmount: 60_000_000,
+        sortOrder: 3,
+      },
+      materials && {
+        categoryId: materials.id,
+        label: "Materials",
+        plannedAmount: 70_000_000,
+        sortOrder: 4,
+      },
+      misc && {
+        categoryId: misc.id,
+        label: "Contingency",
+        plannedAmount: 200_000_000,
+        sortOrder: 5,
+      },
+    ].filter(Boolean) as Array<{
+      categoryId: string;
+      label: string;
+      plannedAmount: number;
+      sortOrder: number;
+    }>;
+
+    if (lines.length > 0) {
+      const plannedSum = lines.reduce((s, l) => s + l.plannedAmount, 0);
+      await prisma.budget.create({
+        data: {
+          projectId: project.id,
+          name: "Kavin Illam construction budget",
+          currency: "INR",
+          totalPlanned: 500_000_000,
+          status: "ACTIVE",
+          defaultRemainingMode: "VS_PAID",
+          notes: "Seeded Phase 9 budget — planned ₹50L total",
+          createdById: kevin.id,
+          categories: {
+            create: lines.map((line) => ({
+              projectId: project.id,
+              categoryId: line.categoryId,
+              label: line.label,
+              plannedAmount: line.plannedAmount,
+              sortOrder: line.sortOrder,
+            })),
+          },
+        },
+      });
+      await prisma.project.update({
+        where: { id: project.id },
+        data: { estimatedBudget: 500_000_000 },
+      });
+      void plannedSum;
+    }
+  }
+
+  console.log(
+    "Seeded users + project + finance + advances + payment requests + documents + budget:",
+  );
   console.log(`- ${kevin.name} <${kevin.email}> OWNER`);
   console.log(`- ${engineer.name} <${engineer.email}> ENGINEER`);
-  console.log(
-    `- Project: ${project.name} (/p/${project.slug}/payment-requests)`,
-  );
+  console.log(`- Project: ${project.name} (/p/${project.slug}/budget)`);
   console.log("Password: value from SEED_PASSWORD (or local default).");
 }
 

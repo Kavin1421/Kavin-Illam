@@ -85,6 +85,12 @@ export default async function ProjectOverviewPage({
               Finance
             </Link>
             <Link
+              href={`/p/${slug}/budget`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              Budget
+            </Link>
+            <Link
               href={`/p/${slug}/advances`}
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >
@@ -95,6 +101,12 @@ export default async function ProjectOverviewPage({
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >
               Requests
+            </Link>
+            <Link
+              href={`/p/${slug}/documents`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              Documents
             </Link>
             <Link
               href={`/p/${slug}/members`}

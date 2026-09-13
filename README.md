@@ -4,11 +4,11 @@ Private, multi-project construction management, finance, and document portal.
 
 ## Status
 
-**Phase 7 — Payment requests: complete**
+**Phase 9 — Budget: complete**
 
-Create → approve / reject / request changes → pay with a **linked ledger transaction** (no silent duplicate rows).
+Category planned amounts with visibility-aware **paid** (shared ledger) and **committed** (open payment requests). Remaining is labeled as either vs paid or vs committed — never mixed.
 
-## Try payment requests
+## Try budget
 
 ```bash
 pnpm db:push
@@ -16,13 +16,12 @@ pnpm db:seed
 pnpm dev
 ```
 
-- Engineer → **Requests** → submit or view pending
-- Kevin → approve pending cement request, or **Pay & link** the approved steel request
+Kevin → **Kavin Illam** → **Budget**. Engineer can view but not edit.
 
 ## Phase map
 
 | Phase | Status |
 |-------|--------|
-| 0–6 | Complete |
-| 7 Payment requests | Complete |
-| 8 Documents + Cloudinary | Next |
+| 0–8 | Complete |
+| 9 Budget | Complete |
+| 10 Tasks + milestones | Next |
