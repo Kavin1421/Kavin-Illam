@@ -39,16 +39,16 @@ Config lives in [`netlify.toml`](../netlify.toml). The `@netlify/plugin-nextjs` 
 ### Required UI settings (or deploys will fail)
 
 1. **Site configuration → Build & deploy → Build settings**
-   - **Build command:** leave empty or match `pnpm run build` (toml wins).
-   - **Publish directory:** must be **empty / cleared**.  
-     If it is `.next`, Netlify packs cache + traces into `___netlify-server-handler` and fails with **“function exceeds the maximum size of 250 MB”**.
+   - Prefer letting [`netlify.toml`](../netlify.toml) win (`publish = ".next"`).
+   - Do **not** set publish to `public` — `@netlify/plugin-nextjs` will fail with “publish directory does not contain expected Next.js build output”.
 2. **Plugins:** Next.js runtime / `@netlify/plugin-nextjs` enabled (also declared in `netlify.toml`).
-3. After fixing publish: use **Clear cache and deploy site** once.
+3. After changing build settings: use **Clear cache and deploy site** once so an old bloated `.next` (cache/standalone) is not reused.
 
 ### What `netlify.toml` already does
 
-- Sets `publish = "public"` so UI cannot force `.next`
-- Runs `rm -rf .next/cache` after build
+- Sets `publish = ".next"` (required by the Next.js plugin)
+- Runs `rm -rf .next/cache .next/dev` after build so the serverless handler stays under the **250 MB** Lambda limit
+- Skips `output: "standalone"` on Netlify (standalone is Docker/self-host only)
 - Omits `.netlify/**` / `.next/**` from secrets scanning (server env is inlined into SSR chunks by design)
 - Omits `MONGO_DB_NAME` from secrets key scanning (name, not a secret)
 - Prisma `rhel-openssl-3.0.x` binary target for Lambda
@@ -149,7 +149,7 @@ Application-level soft deletes do **not** replace database backups.
 - [ ] Strong unique `AUTH_SECRET`
 - [ ] Atlas IP allowlist / private networking
 - [ ] Seed/demo data never applied in production
-- [ ] Netlify **Publish directory** is not `.next`
+- [ ] Netlify publish is `.next` (not `public`); build clears `.next/cache` so the handler stays under 250 MB
 - [ ] Container runs as non-root (`nextjs` user) when self-hosting
 - [ ] `client_max_body_size` sized for document uploads (32m default)
 

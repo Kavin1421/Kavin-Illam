@@ -21,7 +21,7 @@ Seeded: `kevin@kavinillam.local` (OWNER), `engineer@kavinillam.local` (ENGINEER)
 
 ## Production
 
-**Netlify:** connect the repo, set env vars, and ensure **Publish directory is blank** (never `.next`). See [`docs/PRODUCTION.md`](docs/PRODUCTION.md) and [`netlify.toml`](netlify.toml).
+**Netlify:** connect the repo, set env vars, keep publish as `.next` via [`netlify.toml`](netlify.toml) (never `public`). See [`docs/PRODUCTION.md`](docs/PRODUCTION.md).
 
 **Self-host (Docker):**
 
