@@ -85,6 +85,18 @@ export default async function ProjectOverviewPage({
               Finance
             </Link>
             <Link
+              href={`/p/${slug}/advances`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              Advances
+            </Link>
+            <Link
+              href={`/p/${slug}/payment-requests`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              Requests
+            </Link>
+            <Link
               href={`/p/${slug}/members`}
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >

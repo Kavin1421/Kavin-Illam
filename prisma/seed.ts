@@ -1,7 +1,15 @@
 import { hashPassword } from "../src/server/auth/password";
 import { prisma } from "../src/server/db/prisma";
+import {
+  computeAdvanceOutstanding,
+  deriveAdvanceStatus,
+} from "../src/server/advances/outstanding";
 import { ensureSystemCategories } from "../src/server/finance/categories";
-import { allocateTransactionNumber } from "../src/server/finance/numbering";
+import {
+  allocateAdvanceNumber,
+  allocatePaymentRequestNumber,
+  allocateTransactionNumber,
+} from "../src/server/finance/numbering";
 
 /**
  * Development seed only — never run automatically in production.
@@ -163,7 +171,15 @@ async function main() {
     where: { projectId: project.id },
   });
 
-  if (existingTxCount === 0 && engineering && cement && steel && labour && personal && hdfc) {
+  if (
+    existingTxCount === 0 &&
+    engineering &&
+    cement &&
+    steel &&
+    labour &&
+    personal &&
+    hdfc
+  ) {
     const samples = [
       {
         type: "ADVANCE" as const,
@@ -241,10 +257,192 @@ async function main() {
     }
   }
 
-  console.log("Seeded users + project + finance:");
+  // Backfill Advance records from ADVANCE ledger rows (Phase 6).
+  const advanceTxs = await prisma.financialTransaction.findMany({
+    where: {
+      projectId: project.id,
+      type: "ADVANCE",
+      deletedAt: null,
+    },
+  });
+
+  for (const tx of advanceTxs) {
+    const linked = await prisma.advance.findFirst({
+      where: {
+        OR: [
+          { fundingTransactionId: tx.id },
+          { projectId: project.id, advanceNumber: tx.transactionNumber },
+        ],
+      },
+    });
+    if (linked) continue;
+
+    const advanceNumber = await allocateAdvanceNumber({
+      projectId: project.id,
+      projectSlug: project.slug,
+    });
+
+    await prisma.advance.create({
+      data: {
+        projectId: project.id,
+        advanceNumber,
+        originalAmount: tx.amount,
+        currency: tx.currency,
+        recipientName: tx.paidTo ?? "Engineer",
+        recipientUserId: engineer.id,
+        categoryId: tx.categoryId,
+        accountId: tx.accountId,
+        issuedAt: tx.transactionDate,
+        description: tx.description,
+        notes: tx.notes,
+        status: "OPEN",
+        visibility: tx.visibility,
+        allowedUserIds: tx.allowedUserIds,
+        fundingTransactionId: tx.id,
+        createdById: kevin.id,
+      },
+    });
+  }
+
+  // Sample settlement against engineering advance (₹1,00,000 of ₹5,00,000).
+  const engineeringAdvance = await prisma.advance.findFirst({
+    where: {
+      projectId: project.id,
+      deletedAt: null,
+      recipientName: "Engineer",
+    },
+    include: {
+      settlements: { where: { deletedAt: null } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (engineeringAdvance && engineeringAdvance.settlements.length === 0) {
+    const settlementAmount = 10_000_000;
+    const breakdown = computeAdvanceOutstanding(
+      engineeringAdvance.originalAmount,
+      [],
+    );
+    if (settlementAmount <= breakdown.outstanding) {
+      const transactionNumber = await allocateTransactionNumber({
+        projectId: project.id,
+        projectSlug: project.slug,
+        type: "SETTLEMENT",
+      });
+      const ledger = await prisma.financialTransaction.create({
+        data: {
+          projectId: project.id,
+          transactionNumber,
+          type: "SETTLEMENT",
+          direction: "INTERNAL",
+          amount: settlementAmount,
+          currency: "INR",
+          categoryId: engineeringAdvance.categoryId,
+          accountId: engineeringAdvance.accountId,
+          paidByUserId: kevin.id,
+          paidTo: engineeringAdvance.recipientName,
+          transactionDate: new Date(),
+          status: "PAID",
+          paymentMethod: "BANK_TRANSFER",
+          description: "Partial settlement against engineering advance",
+          visibility: "PROJECT_SHARED",
+          allowedUserIds: [],
+          createdById: kevin.id,
+          approvedById: kevin.id,
+          approvedAt: new Date(),
+        },
+      });
+
+      await prisma.advanceSettlement.create({
+        data: {
+          projectId: project.id,
+          advanceId: engineeringAdvance.id,
+          kind: "SETTLEMENT",
+          amount: settlementAmount,
+          currency: "INR",
+          settledAt: new Date(),
+          description: "Partial settlement against engineering advance",
+          transactionId: ledger.id,
+          createdById: kevin.id,
+        },
+      });
+
+      const next = computeAdvanceOutstanding(engineeringAdvance.originalAmount, [
+        { kind: "SETTLEMENT", amount: settlementAmount },
+      ]);
+      await prisma.advance.update({
+        where: { id: engineeringAdvance.id },
+        data: {
+          status: deriveAdvanceStatus({
+            originalAmount: engineeringAdvance.originalAmount,
+            outstanding: next.outstanding,
+          }),
+        },
+      });
+    }
+  }
+
+  // Phase 7 — sample payment requests from engineer.
+  const existingRequestCount = await prisma.paymentRequest.count({
+    where: { projectId: project.id },
+  });
+
+  if (existingRequestCount === 0 && cement && steel) {
+    const pendingNumber = await allocatePaymentRequestNumber({
+      projectId: project.id,
+      projectSlug: project.slug,
+    });
+    await prisma.paymentRequest.create({
+      data: {
+        projectId: project.id,
+        requestNumber: pendingNumber,
+        title: "Additional cement delivery",
+        description: "Need 50 bags for first-floor slab",
+        amount: 2_500_000,
+        paidAmount: 0,
+        currency: "INR",
+        categoryId: cement.id,
+        payeeName: "Cement supplier",
+        status: "PENDING",
+        visibility: "PROJECT_SHARED",
+        allowedUserIds: [],
+        createdById: engineer.id,
+      },
+    });
+
+    const approvedNumber = await allocatePaymentRequestNumber({
+      projectId: project.id,
+      projectSlug: project.slug,
+    });
+    await prisma.paymentRequest.create({
+      data: {
+        projectId: project.id,
+        requestNumber: approvedNumber,
+        title: "Steel stirrups for columns",
+        description: "Approved — ready to pay",
+        amount: 3_500_000,
+        paidAmount: 0,
+        currency: "INR",
+        categoryId: steel.id,
+        accountId: hdfc?.id,
+        payeeName: "Steel supplier",
+        status: "APPROVED",
+        visibility: "PROJECT_SHARED",
+        allowedUserIds: [],
+        createdById: engineer.id,
+        reviewedById: kevin.id,
+        reviewedAt: new Date(),
+        reviewNote: "Approved for payment",
+      },
+    });
+  }
+
+  console.log("Seeded users + project + finance + advances + payment requests:");
   console.log(`- ${kevin.name} <${kevin.email}> OWNER`);
   console.log(`- ${engineer.name} <${engineer.email}> ENGINEER`);
-  console.log(`- Project: ${project.name} (/p/${project.slug}/finance)`);
+  console.log(
+    `- Project: ${project.name} (/p/${project.slug}/payment-requests)`,
+  );
   console.log("Password: value from SEED_PASSWORD (or local default).");
 }
 

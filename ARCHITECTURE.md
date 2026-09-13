@@ -1,7 +1,7 @@
 # Kavin Illam — Architecture
 
 **Product:** Multi-project construction management, finance, and document portal  
-**Status:** Phase 5 financial core complete. Phase 6 (advances) is next.  
+**Status:** Phase 7 payment requests complete. Phase 8 (documents + Cloudinary) is next.  
 **Audience:** Homeowner + engineer initially; designed for additional collaborators later.
 
 This document is the source of truth for stack, module layout, data strategy, authorization, finance rules, document security, and deployment. Implementation must follow it phase by phase.

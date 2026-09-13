@@ -48,6 +48,12 @@ export default async function FinancePage({
               Accounts
             </Link>
             <Link
+              href={`/p/${slug}/advances`}
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Advances
+            </Link>
+            <Link
               href={`/p/${slug}/finance/new`}
               className={cn(buttonVariants())}
             >

@@ -4,11 +4,11 @@ Private, multi-project construction management, finance, and document portal.
 
 ## Status
 
-**Phase 5 — Financial core: complete**
+**Phase 7 — Payment requests: complete**
 
-Accounts, construction categories, ledger transactions (integer paise), visibility-aware lists/totals, soft delete, and seed sample data for Kavin Illam.
+Create → approve / reject / request changes → pay with a **linked ledger transaction** (no silent duplicate rows).
 
-## Try finance
+## Try payment requests
 
 ```bash
 pnpm db:push
@@ -16,14 +16,13 @@ pnpm db:seed
 pnpm dev
 ```
 
-Sign in as Kevin → **Kavin Illam** → **Finance**.
-
-Engineer can see shared expenses/advances but not Kevin’s private personal furniture expense.
+- Engineer → **Requests** → submit or view pending
+- Kevin → approve pending cement request, or **Pay & link** the approved steel request
 
 ## Phase map
 
 | Phase | Status |
 |-------|--------|
-| 0–4 | Complete |
-| 5 Financial core | Complete |
-| 6 Advances | Next |
+| 0–6 | Complete |
+| 7 Payment requests | Complete |
+| 8 Documents + Cloudinary | Next |

@@ -112,6 +112,28 @@ enum PaymentMethod {
   OTHER
 }
 
+enum AdvanceStatus {
+  OPEN
+  PARTIALLY_SETTLED
+  SETTLED
+  CANCELLED
+}
+
+enum AdvanceSettlementKind {
+  SETTLEMENT
+  REFUND
+}
+
+enum PaymentRequestStatus {
+  PENDING
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+  PAID
+  PARTIALLY_PAID
+  CANCELLED
+}
+
 model User {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
@@ -137,6 +159,12 @@ model User {
   transactionsPaid    FinancialTransaction[] @relation("TransactionPayer")
   transactionsApproved FinancialTransaction[] @relation("TransactionApprover")
   transactionsDeleted FinancialTransaction[] @relation("TransactionDeleter")
+  advancesCreated     Advance[] @relation("AdvanceCreator")
+  advancesDeleted     Advance[] @relation("AdvanceDeleter")
+  advanceSettlementsCreated AdvanceSettlement[] @relation("AdvanceSettlementCreator")
+  advancesReceived    Advance[] @relation("AdvanceRecipient")
+  paymentRequestsCreated PaymentRequest[] @relation("PaymentRequestCreator")
+  paymentRequestsReviewed PaymentRequest[] @relation("PaymentRequestReviewer")
 }
 
 model Account {
@@ -200,6 +228,9 @@ model Project {
   financialAccounts FinancialAccount[]
   categories Category[]
   transactions FinancialTransaction[]
+  advances Advance[]
+  advanceSettlements AdvanceSettlement[]
+  paymentRequests PaymentRequest[]
 
   @@index([ownerId, status])
   @@index([status, updatedAt])
@@ -294,6 +325,7 @@ model Category {
 
   project      Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   transactions FinancialTransaction[]
+  paymentRequests PaymentRequest[]
 
   @@index([projectId, isActive])
   @@index([code])
@@ -339,6 +371,9 @@ model FinancialTransaction {
   paidBy    User?             @relation("TransactionPayer", fields: [paidByUserId], references: [id], onDelete: SetNull)
   approvedBy User?            @relation("TransactionApprover", fields: [approvedById], references: [id], onDelete: SetNull)
   deletedBy User?             @relation("TransactionDeleter", fields: [deletedById], references: [id], onDelete: SetNull)
+  advanceFunding Advance?     @relation("AdvanceFunding")
+  advanceSettlement AdvanceSettlement? @relation("SettlementTransaction")
+  paymentRequests PaymentRequest[] @relation("PaymentRequestTransaction")
 
   @@unique([projectId, transactionNumber])
   @@index([projectId, transactionDate])
@@ -347,4 +382,114 @@ model FinancialTransaction {
   @@index([projectId, createdAt])
   @@index([projectId, visibility, createdById])
   @@index([projectId, type, status])
+}
+
+model Advance {
+  id                   String        @id @default(auto()) @map("_id") @db.ObjectId
+  projectId            String        @db.ObjectId
+  advanceNumber        String
+  /// Principal in minor units (paise). Source of truth for outstanding math.
+  originalAmount       Int
+  currency             String        @default("INR")
+  recipientName        String?
+  recipientUserId      String?       @db.ObjectId
+  categoryId           String?       @db.ObjectId
+  accountId            String?       @db.ObjectId
+  issuedAt             DateTime
+  description          String?
+  notes                String?
+  status               AdvanceStatus @default(OPEN)
+  visibility           Visibility    @default(PROJECT_SHARED)
+  allowedUserIds       String[]      @db.ObjectId
+  /// Linked ledger ADVANCE transaction — same payment event, no duplicate silent rows
+  fundingTransactionId String?       @unique @db.ObjectId
+  createdById          String        @db.ObjectId
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  deletedAt            DateTime?
+  deletedById          String?       @db.ObjectId
+  deletionReason       String?
+
+  project            Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fundingTransaction FinancialTransaction? @relation("AdvanceFunding", fields: [fundingTransactionId], references: [id], onDelete: SetNull)
+  recipientUser      User?                 @relation("AdvanceRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  createdBy          User                  @relation("AdvanceCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  deletedBy          User?                 @relation("AdvanceDeleter", fields: [deletedById], references: [id], onDelete: SetNull)
+  settlements        AdvanceSettlement[]
+
+  @@unique([projectId, advanceNumber])
+  @@index([projectId, status])
+  @@index([projectId, issuedAt])
+  @@index([projectId, visibility, createdById])
+}
+
+model AdvanceSettlement {
+  id            String                @id @default(auto()) @map("_id") @db.ObjectId
+  projectId     String                @db.ObjectId
+  advanceId     String                @db.ObjectId
+  kind          AdvanceSettlementKind
+  /// Amount in minor units (paise)
+  amount        Int
+  currency      String                @default("INR")
+  settledAt     DateTime
+  description   String?
+  notes         String?
+  /// Linked SETTLEMENT or REFUND ledger row
+  transactionId String?               @unique @db.ObjectId
+  createdById   String                @db.ObjectId
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  deletedAt     DateTime?
+
+  project     Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  advance     Advance               @relation(fields: [advanceId], references: [id], onDelete: Cascade)
+  transaction FinancialTransaction? @relation("SettlementTransaction", fields: [transactionId], references: [id], onDelete: SetNull)
+  createdBy   User                  @relation("AdvanceSettlementCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([advanceId, deletedAt])
+  @@index([projectId, settledAt])
+  @@index([projectId, kind])
+}
+
+model PaymentRequest {
+  id                   String               @id @default(auto()) @map("_id") @db.ObjectId
+  projectId            String               @db.ObjectId
+  requestNumber        String
+  title                String
+  description          String?
+  /// Requested amount in minor units (paise)
+  amount               Int
+  /// Cumulative paid amount in minor units
+  paidAmount           Int                  @default(0)
+  currency             String               @default("INR")
+  categoryId           String?              @db.ObjectId
+  accountId            String?              @db.ObjectId
+  payeeName            String?
+  dueDate              DateTime?
+  status               PaymentRequestStatus @default(PENDING)
+  visibility           Visibility           @default(PROJECT_SHARED)
+  allowedUserIds       String[]             @db.ObjectId
+  reviewNote           String?
+  reviewedById         String?              @db.ObjectId
+  reviewedAt           DateTime?
+  /// Required before status can be PAID / PARTIALLY_PAID — no silent duplicate ledger
+  /// (not @unique: MongoDB unique indexes reject multiple nulls)
+  linkedTransactionId  String?              @db.ObjectId
+  paidAt               DateTime?
+  createdById          String               @db.ObjectId
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  deletedAt            DateTime?
+
+  project           Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category          Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  linkedTransaction FinancialTransaction? @relation("PaymentRequestTransaction", fields: [linkedTransactionId], references: [id], onDelete: SetNull)
+  createdBy         User                  @relation("PaymentRequestCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  reviewedBy        User?                 @relation("PaymentRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, requestNumber])
+  @@index([projectId, status])
+  @@index([projectId, createdAt])
+  @@index([projectId, visibility, createdById])
+  @@index([linkedTransactionId])
 }

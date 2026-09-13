@@ -69,6 +69,7 @@ export function defaultDirectionForType(type: TransactionType): TransactionDirec
     case "REFUND":
       return "INFLOW";
     case "TRANSFER":
+    case "SETTLEMENT":
       return "INTERNAL";
     default:
       return "OUTFLOW";
