@@ -19,7 +19,7 @@ export default async function HomePage() {
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
       <section className="max-w-2xl space-y-5">
         <Badge variant="secondary">Phase 3 · Projects</Badge>
-        <h1 className="font-heading text-4xl leading-tight tracking-tight sm:text-5xl">
+        <h1 className="text-display text-foreground">
           Kavin Illam
         </h1>
         <p className="text-muted-foreground text-lg leading-relaxed">
@@ -45,7 +45,9 @@ export default async function HomePage() {
               </Link>
               <Link
                 href="/login"
-                className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "lg" }),
+                )}
               >
                 Sign in
               </Link>
@@ -74,7 +76,8 @@ export default async function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">
-            Accepting an invite creates project membership with the assigned role.
+            Accepting an invite creates project membership with the assigned
+            role.
           </CardContent>
         </Card>
         <Card>

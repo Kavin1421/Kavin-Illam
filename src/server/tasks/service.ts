@@ -7,6 +7,7 @@ import type {
 
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
+import { actorLabel, recordAuditEvent } from "@/server/audit/record";
 import {
   canViewResource,
   requireProjectPermissionBySlug,
@@ -58,11 +59,17 @@ async function assertActiveMember(projectId: string, userId: string) {
     where: { projectId, userId, status: "ACTIVE" },
   });
   if (!member) {
-    throw new AppError("VALIDATION", "Assignee must be an active project member.");
+    throw new AppError(
+      "VALIDATION",
+      "Assignee must be an active project member.",
+    );
   }
 }
 
-async function assertMilestoneInProject(projectId: string, milestoneId: string) {
+async function assertMilestoneInProject(
+  projectId: string,
+  milestoneId: string,
+) {
   const milestone = await prisma.milestone.findFirst({
     where: { id: milestoneId, projectId },
   });
@@ -179,14 +186,24 @@ export async function createTask(slug: string, input: unknown) {
     actorId: ctx.user.id,
   });
 
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "CREATE",
+    entityType: "Task",
+    entityId: task.id,
+    metadata: { taskNumber: task.taskNumber, status: task.status },
+    activity: {
+      message: `${actorLabel(ctx.user)} created task ${task.taskNumber}: ${task.title}.`,
+      href: `/p/${slug}/tasks/${task.id}`,
+      visibility: task.visibility,
+    },
+  });
+
   return task;
 }
 
-export async function updateTask(
-  slug: string,
-  taskId: string,
-  input: unknown,
-) {
+export async function updateTask(slug: string, taskId: string, input: unknown) {
   const ctx = await requireProjectPermissionBySlug(slug, "TASK_EDIT");
   const parsed = updateTaskSchema.safeParse(input);
   if (!parsed.success) {
@@ -238,7 +255,8 @@ export async function updateTask(
         parsed.data.description !== undefined
           ? parsed.data.description || null
           : task.description,
-      priority: (parsed.data.priority as TaskPriority | undefined) ?? task.priority,
+      priority:
+        (parsed.data.priority as TaskPriority | undefined) ?? task.priority,
       status: nextStatus,
       assigneeId:
         parsed.data.assigneeId !== undefined
@@ -268,6 +286,24 @@ export async function updateTask(
     status: updated.status,
   });
 
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "UPDATE",
+    entityType: "Task",
+    entityId: task.id,
+    metadata: {
+      taskNumber: task.taskNumber,
+      fromStatus: task.status,
+      toStatus: updated.status,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} updated task ${task.taskNumber} (${updated.status}).`,
+      href: `/p/${slug}/tasks/${task.id}`,
+      visibility: task.visibility,
+    },
+  });
+
   return updated;
 }
 
@@ -276,7 +312,11 @@ export async function listMilestones(slug: string) {
 
   const rows = await prisma.milestone.findMany({
     where: { projectId: ctx.project.id },
-    orderBy: [{ sortOrder: "asc" }, { targetDate: "asc" }, { createdAt: "asc" }],
+    orderBy: [
+      { sortOrder: "asc" },
+      { targetDate: "asc" },
+      { createdAt: "asc" },
+    ],
     include: {
       createdBy: { select: { id: true, name: true, email: true } },
       _count: { select: { tasks: true } },

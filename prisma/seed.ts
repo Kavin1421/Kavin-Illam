@@ -375,9 +375,10 @@ async function main() {
         },
       });
 
-      const next = computeAdvanceOutstanding(engineeringAdvance.originalAmount, [
-        { kind: "SETTLEMENT", amount: settlementAmount },
-      ]);
+      const next = computeAdvanceOutstanding(
+        engineeringAdvance.originalAmount,
+        [{ kind: "SETTLEMENT", amount: settlementAmount }],
+      );
       await prisma.advance.update({
         where: { id: engineeringAdvance.id },
         data: {

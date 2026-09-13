@@ -3,6 +3,7 @@ import type { Visibility } from "@prisma/client";
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { paiseFromRupeeString } from "@/lib/money";
+import { actorLabel, recordAuditEvent } from "@/server/audit/record";
 import {
   canViewResource,
   includeInSharedProjectTotals,
@@ -210,7 +211,9 @@ export async function upsertProjectBudget(slug: string, input: unknown) {
   });
 
   if (existing) {
-    await prisma.budgetCategory.deleteMany({ where: { budgetId: existing.id } });
+    await prisma.budgetCategory.deleteMany({
+      where: { budgetId: existing.id },
+    });
     const budget = await prisma.budget.update({
       where: { id: existing.id },
       data: {
@@ -243,6 +246,20 @@ export async function upsertProjectBudget(slug: string, input: unknown) {
       budgetId: budget.id,
       actorId: ctx.user.id,
     });
+
+    await recordAuditEvent({
+      projectId: ctx.project.id,
+      actorId: ctx.user.id,
+      action: "UPDATE",
+      entityType: "Budget",
+      entityId: budget.id,
+      metadata: { lineCount: lines.length, totalPlanned },
+      activity: {
+        message: `${actorLabel(ctx.user)} updated the project budget.`,
+        href: `/p/${slug}/budget`,
+      },
+    });
+
     return budget;
   }
 
@@ -279,6 +296,19 @@ export async function upsertProjectBudget(slug: string, input: unknown) {
     projectId: ctx.project.id,
     budgetId: budget.id,
     actorId: ctx.user.id,
+  });
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "CREATE",
+    entityType: "Budget",
+    entityId: budget.id,
+    metadata: { lineCount: lines.length, totalPlanned },
+    activity: {
+      message: `${actorLabel(ctx.user)} created the project budget.`,
+      href: `/p/${slug}/budget`,
+    },
   });
 
   return budget;

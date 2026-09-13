@@ -22,7 +22,9 @@ export type FinanceTotals = {
 
 const PAID_STATUSES = new Set(["PAID", "PARTIALLY_PAID", "APPROVED"]);
 
-export function sumAuthorizedFinanceTotals(rows: readonly LedgerRow[]): FinanceTotals {
+export function sumAuthorizedFinanceTotals(
+  rows: readonly LedgerRow[],
+): FinanceTotals {
   let totalIncome = 0;
   let totalExpenses = 0;
   let totalAdvances = 0;
@@ -33,7 +35,11 @@ export function sumAuthorizedFinanceTotals(rows: readonly LedgerRow[]): FinanceT
       throw new Error("Transaction amounts must be integer minor units.");
     }
     if (row.status === "CANCELLED" || row.status === "REJECTED") continue;
-    if (!PAID_STATUSES.has(row.status) && row.status !== "DRAFT" && row.status !== "PENDING") {
+    if (
+      !PAID_STATUSES.has(row.status) &&
+      row.status !== "DRAFT" &&
+      row.status !== "PENDING"
+    ) {
       // still count PAID-like; DRAFT/PENDING excluded from cash totals
     }
     if (row.status === "DRAFT" || row.status === "PENDING") continue;
@@ -41,7 +47,12 @@ export function sumAuthorizedFinanceTotals(rows: readonly LedgerRow[]): FinanceT
     if (row.type === "INCOME" || row.direction === "INFLOW") {
       totalIncome += row.amount;
     }
-    if (row.type === "EXPENSE" || (row.direction === "OUTFLOW" && row.type !== "ADVANCE" && row.type !== "TRANSFER")) {
+    if (
+      row.type === "EXPENSE" ||
+      (row.direction === "OUTFLOW" &&
+        row.type !== "ADVANCE" &&
+        row.type !== "TRANSFER")
+    ) {
       totalExpenses += row.amount;
     }
     if (row.type === "ADVANCE") {
@@ -63,7 +74,9 @@ export function sumAuthorizedFinanceTotals(rows: readonly LedgerRow[]): FinanceT
   };
 }
 
-export function defaultDirectionForType(type: TransactionType): TransactionDirection {
+export function defaultDirectionForType(
+  type: TransactionType,
+): TransactionDirection {
   switch (type) {
     case "INCOME":
     case "REFUND":

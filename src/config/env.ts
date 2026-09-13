@@ -18,9 +18,7 @@ const envSchema = z.object({
         value.startsWith("mongodb://") || value.startsWith("mongodb+srv://"),
       "DATABASE_URL must be a MongoDB connection string",
     ),
-  AUTH_SECRET: z
-    .string()
-    .min(32, "AUTH_SECRET must be at least 32 characters"),
+  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
   AUTH_URL: z.string().url().optional(),
   NEXTAUTH_URL: z.string().url().optional(),
   CLOUDINARY_CLOUD_NAME: z.string().optional(),

@@ -19,7 +19,9 @@ export default function ForgotPasswordPage() {
     <div className="mx-auto flex w-full max-w-md flex-col justify-center px-4 py-16 sm:px-6">
       <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-2xl">Forgot password</CardTitle>
+          <CardTitle className="font-heading text-2xl">
+            Forgot password
+          </CardTitle>
           <CardDescription>
             We will email a reset link if an account exists for that address.
           </CardDescription>

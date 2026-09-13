@@ -5,15 +5,15 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  loginAction,
-  type ActionState,
-} from "@/server/auth/actions";
+import { loginAction, type ActionState } from "@/server/auth/actions";
 
 const initialState: ActionState = {};
 
 export function LoginForm() {
-  const [state, formAction, pending] = useActionState(loginAction, initialState);
+  const [state, formAction, pending] = useActionState(
+    loginAction,
+    initialState,
+  );
 
   return (
     <form action={formAction} className="space-y-4">

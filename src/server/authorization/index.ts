@@ -11,9 +11,7 @@ import {
   loadActiveProjectById,
   loadActiveProjectBySlug,
 } from "./access";
-import {
-  type Permission,
-} from "./permissions";
+import { type Permission } from "./permissions";
 import type { VisibleResource } from "./visibility";
 
 export type ProjectContext = {

@@ -1,0 +1,45 @@
+# dependencies & package managers
+node_modules
+.pnpm-store
+.pnp
+.yarn
+
+# next / build
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# git / ide
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+*.md
+!README.md
+
+# env & secrets — never bake into images
+.env
+.env.*
+!.env.example
+
+# docker (avoid recursive context noise)
+docker/nginx/certs/*
+!docker/nginx/certs/.gitkeep
+
+# tests / tooling not needed at runtime
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+vitest.config.*
+vitest.setup.ts
+eslint.config.*
+prettier.config.*
+
+# misc
+.DS_Store
+*.pem
+.vercel
+AGENTS.md

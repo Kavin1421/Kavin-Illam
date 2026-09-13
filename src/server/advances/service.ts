@@ -6,7 +6,8 @@ import type {
 
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
-import { paiseFromRupeeString } from "@/lib/money";
+import { formatInrFromPaise, paiseFromRupeeString } from "@/lib/money";
+import { actorLabel, recordAuditEvent } from "@/server/audit/record";
 import {
   assertCanViewProjectResource,
   canViewResource,
@@ -52,10 +53,7 @@ async function validateCategory(projectId: string, categoryId?: string) {
   const category = await prisma.category.findFirst({
     where: {
       id: categoryId,
-      OR: [
-        { isSystem: true, projectId: null },
-        { projectId },
-      ],
+      OR: [{ isSystem: true, projectId: null }, { projectId }],
     },
   });
   if (!category) {
@@ -73,12 +71,18 @@ async function validateAccount(projectId: string, accountId?: string) {
   }
 }
 
-function withOutstanding<T extends {
-  originalAmount: number;
-  status: string;
-  deletedAt: Date | null;
-  settlements: { kind: AdvanceSettlementKind; amount: number; deletedAt: Date | null }[];
-}>(advance: T) {
+function withOutstanding<
+  T extends {
+    originalAmount: number;
+    status: string;
+    deletedAt: Date | null;
+    settlements: {
+      kind: AdvanceSettlementKind;
+      amount: number;
+      deletedAt: Date | null;
+    }[];
+  },
+>(advance: T) {
   const breakdown = computeAdvanceOutstanding(
     advance.originalAmount,
     advance.settlements,
@@ -294,6 +298,24 @@ export async function createAdvance(slug: string, input: unknown) {
     amount,
   });
 
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "CREATE",
+    entityType: "Advance",
+    entityId: result.id,
+    metadata: {
+      advanceNumber: result.advanceNumber,
+      amount,
+      visibility: result.visibility,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} issued ${formatInrFromPaise(amount)} advance (${result.advanceNumber}).`,
+      href: `/p/${slug}/advances/${result.id}`,
+      visibility: result.visibility,
+    },
+  });
+
   return result;
 }
 
@@ -435,6 +457,25 @@ export async function settleAdvance(
     actorId: ctx.user.id,
   });
 
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "SETTLEMENT",
+    entityType: "AdvanceSettlement",
+    entityId: settlement.id,
+    metadata: {
+      advanceId: advance.id,
+      advanceNumber: advance.advanceNumber,
+      kind,
+      amount,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} recorded ${formatInrFromPaise(amount)} ${kind.toLowerCase()} on ${advance.advanceNumber}.`,
+      href: `/p/${slug}/advances/${advance.id}`,
+      visibility: advance.visibility,
+    },
+  });
+
   return settlement;
 }
 
@@ -470,6 +511,23 @@ export async function softDeleteAdvance(
     projectId: ctx.project.id,
     advanceId: advance.id,
     actorId: ctx.user.id,
+  });
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "DELETE",
+    entityType: "Advance",
+    entityId: advance.id,
+    metadata: {
+      reason: parsed.data.reason,
+      advanceNumber: advance.advanceNumber,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} cancelled advance ${advance.advanceNumber}.`,
+      href: `/p/${slug}/advances/${advance.id}`,
+      visibility: advance.visibility,
+    },
   });
 
   return updated;

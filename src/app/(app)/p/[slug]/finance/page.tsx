@@ -146,9 +146,7 @@ export default async function FinancePage({
                       {tx.transactionNumber}
                     </td>
                     <td className="px-3 py-2">{tx.type}</td>
-                    <td className="px-3 py-2">
-                      {tx.category?.name ?? "—"}
-                    </td>
+                    <td className="px-3 py-2">{tx.category?.name ?? "—"}</td>
                     <td className="px-3 py-2 font-medium">
                       {formatInrFromPaise(tx.amount)}
                     </td>

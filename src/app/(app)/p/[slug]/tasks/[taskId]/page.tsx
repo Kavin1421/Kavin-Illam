@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/dates";
+import { withNotFound } from "@/lib/with-not-found";
 import { roleHasPermission } from "@/server/authorization";
 import { listProjectMembers } from "@/server/projects/members";
 import { getTask, listMilestones } from "@/server/tasks/service";
@@ -26,7 +27,7 @@ export default async function TaskDetailPage({
 }) {
   const { slug, taskId } = await params;
   const [{ role, task }, { members }, { milestones }] = await Promise.all([
-    getTask(slug, taskId),
+    withNotFound(() => getTask(slug, taskId)),
     listProjectMembers(slug),
     listMilestones(slug),
   ]);
@@ -55,7 +56,8 @@ export default async function TaskDetailPage({
         </CardHeader>
         <CardContent className="text-muted-foreground space-y-2 text-sm">
           <p>
-            Assignee: {task.assignee?.name ?? task.assignee?.email ?? "Unassigned"}
+            Assignee:{" "}
+            {task.assignee?.name ?? task.assignee?.email ?? "Unassigned"}
           </p>
           <p>
             Milestone:{" "}

@@ -2,7 +2,9 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // native = local/dev; debian = Node 24 bookworm Docker image
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -174,6 +176,8 @@ model User {
   milestonesCreated Milestone[] @relation("MilestoneCreator")
   tasksCreated Task[] @relation("TaskCreator")
   tasksAssigned Task[] @relation("TaskAssignee")
+  auditLogs AuditLog[] @relation("AuditActor")
+  activities Activity[] @relation("ActivityActor")
 }
 
 model Account {
@@ -244,6 +248,8 @@ model Project {
   budgets Budget[]
   milestones Milestone[]
   tasks Task[]
+  auditLogs AuditLog[]
+  activities Activity[]
 
   @@index([ownerId, status])
   @@index([status, updatedAt])
@@ -743,5 +749,69 @@ model Task {
   @@index([projectId, assigneeId])
   @@index([projectId, milestoneId])
   @@index([projectId, dueDate])
+  @@index([projectId, visibility, createdById])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  REQUEST_CHANGES
+  UPLOAD
+  DOWNLOAD
+  VIEW
+  INVITE
+  REMOVE_MEMBER
+  CHANGE_PERMISSION
+  PAYMENT
+  SETTLEMENT
+  RESTORE_VERSION
+  ARCHIVE
+  EXPORT
+}
+
+/// Security/finance-sensitive history. Never store secrets in metadata.
+model AuditLog {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  projectId  String      @db.ObjectId
+  actorId    String      @db.ObjectId
+  action     AuditAction
+  entityType String
+  entityId   String
+  ip         String?
+  userAgent  String?
+  /// Safe diff / context only — redacted of secrets
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actor   User    @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@index([projectId, entityType, entityId])
+  @@index([projectId, action, createdAt])
+}
+
+/// Human-readable project feed. Visibility mirrors the related resource.
+model Activity {
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  projectId      String     @db.ObjectId
+  actorId        String     @db.ObjectId
+  message        String
+  entityType     String?
+  entityId       String?
+  href           String?
+  visibility     Visibility @default(PROJECT_SHARED)
+  /// Used with visibility checks (typically same as actorId)
+  createdById    String     @db.ObjectId
+  allowedUserIds String[]   @db.ObjectId
+  createdAt      DateTime   @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actor   User    @relation("ActivityActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
   @@index([projectId, visibility, createdById])
 }

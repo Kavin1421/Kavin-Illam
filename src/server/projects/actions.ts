@@ -4,10 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AppError, toUserMessage } from "@/lib/errors";
 import { createInvitation } from "@/server/invitations/service";
-import {
-  removeMember,
-  updateMemberRole,
-} from "@/server/projects/members";
+import { removeMember, updateMemberRole } from "@/server/projects/members";
 import {
   archiveProject,
   createProject,

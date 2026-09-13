@@ -30,10 +30,8 @@ function Metric({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-muted-foreground text-xs tracking-wide uppercase">
-        {label}
-      </p>
-      <p className="font-heading text-2xl tracking-tight">{value}</p>
+      <p className="text-meta">{label}</p>
+      <p className="text-metric text-foreground">{value}</p>
       {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
     </div>
   );
@@ -59,8 +57,8 @@ export default async function ProjectDashboardPage({
               {project.projectType.replaceAll("_", " ")}
             </Badge>
           </div>
-          <h2 className="font-heading text-3xl tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground max-w-2xl text-sm">
+          <h2 className="text-page-title text-foreground">Dashboard</h2>
+          <p className="text-muted-foreground text-body max-w-2xl">
             Shared project figures only — private expenses never appear in these
             totals. Remaining is shown vs paid and vs committed separately.
           </p>
@@ -85,6 +83,12 @@ export default async function ProjectDashboardPage({
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
           >
             Budget
+          </Link>
+          <Link
+            href={`/p/${slug}/reports`}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            Reports
           </Link>
         </div>
       </div>
@@ -137,7 +141,10 @@ export default async function ProjectDashboardPage({
           ) : (
             <div className="space-y-4">
               {data.topSpend.map((row) => (
-                <div key={row.categoryId ?? row.categoryName} className="space-y-1.5">
+                <div
+                  key={row.categoryId ?? row.categoryName}
+                  className="space-y-1.5"
+                >
                   <div className="flex items-baseline justify-between gap-2 text-sm">
                     <span className="font-medium">{row.categoryName}</span>
                     <span className="tabular-nums">
@@ -171,7 +178,9 @@ export default async function ProjectDashboardPage({
               </p>
             </div>
             <div className="border-border space-y-1 border-t pt-4">
-              <p className="text-muted-foreground text-xs uppercase">Net cash</p>
+              <p className="text-muted-foreground text-xs uppercase">
+                Net cash
+              </p>
               <p className="text-lg font-medium tabular-nums">
                 {formatInrFromPaise(summary.netCashFlow)}
               </p>
@@ -181,7 +190,9 @@ export default async function ProjectDashboardPage({
 
         <div className="space-y-4 lg:col-span-2">
           <div>
-            <h3 className="font-heading text-xl tracking-tight">Needs attention</h3>
+            <h3 className="font-heading text-xl tracking-tight">
+              Needs attention
+            </h3>
             <p className="text-muted-foreground text-sm">
               Engineer requests, overdue work, expiries
             </p>
@@ -335,7 +346,9 @@ export default async function ProjectDashboardPage({
             </Link>
           </div>
           {data.upcomingMilestones.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No upcoming milestones.</p>
+            <p className="text-muted-foreground text-sm">
+              No upcoming milestones.
+            </p>
           ) : (
             <div className="space-y-2">
               {data.upcomingMilestones.map((ms) => (

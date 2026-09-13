@@ -53,7 +53,11 @@ export default async function ProjectsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {projects.map((project) => (
-            <Link key={project.id} href={`/p/${project.slug}`} className="block">
+            <Link
+              key={project.id}
+              href={`/p/${project.slug}`}
+              className="block"
+            >
               <Card className="hover:border-foreground/20 transition-colors">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
@@ -63,7 +67,8 @@ export default async function ProjectsPage() {
                     <Badge variant="secondary">{project.role}</Badge>
                   </div>
                   <CardDescription>
-                    {project.projectType.replaceAll("_", " ")} · {project.status}
+                    {project.projectType.replaceAll("_", " ")} ·{" "}
+                    {project.status}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-muted-foreground text-sm">

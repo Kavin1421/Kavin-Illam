@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { projectCodeFromSlug, slugify } from "@/lib/slug";
-import {
-  roleHasPermission,
-} from "@/server/authorization/permissions";
+import { roleHasPermission } from "@/server/authorization/permissions";
 
 describe("slugify", () => {
   it("creates URL-safe slugs", () => {

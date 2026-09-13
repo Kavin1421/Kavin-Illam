@@ -2,6 +2,7 @@ import type { DocumentCategory, Visibility } from "@prisma/client";
 
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
+import { actorLabel, recordAuditEvent } from "@/server/audit/record";
 import {
   assertCanViewProjectResource,
   canViewResource,
@@ -10,6 +11,7 @@ import {
 } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
 import { allocateDocumentNumber } from "@/server/finance/numbering";
+import { assertRateLimit, rateLimitKey } from "@/server/auth/rate-limit";
 import {
   createDocumentSchema,
   addDocumentVersionSchema,
@@ -124,12 +126,27 @@ export async function getDocument(slug: string, documentId: string) {
     project: ctx.project,
     role: ctx.role,
     document,
-    canPreview: canPreviewInline(document.mimeType, document.cloudinaryResourceType),
+    canPreview: canPreviewInline(
+      document.mimeType,
+      document.cloudinaryResourceType,
+    ),
   };
 }
 
 export async function prepareDocumentUpload(slug: string, input: unknown) {
   const ctx = await requireProjectPermissionBySlug(slug, "DOCUMENT_UPLOAD");
+  const limit = assertRateLimit(
+    rateLimitKey("doc-sign", `${ctx.user.id}:${ctx.project.id}`),
+    30,
+    15 * 60 * 1000,
+  );
+  if (!limit.ok) {
+    throw new AppError(
+      "RATE_LIMITED",
+      `Too many upload attempts. Try again in ${limit.retryAfterSec}s.`,
+    );
+  }
+
   const parsed = signUploadSchema.safeParse(input);
   if (!parsed.success) {
     throw new AppError("VALIDATION", "Invalid upload request.");
@@ -254,6 +271,24 @@ export async function createDocument(slug: string, input: unknown) {
     actorId: ctx.user.id,
   });
 
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "UPLOAD",
+    entityType: "Document",
+    entityId: document.id,
+    metadata: {
+      documentNumber: document.documentNumber,
+      category: document.category,
+      visibility: document.visibility,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} uploaded ${document.title} (${document.documentNumber}).`,
+      href: `/p/${slug}/documents/${document.id}`,
+      visibility: document.visibility,
+    },
+  });
+
   return document;
 }
 
@@ -343,6 +378,20 @@ export async function addDocumentVersion(slug: string, input: unknown) {
     actorId: ctx.user.id,
   });
 
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "UPLOAD",
+    entityType: "Document",
+    entityId: document.id,
+    metadata: { version: nextVersion, documentNumber: document.documentNumber },
+    activity: {
+      message: `${actorLabel(ctx.user)} uploaded version ${nextVersion} of ${document.title}.`,
+      href: `/p/${slug}/documents/${document.id}`,
+      visibility: document.visibility,
+    },
+  });
+
   return updated;
 }
 
@@ -430,6 +479,23 @@ export async function restoreDocumentVersion(
     actorId: ctx.user.id,
   });
 
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "RESTORE_VERSION",
+    entityType: "Document",
+    entityId: document.id,
+    metadata: {
+      fromVersion: version.versionNumber,
+      toVersion: nextVersion,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} restored ${document.title} to version ${version.versionNumber}.`,
+      href: `/p/${slug}/documents/${document.id}`,
+      visibility: document.visibility,
+    },
+  });
+
   return updated;
 }
 
@@ -492,6 +558,20 @@ export async function issueDocumentUrl(
     download: Boolean(opts?.download),
   });
 
+  if (opts?.download) {
+    await recordAuditEvent({
+      projectId: ctx.project.id,
+      actorId: ctx.user.id,
+      action: "DOWNLOAD",
+      entityType: "Document",
+      entityId: document.id,
+      metadata: {
+        documentNumber: document.documentNumber,
+        versionId: opts.versionId ?? null,
+      },
+    });
+  }
+
   return { ...issued, fileName };
 }
 
@@ -505,8 +585,24 @@ export async function archiveDocument(slug: string, documentId: string) {
     throw new AppError("NOT_FOUND", "Document was not found.");
   }
 
-  return prisma.document.update({
+  const updated = await prisma.document.update({
     where: { id: document.id },
     data: { status: "ARCHIVED", archivedAt: new Date() },
   });
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "ARCHIVE",
+    entityType: "Document",
+    entityId: document.id,
+    metadata: { documentNumber: document.documentNumber },
+    activity: {
+      message: `${actorLabel(ctx.user)} archived ${document.title}.`,
+      href: `/p/${slug}/documents/${document.id}`,
+      visibility: document.visibility,
+    },
+  });
+
+  return updated;
 }

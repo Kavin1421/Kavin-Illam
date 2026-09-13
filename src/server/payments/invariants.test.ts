@@ -66,9 +66,9 @@ describe("payment request invariants", () => {
     expect(() =>
       assertValidReviewTransition("PENDING", "APPROVED"),
     ).not.toThrow();
-    expect(() =>
-      assertValidReviewTransition("APPROVED", "REJECTED"),
-    ).toThrow(/cannot reject/i);
+    expect(() => assertValidReviewTransition("APPROVED", "REJECTED")).toThrow(
+      /cannot reject/i,
+    );
   });
 
   it("allows pay only from APPROVED", () => {

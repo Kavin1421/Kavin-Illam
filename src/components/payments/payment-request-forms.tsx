@@ -31,7 +31,12 @@ export function CreatePaymentRequestForm({
     <form action={formAction} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
-        <Input id="title" name="title" required placeholder="Steel for foundation" />
+        <Input
+          id="title"
+          name="title"
+          required
+          placeholder="Steel for foundation"
+        />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">

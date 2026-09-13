@@ -15,7 +15,11 @@ export async function registerUser(input: unknown) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const limit = assertRateLimit(rateLimitKey("register", email), 5, 15 * 60 * 1000);
+  const limit = assertRateLimit(
+    rateLimitKey("register", email),
+    5,
+    15 * 60 * 1000,
+  );
   if (!limit.ok) {
     throw new AppError(
       "VALIDATION",

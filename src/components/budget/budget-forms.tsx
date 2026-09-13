@@ -167,7 +167,9 @@ export function BudgetEditorForm({
               <Label>Label</Label>
               <Input
                 value={line.label}
-                onChange={(e) => updateLine(line.key, { label: e.target.value })}
+                onChange={(e) =>
+                  updateLine(line.key, { label: e.target.value })
+                }
                 required
               />
             </div>

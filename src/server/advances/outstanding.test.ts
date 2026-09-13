@@ -20,6 +20,19 @@ describe("advance outstanding", () => {
     expect(result.outstanding).toBe(35_000_000);
   });
 
+  it("matches acceptance scenario: ₹5,00,000 − ₹1,00,000 = ₹4,00,000", () => {
+    const result = computeAdvanceOutstanding(50_000_000, [
+      { kind: "SETTLEMENT", amount: 10_000_000 },
+    ]);
+    expect(result.outstanding).toBe(40_000_000);
+    expect(
+      deriveAdvanceStatus({
+        originalAmount: result.originalAmount,
+        outstanding: result.outstanding,
+      }),
+    ).toBe("PARTIALLY_SETTLED");
+  });
+
   it("rejects settlements that exceed outstanding", () => {
     expect(() => assertSettlementWithinOutstanding(100, 101)).toThrow(
       /exceed outstanding/i,
@@ -28,15 +41,15 @@ describe("advance outstanding", () => {
   });
 
   it("derives advance status from outstanding", () => {
-    expect(
-      deriveAdvanceStatus({ originalAmount: 100, outstanding: 100 }),
-    ).toBe("OPEN");
-    expect(
-      deriveAdvanceStatus({ originalAmount: 100, outstanding: 40 }),
-    ).toBe("PARTIALLY_SETTLED");
-    expect(
-      deriveAdvanceStatus({ originalAmount: 100, outstanding: 0 }),
-    ).toBe("SETTLED");
+    expect(deriveAdvanceStatus({ originalAmount: 100, outstanding: 100 })).toBe(
+      "OPEN",
+    );
+    expect(deriveAdvanceStatus({ originalAmount: 100, outstanding: 40 })).toBe(
+      "PARTIALLY_SETTLED",
+    );
+    expect(deriveAdvanceStatus({ originalAmount: 100, outstanding: 0 })).toBe(
+      "SETTLED",
+    );
     expect(
       deriveAdvanceStatus({
         cancelled: true,

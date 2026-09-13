@@ -4,24 +4,33 @@ Private, multi-project construction management, finance, and document portal.
 
 ## Status
 
-**Phase 11 — Premium dashboard: complete**
+**Phase 15 — Final QA / acceptance: complete**
 
-Owner-ready project dashboard: spent, category breakdown, budget remaining (vs paid / vs committed), outstanding advances, pending requests, overdue tasks, upcoming milestones, and recent activity — all visibility-filtered on the server.
+All planned phases (0–15) are done. See [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) for the acceptance matrix and [`docs/PRODUCTION.md`](docs/PRODUCTION.md) for self-hosting.
 
-## Try the dashboard
+## Local development
 
 ```bash
+pnpm install
 pnpm db:push
-pnpm db:seed
+SEED_PASSWORD='YourSecurePass123' pnpm db:seed
 pnpm dev
 ```
 
-Sign in as Kevin → **Kavin Illam** → **Dashboard**.
+Seeded: `kevin@kavinillam.local` (OWNER), `engineer@kavinillam.local` (ENGINEER), project `kavin-illam`.
+
+## Production (self-host)
+
+```bash
+docker compose up --build -d
+curl -fsS http://localhost:8080/api/health
+```
+
+**Never** run `pnpm db:seed` against production.
 
 ## Phase map
 
-| Phase | Status |
-|-------|--------|
-| 0–10 | Complete |
-| 11 Premium dashboard | Complete |
-| 12 Reports + CSV | Next |
+| Phase                    | Status   |
+| ------------------------ | -------- |
+| 0–14                     | Complete |
+| 15 Final QA / acceptance | Complete |

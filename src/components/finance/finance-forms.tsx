@@ -124,7 +124,11 @@ export function CreateTransactionForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="referenceNumber">Reference</Label>
-          <Input id="referenceNumber" name="referenceNumber" placeholder="UTR..." />
+          <Input
+            id="referenceNumber"
+            name="referenceNumber"
+            placeholder="UTR..."
+          />
         </div>
       </div>
       <div className="space-y-2">

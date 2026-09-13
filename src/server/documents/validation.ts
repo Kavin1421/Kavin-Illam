@@ -26,7 +26,10 @@ const ALLOWED_BY_EXT: Record<
     ],
     resourceType: "raw",
   },
-  csv: { mimePrefixes: ["text/csv", "application/csv", "text/plain"], resourceType: "raw" },
+  csv: {
+    mimePrefixes: ["text/csv", "application/csv", "text/plain"],
+    resourceType: "raw",
+  },
   txt: { mimePrefixes: ["text/plain"], resourceType: "raw" },
 };
 
@@ -109,7 +112,10 @@ export function validateUploadFile(input: {
   };
 }
 
-export function canPreviewInline(mimeType: string, resourceType: string): boolean {
+export function canPreviewInline(
+  mimeType: string,
+  resourceType: string,
+): boolean {
   if (resourceType === "image") return true;
   return mimeType === "application/pdf" || mimeType.startsWith("image/");
 }

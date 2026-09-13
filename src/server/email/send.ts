@@ -25,7 +25,9 @@ export function absoluteUrl(path: string): string {
 }
 
 function smtpConfigured(): boolean {
-  return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS && env.SMTP_FROM);
+  return Boolean(
+    env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS && env.SMTP_FROM,
+  );
 }
 
 function resendConfigured(): boolean {
@@ -83,17 +85,25 @@ async function sendViaResend(message: EmailMessage): Promise<void> {
  * Sends email when SMTP or Resend is configured.
  * In development without email config, logs a redacted stub (no secrets).
  */
-export async function sendEmail(message: EmailMessage): Promise<{ delivered: boolean }> {
+export async function sendEmail(
+  message: EmailMessage,
+): Promise<{ delivered: boolean }> {
   try {
     if (smtpConfigured()) {
       await sendViaSmtp(message);
-      logger.info("Email sent via SMTP", { to: message.to, subject: message.subject });
+      logger.info("Email sent via SMTP", {
+        to: message.to,
+        subject: message.subject,
+      });
       return { delivered: true };
     }
 
     if (resendConfigured()) {
       await sendViaResend(message);
-      logger.info("Email sent via Resend", { to: message.to, subject: message.subject });
+      logger.info("Email sent via Resend", {
+        to: message.to,
+        subject: message.subject,
+      });
       return { delivered: true };
     }
 

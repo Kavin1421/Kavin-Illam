@@ -2,10 +2,7 @@ import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { absoluteUrl, sendEmail } from "@/server/email/send";
 import { prisma } from "@/server/db/prisma";
-import {
-  forgotPasswordSchema,
-  resetPasswordSchema,
-} from "@/validators/auth";
+import { forgotPasswordSchema, resetPasswordSchema } from "@/validators/auth";
 
 import { hashPassword } from "./password";
 import { assertRateLimit, rateLimitKey } from "./rate-limit";
@@ -84,7 +81,9 @@ export async function resetPasswordWithToken(input: unknown) {
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { email: matched.email } });
+  const user = await prisma.user.findUnique({
+    where: { email: matched.email },
+  });
   if (!user || user.status === "DISABLED") {
     throw new AppError(
       "VALIDATION",

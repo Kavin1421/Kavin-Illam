@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/dates";
+import { withNotFound } from "@/lib/with-not-found";
 import { roleHasPermission } from "@/server/authorization";
 import { getMilestone } from "@/server/tasks/service";
 
@@ -24,7 +25,9 @@ export default async function MilestoneDetailPage({
   params: Promise<{ slug: string; milestoneId: string }>;
 }) {
   const { slug, milestoneId } = await params;
-  const { role, milestone } = await getMilestone(slug, milestoneId);
+  const { role, milestone } = await withNotFound(() =>
+    getMilestone(slug, milestoneId),
+  );
   const canEdit = roleHasPermission(role, "TASK_EDIT");
 
   return (
@@ -71,7 +74,9 @@ export default async function MilestoneDetailPage({
         </CardHeader>
         <CardContent className="space-y-2">
           {milestone.tasks.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No tasks linked yet.</p>
+            <p className="text-muted-foreground text-sm">
+              No tasks linked yet.
+            </p>
           ) : (
             milestone.tasks.map((task) => (
               <Link

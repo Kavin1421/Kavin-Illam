@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
+import { withNotFound } from "@/lib/with-not-found";
 import { roleHasPermission } from "@/server/authorization";
 import { listAccounts } from "@/server/finance/accounts";
 import { getPaymentRequest } from "@/server/payments/service";
@@ -39,7 +40,7 @@ export default async function PaymentRequestDetailPage({
 }) {
   const { slug, requestId } = await params;
   const [{ role, request }, accounts] = await Promise.all([
-    getPaymentRequest(slug, requestId),
+    withNotFound(() => getPaymentRequest(slug, requestId)),
     listAccounts(slug),
   ]);
 
@@ -64,7 +65,9 @@ export default async function PaymentRequestDetailPage({
         <p className="text-muted-foreground font-mono text-xs">
           {request.requestNumber}
         </p>
-        <h2 className="font-heading text-3xl tracking-tight">{request.title}</h2>
+        <h2 className="font-heading text-3xl tracking-tight">
+          {request.title}
+        </h2>
         <p className="text-2xl font-medium tracking-tight">
           {formatInrFromPaise(request.amount)}
         </p>

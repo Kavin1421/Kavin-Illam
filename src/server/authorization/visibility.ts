@@ -23,7 +23,14 @@ export type VisibleResource = {
 export type VisibilityViewer = {
   userId: string;
   /** Project role of the viewer within the resource's project */
-  role: "OWNER" | "ADMIN" | "ENGINEER" | "CONTRACTOR" | "ARCHITECT" | "ACCOUNTANT" | "VIEWER";
+  role:
+    | "OWNER"
+    | "ADMIN"
+    | "ENGINEER"
+    | "CONTRACTOR"
+    | "ARCHITECT"
+    | "ACCOUNTANT"
+    | "VIEWER";
 };
 
 /**
@@ -89,7 +96,9 @@ export function canEditResource(
  * RESTRICTED rows are excluded from shared aggregates unless the viewer is allowed
  * (handled by filtering the authorized dataset first).
  */
-export function includeInSharedProjectTotals(resource: VisibleResource): boolean {
+export function includeInSharedProjectTotals(
+  resource: VisibleResource,
+): boolean {
   if (resource.deletedAt) return false;
   return resource.visibility === "PROJECT_SHARED";
 }

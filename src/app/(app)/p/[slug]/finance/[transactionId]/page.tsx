@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
+import { withNotFound } from "@/lib/with-not-found";
 import { roleHasPermission } from "@/server/authorization";
 import { softDeleteTransactionAction } from "@/server/finance/actions";
 import { getTransaction } from "@/server/finance/transactions";
@@ -26,7 +27,9 @@ export default async function TransactionDetailPage({
   params: Promise<{ slug: string; transactionId: string }>;
 }) {
   const { slug, transactionId } = await params;
-  const { role, transaction } = await getTransaction(slug, transactionId);
+  const { role, transaction } = await withNotFound(() =>
+    getTransaction(slug, transactionId),
+  );
   const canDelete = roleHasPermission(role, "FINANCE_DELETE");
 
   return (
@@ -60,8 +63,9 @@ export default async function TransactionDetailPage({
           <p>Method: {transaction.paymentMethod ?? "—"}</p>
           <p>Reference: {transaction.referenceNumber ?? "—"}</p>
           <p>
-            Created by: {transaction.createdBy.name ?? transaction.createdBy.email}{" "}
-            · {formatDateTime(transaction.createdAt)}
+            Created by:{" "}
+            {transaction.createdBy.name ?? transaction.createdBy.email} ·{" "}
+            {formatDateTime(transaction.createdAt)}
           </p>
           {transaction.notes ? <p>Notes: {transaction.notes}</p> : null}
         </CardContent>
@@ -84,7 +88,11 @@ export default async function TransactionDetailPage({
           </CardHeader>
           <CardContent>
             <form
-              action={softDeleteTransactionAction.bind(null, slug, transactionId)}
+              action={softDeleteTransactionAction.bind(
+                null,
+                slug,
+                transactionId,
+              )}
               className="space-y-3"
             >
               <input

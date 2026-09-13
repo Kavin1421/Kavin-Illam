@@ -8,7 +8,9 @@ import {
 
 describe("task status transitions", () => {
   it("allows TODO → IN_PROGRESS → DONE", () => {
-    expect(() => assertTaskStatusTransition("TODO", "IN_PROGRESS")).not.toThrow();
+    expect(() =>
+      assertTaskStatusTransition("TODO", "IN_PROGRESS"),
+    ).not.toThrow();
     expect(() =>
       assertTaskStatusTransition("IN_PROGRESS", "DONE"),
     ).not.toThrow();

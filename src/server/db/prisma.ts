@@ -11,10 +11,7 @@ function createPrismaClient() {
   void env.DATABASE_URL;
 
   return new PrismaClient({
-    log:
-      env.NODE_ENV === "development"
-        ? ["error", "warn"]
-        : ["error"],
+    log: env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 }
 

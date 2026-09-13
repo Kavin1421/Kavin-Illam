@@ -1,7 +1,7 @@
 # Kavin Illam — Architecture
 
 **Product:** Multi-project construction management, finance, and document portal  
-**Status:** Phase 11 premium dashboard complete. Phase 12 (reports + CSV) is next.  
+**Status:** Phase 15 final QA / acceptance complete. All planned phases (0–15) delivered.  
 **Audience:** Homeowner + engineer initially; designed for additional collaborators later.
 
 This document is the source of truth for stack, module layout, data strategy, authorization, finance rules, document security, and deployment. Implementation must follow it phase by phase.
@@ -38,22 +38,22 @@ Server Components / Server Actions / Route Handlers
 
 ## 2. Locked technology stack
 
-| Concern | Choice |
-|---------|--------|
-| Package manager | **pnpm** |
-| Runtime | **Node.js 24 LTS** |
-| Framework | **Next.js** (App Router) + **TypeScript** |
-| UI | **Tailwind CSS** + **shadcn/ui** |
-| Database | **MongoDB** via **Prisma** (`provider = "mongodb"`, `DATABASE_URL`) |
-| Auth | **Auth.js (NextAuth v5)** — Credentials (email/password), DB sessions, invitations; email via **Resend** |
-| Validation | **Zod** (client UX + server security); forms with **React Hook Form** |
-| Charts | **Recharts** |
-| Files | **Cloudinary** — server-signed upload; private/authenticated delivery; short-lived signed URLs after authorization |
-| Money | Integer **minor units** (paise for INR) |
-| Dates | **UTC** in DB; display default **Asia/Kolkata** via shared formatters |
-| Currency display | `Intl.NumberFormat('en-IN', …)` |
-| Quality | ESLint, Prettier, automated tests for authz and finance |
-| Production | **Docker** + **Nginx** reverse proxy; MongoDB Atlas / replica-set compatible |
+| Concern          | Choice                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Package manager  | **pnpm**                                                                                                           |
+| Runtime          | **Node.js 24 LTS**                                                                                                 |
+| Framework        | **Next.js** (App Router) + **TypeScript**                                                                          |
+| UI               | **Tailwind CSS** + **shadcn/ui**                                                                                   |
+| Database         | **MongoDB** via **Prisma** (`provider = "mongodb"`, `DATABASE_URL`)                                                |
+| Auth             | **Auth.js (NextAuth v5)** — Credentials (email/password), DB sessions, invitations; email via **Resend**           |
+| Validation       | **Zod** (client UX + server security); forms with **React Hook Form**                                              |
+| Charts           | **Recharts**                                                                                                       |
+| Files            | **Cloudinary** — server-signed upload; private/authenticated delivery; short-lived signed URLs after authorization |
+| Money            | Integer **minor units** (paise for INR)                                                                            |
+| Dates            | **UTC** in DB; display default **Asia/Kolkata** via shared formatters                                              |
+| Currency display | `Intl.NumberFormat('en-IN', …)`                                                                                    |
+| Quality          | ESLint, Prettier, automated tests for authz and finance                                                            |
+| Production       | **Docker** + **Nginx** reverse proxy; MongoDB Atlas / replica-set compatible                                       |
 
 Do not add dependencies without checking whether an existing package already covers the need. Prefer mature, maintained libraries and keep the tree minimal.
 
@@ -157,15 +157,15 @@ Authorization helpers are centralized in `src/server/authorization/` and must be
 
 Initial roles:
 
-| Role | Intent |
-|------|--------|
-| `OWNER` | Full control |
-| `ADMIN` | Near-full project administration |
-| `ENGINEER` | Shared finance view, payment requests, settlements, documents, assigned tasks |
-| `CONTRACTOR` | Restricted collaborator (seeded permissions; tighten as needed) |
-| `ARCHITECT` | Documents / tasks oriented |
-| `ACCOUNTANT` | Finance-heavy view/edit as configured |
-| `VIEWER` | Read shared surfaces only |
+| Role         | Intent                                                                        |
+| ------------ | ----------------------------------------------------------------------------- |
+| `OWNER`      | Full control                                                                  |
+| `ADMIN`      | Near-full project administration                                              |
+| `ENGINEER`   | Shared finance view, payment requests, settlements, documents, assigned tasks |
+| `CONTRACTOR` | Restricted collaborator (seeded permissions; tighten as needed)               |
+| `ARCHITECT`  | Documents / tasks oriented                                                    |
+| `ACCOUNTANT` | Finance-heavy view/edit as configured                                         |
+| `VIEWER`     | Read shared surfaces only                                                     |
 
 Do **not** check role names inside domain code for authorization. Check **permissions**. Roles map to permission sets (seeded defaults; later editable in project settings).
 
@@ -195,11 +195,11 @@ Do **not** check role names inside domain code for authorization. Check **permis
 
 Important user-created resources support:
 
-| Value | Meaning |
-|-------|---------|
-| `PRIVATE` | Creator / authorized owner only |
-| `PROJECT_SHARED` | Members with the relevant permission |
-| `RESTRICTED` | Explicitly selected members only (`DocumentAccess` / equivalent ACL) |
+| Value            | Meaning                                                              |
+| ---------------- | -------------------------------------------------------------------- |
+| `PRIVATE`        | Creator / authorized owner only                                      |
+| `PROJECT_SHARED` | Members with the relevant permission                                 |
+| `RESTRICTED`     | Explicitly selected members only (`DocumentAccess` / equivalent ACL) |
 
 Server must enforce visibility on:
 
@@ -233,29 +233,29 @@ Engineer (and other collaborator) access is **invitation-based and explicit**. M
 
 ### 6.2 Core collections (conceptual)
 
-| Collection | Purpose |
-|------------|---------|
-| `User` | Profile, status, lastLoginAt |
-| `Account`, `Session`, `VerificationToken` | Auth.js |
-| `Project` | Multi-project container |
-| `ProjectMember` | Membership + role |
-| `Invitation` | Pending invites |
-| `RolePermission` or seeded role→permission map | Authorization |
-| `FinancialAccount` | Bank/cash/UPI tracking accounts (no full credentials) |
-| `Category` | System + project custom categories |
-| `FinancialTransaction` | Ledger entries |
-| `TransactionAllocation` | Optional splits / budget linkage |
-| `PaymentRequest` | Approval workflow |
-| `Advance` | Advance principal |
-| `AdvanceSettlement` | Settlements against advances |
-| `Budget`, `BudgetCategory` | Planned vs committed vs paid |
-| `Document`, `DocumentVersion`, `DocumentAccess` | Files + versions + ACL |
-| `Task`, `Milestone` | Operational tracking |
-| `Comment` | On requests, transactions, documents, tasks |
-| `Notification`, `NotificationPreference` | In-app notifications |
-| `AuditLog` | Security/finance sensitive history |
-| `Activity` | Human-readable project feed |
-| `ProjectCounter` | Human-readable number sequences |
+| Collection                                      | Purpose                                               |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| `User`                                          | Profile, status, lastLoginAt                          |
+| `Account`, `Session`, `VerificationToken`       | Auth.js                                               |
+| `Project`                                       | Multi-project container                               |
+| `ProjectMember`                                 | Membership + role                                     |
+| `Invitation`                                    | Pending invites                                       |
+| `RolePermission` or seeded role→permission map  | Authorization                                         |
+| `FinancialAccount`                              | Bank/cash/UPI tracking accounts (no full credentials) |
+| `Category`                                      | System + project custom categories                    |
+| `FinancialTransaction`                          | Ledger entries                                        |
+| `TransactionAllocation`                         | Optional splits / budget linkage                      |
+| `PaymentRequest`                                | Approval workflow                                     |
+| `Advance`                                       | Advance principal                                     |
+| `AdvanceSettlement`                             | Settlements against advances                          |
+| `Budget`, `BudgetCategory`                      | Planned vs committed vs paid                          |
+| `Document`, `DocumentVersion`, `DocumentAccess` | Files + versions + ACL                                |
+| `Task`, `Milestone`                             | Operational tracking                                  |
+| `Comment`                                       | On requests, transactions, documents, tasks           |
+| `Notification`, `NotificationPreference`        | In-app notifications                                  |
+| `AuditLog`                                      | Security/finance sensitive history                    |
+| `Activity`                                      | Human-readable project feed                           |
+| `ProjectCounter`                                | Human-readable number sequences                       |
 
 ### 6.3 Soft delete & archive
 
@@ -274,15 +274,15 @@ Documents:
 
 Create indexes for real query patterns, including:
 
-| Pattern | Index intent |
-|---------|----------------|
-| Membership | `ProjectMember`: unique `(projectId, userId)` |
-| Transactions | `(projectId, transactionDate)`, `(projectId, categoryId)`, `(projectId, status)`, `(projectId, createdAt)` |
-| Payment requests | `(projectId, status)` |
-| Documents | `(projectId, category)`, `(projectId, createdAt)` |
-| Tasks | `(projectId, status)` |
-| Audit | `(projectId, createdAt)` |
-| Visibility filters | compound indexes including `visibility` / `createdBy` where queries require them |
+| Pattern            | Index intent                                                                                               |
+| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Membership         | `ProjectMember`: unique `(projectId, userId)`                                                              |
+| Transactions       | `(projectId, transactionDate)`, `(projectId, categoryId)`, `(projectId, status)`, `(projectId, createdAt)` |
+| Payment requests   | `(projectId, status)`                                                                                      |
+| Documents          | `(projectId, category)`, `(projectId, createdAt)`                                                          |
+| Tasks              | `(projectId, status)`                                                                                      |
+| Audit              | `(projectId, createdAt)`                                                                                   |
+| Visibility filters | compound indexes including `visibility` / `createdBy` where queries require them                           |
 
 Review indexes when query patterns stabilize (Phases 5–12).
 
@@ -373,13 +373,13 @@ Payment Request → Approval / Reject / Request Changes → Payment → Transact
 
 ### 7.9 Budget semantics
 
-| Term | Meaning |
-|------|---------|
-| **Budget** | Planned amount |
-| **Committed** | Approved/requested obligation not necessarily paid |
-| **Paid** | Actual paid amount |
+| Term          | Meaning                                                                                       |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| **Budget**    | Planned amount                                                                                |
+| **Committed** | Approved/requested obligation not necessarily paid                                            |
+| **Paid**      | Actual paid amount                                                                            |
 | **Remaining** | Per reporting mode: budget minus committed and/or paid — modes must be explicit and not mixed |
-| **Variance** | Budget vs actual/committed as defined by the report |
+| **Variance**  | Budget vs actual/committed as defined by the report                                           |
 
 Private transactions are excluded from shared budget/dashboard figures unless product rules explicitly include them for the owner-only view.
 
@@ -423,19 +423,19 @@ Replacing a file creates a new `DocumentVersion` (version number, uploader, time
 
 ## 9. Security model
 
-| Control | Approach |
-|---------|----------|
-| Authentication | Auth.js secure cookies and DB sessions |
-| CSRF | Framework/Auth.js defaults where applicable |
-| Authorization | Every server operation independently verifies |
-| Validation | Zod on all mutations; never trust client validation alone |
-| Errors | User-safe messages + internal error codes; log details server-side; never expose raw DB/stack to users |
-| Rate limiting | Auth and upload routes (foundation early; harden Phase 13) |
-| Headers / CSP | Practical baseline in Next config; Nginx in production |
-| Secrets | `.env` / host secrets only; `.env.example` placeholders; validated in `src/config/env.ts` |
-| Logging | No passwords, tokens, secrets, or full card/bank credentials in logs or audit metadata |
-| File upload | Authz + type/size/extension checks + sanitized metadata |
-| ID enumeration | Authorization failure must not leak existence beyond safe error handling |
+| Control        | Approach                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------ |
+| Authentication | Auth.js secure cookies and DB sessions                                                                 |
+| CSRF           | Framework/Auth.js defaults where applicable                                                            |
+| Authorization  | Every server operation independently verifies                                                          |
+| Validation     | Zod on all mutations; never trust client validation alone                                              |
+| Errors         | User-safe messages + internal error codes; log details server-side; never expose raw DB/stack to users |
+| Rate limiting  | Auth and upload routes (foundation early; harden Phase 13)                                             |
+| Headers / CSP  | Practical baseline in Next config; Nginx in production                                                 |
+| Secrets        | `.env` / host secrets only; `.env.example` placeholders; validated in `src/config/env.ts`              |
+| Logging        | No passwords, tokens, secrets, or full card/bank credentials in logs or audit metadata                 |
+| File upload    | Authz + type/size/extension checks + sanitized metadata                                                |
+| ID enumeration | Authorization failure must not leak existence beyond safe error handling                               |
 
 Follow OWASP-oriented practices throughout.
 
@@ -502,36 +502,41 @@ Surfaces: budget / paid / commitments / outstanding advances / remaining; charts
 
 ## 12. Cross-cutting domains
 
-| Domain | Notes |
-|--------|-------|
-| Activity feed | Human events linking to entities; respects visibility |
-| Notifications | In-app; read/unread; preferences; `/notifications` |
-| Comments | On payment requests, transactions, documents, tasks; inherit parent visibility |
-| Search | Server-side filtered search within authorized project data |
-| Audit log | CREATE/UPDATE/DELETE/APPROVE/REJECT/UPLOAD/DOWNLOAD/VIEW (sensitive)/INVITE/REMOVE_MEMBER/CHANGE_PERMISSION/PAYMENT/SETTLEMENT/RESTORE_VERSION — with actor, project, entity, timestamp, optional IP/UA, safe metadata/diff |
-| Reports | Summary, expense, category, monthly, advance, payment request, budget vs actual, cash flow, outstanding, document register; CSV first; PDF later |
-| Bulk ops | Multi-upload/tag/archive documents; export selected transactions; confirm destructive bulk actions |
-| Tasks / milestones | Operational tracking with statuses TODO → CANCELLED; custom milestones allowed |
+| Domain             | Notes                                                                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Activity feed      | Human events linking to entities; respects visibility                                                                                                                                                                       |
+| Notifications      | In-app; read/unread; preferences; `/notifications`                                                                                                                                                                          |
+| Comments           | On payment requests, transactions, documents, tasks; inherit parent visibility                                                                                                                                              |
+| Search             | Server-side filtered search within authorized project data                                                                                                                                                                  |
+| Audit log          | CREATE/UPDATE/DELETE/APPROVE/REJECT/UPLOAD/DOWNLOAD/VIEW (sensitive)/INVITE/REMOVE_MEMBER/CHANGE_PERMISSION/PAYMENT/SETTLEMENT/RESTORE_VERSION — with actor, project, entity, timestamp, optional IP/UA, safe metadata/diff |
+| Reports            | Summary, expense, category, monthly, advance, payment request, budget vs actual, cash flow, outstanding, document register; CSV first; PDF later                                                                            |
+| Bulk ops           | Multi-upload/tag/archive documents; export selected transactions; confirm destructive bulk actions                                                                                                                          |
+| Tasks / milestones | Operational tracking with statuses TODO → CANCELLED; custom milestones allowed                                                                                                                                              |
 
 ---
 
 ## 13. Deployment architecture
 
-**Target (Phase 14):**
+**Target (Phase 14 — implemented):**
 
 ```text
 Internet → Nginx (TLS, headers, reverse proxy)
-                → Next.js Node 24 container
+                → Next.js Node 24 container (`output: "standalone"`)
                       → MongoDB Atlas (or replica set)
                       → Cloudinary
-                      → Resend
+                      → Resend / SMTP
 ```
 
-- `Dockerfile` + `docker-compose.yml` where appropriate
-- Health endpoint for orchestration
-- Structured logging
-- Backup strategy documented for MongoDB
-- Production env documentation
+| Artifact      | Location                                     |
+| ------------- | -------------------------------------------- |
+| App image     | [`Dockerfile`](Dockerfile)                   |
+| Compose stack | [`docker-compose.yml`](docker-compose.yml)   |
+| Nginx         | [`docker/nginx/`](docker/nginx/)             |
+| Runbook       | [`docs/PRODUCTION.md`](docs/PRODUCTION.md)   |
+| Health        | `GET /api/health` (auth middleware excluded) |
+
+- Structured logging to stdout (no secrets)
+- MongoDB backup strategy documented (Atlas continuous backup / `mongodump`)
 - Demo/seed data **never** auto-applied in production
 
 ---
@@ -557,24 +562,24 @@ Acceptance scenario (end-to-end) is defined in the product brief: Kevin creates 
 
 ## 15. Phase map
 
-| Phase | Deliverable |
-|-------|-------------|
-| **0** | Discovery + this architecture document |
-| **1** | Next.js, Tailwind, shadcn, env validation, Prisma/Mongo, auth shell, basic layout, logging — app runs |
-| **2** | Auth complete: login/logout/session/profile/invitation foundation |
-| **3** | Projects CRUD, switcher, members, invitations, roles |
-| **4** | Centralized authorization + isolation tests |
-| **5** | Financial core: accounts, categories, transactions, calculations |
-| **6** | Advances: create, outstanding, settle, refund, history |
-| **7** | Payment requests: create, approve/reject/changes, pay + link, notifications |
-| **8** | Documents: Cloudinary, upload, versions, preview, download |
-| **9** | Budget: categories, committed/paid/variance, budget dashboard |
-| **10** | Tasks + milestones |
-| **11** | Premium project dashboard |
-| **12** | Reports + CSV export |
-| **13** | Audit review + security hardening |
-| **14** | Docker, Nginx, production docs, health, backups |
-| **15** | Final QA against acceptance scenario |
+| Phase  | Deliverable                                                                                           |
+| ------ | ----------------------------------------------------------------------------------------------------- |
+| **0**  | Discovery + this architecture document                                                                |
+| **1**  | Next.js, Tailwind, shadcn, env validation, Prisma/Mongo, auth shell, basic layout, logging — app runs |
+| **2**  | Auth complete: login/logout/session/profile/invitation foundation                                     |
+| **3**  | Projects CRUD, switcher, members, invitations, roles                                                  |
+| **4**  | Centralized authorization + isolation tests                                                           |
+| **5**  | Financial core: accounts, categories, transactions, calculations                                      |
+| **6**  | Advances: create, outstanding, settle, refund, history                                                |
+| **7**  | Payment requests: create, approve/reject/changes, pay + link, notifications                           |
+| **8**  | Documents: Cloudinary, upload, versions, preview, download                                            |
+| **9**  | Budget: categories, committed/paid/variance, budget dashboard                                         |
+| **10** | Tasks + milestones                                                                                    |
+| **11** | Premium project dashboard                                                                             |
+| **12** | Reports + CSV export                                                                                  |
+| **13** | Audit review + security hardening                                                                     |
+| **14** | Docker, Nginx, production docs, health, backups                                                       |
+| **15** | Final QA against acceptance scenario                                                                  |
 
 **Gate rule:** After each phase run TypeScript check, lint, tests, and production build. Fix failures before starting the next phase. Summarize: what shipped, files changed, DB changes, security notes, tests, next phase.
 
@@ -594,14 +599,14 @@ Keep extension points clean (vendors, tax fields, integrations) without building
 
 ## 17. Phase 0 discovery record
 
-| Item | Finding |
-|------|---------|
-| Workspace | `/Users/kavinkumar/Kavin/Godevs/Kavin-Illam` |
-| Prior application code | **None** — empty greenfield |
-| Package manager / lockfile | Absent (will use pnpm in Phase 1) |
-| Next.js / Prisma / Auth / UI | Absent |
-| Docker / Nginx | Absent |
-| Git | Initialized in Phase 0 (local only) |
+| Item                         | Finding                                      |
+| ---------------------------- | -------------------------------------------- |
+| Workspace                    | `/Users/kavinkumar/Kavin/Godevs/Kavin-Illam` |
+| Prior application code       | **None** — empty greenfield                  |
+| Package manager / lockfile   | Absent (will use pnpm in Phase 1)            |
+| Next.js / Prisma / Auth / UI | Absent                                       |
+| Docker / Nginx               | Absent                                       |
+| Git                          | Initialized in Phase 0 (local only)          |
 
 Nothing existing was overwritten.
 
@@ -609,21 +614,21 @@ Nothing existing was overwritten.
 
 ## 18. Decision log (security & finance)
 
-| Decision | Rationale |
-|----------|-----------|
-| Permission checks, not role switches in domain code | Prevents brittle role sprawl and privilege bugs |
-| Credentials auth uses JWT sessions | Auth.js does not support database sessions with the Credentials provider; Prisma Session/Account models remain for adapter readiness |
-| Auth rate limits are in-memory | Fine for single-instance; use Redis (or equivalent) before multi-instance production |
-| Invitation.projectId optional | Phase 2 invite foundation; project membership binding lands in Phase 3 |
-| Role→permission matrix in code | Seeded defaults in `src/server/authorization/permissions.ts`; editable DB matrix can come later |
-| Non-members get NOT_FOUND | Avoids project-id enumeration via FORBIDDEN vs NOT_FOUND distinction |
-| Private visibility | Creator or project OWNER only; never in shared totals; collaborators get NOT_FOUND |
-| Integer minor units | Avoids IEEE-754 money errors |
-| Soft delete for finance | Auditability and recovery |
-| Explicit payment-request ↔ transaction link | Prevents duplicate ledger entries |
-| Server-only advance outstanding formula | Single source of truth |
-| Visibility on reads, totals, exports, activity | Stops private leakage via aggregates and feeds |
-| Cloudinary secret server-only + short-lived URLs | Controlled document access |
-| pnpm + phased delivery | Reproducible installs; controlled complexity |
+| Decision                                            | Rationale                                                                                                                            |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Permission checks, not role switches in domain code | Prevents brittle role sprawl and privilege bugs                                                                                      |
+| Credentials auth uses JWT sessions                  | Auth.js does not support database sessions with the Credentials provider; Prisma Session/Account models remain for adapter readiness |
+| Auth rate limits are in-memory                      | Fine for single-instance; use Redis (or equivalent) before multi-instance production                                                 |
+| Invitation.projectId optional                       | Phase 2 invite foundation; project membership binding lands in Phase 3                                                               |
+| Role→permission matrix in code                      | Seeded defaults in `src/server/authorization/permissions.ts`; editable DB matrix can come later                                      |
+| Non-members get NOT_FOUND                           | Avoids project-id enumeration via FORBIDDEN vs NOT_FOUND distinction                                                                 |
+| Private visibility                                  | Creator or project OWNER only; never in shared totals; collaborators get NOT_FOUND                                                   |
+| Integer minor units                                 | Avoids IEEE-754 money errors                                                                                                         |
+| Soft delete for finance                             | Auditability and recovery                                                                                                            |
+| Explicit payment-request ↔ transaction link         | Prevents duplicate ledger entries                                                                                                    |
+| Server-only advance outstanding formula             | Single source of truth                                                                                                               |
+| Visibility on reads, totals, exports, activity      | Stops private leakage via aggregates and feeds                                                                                       |
+| Cloudinary secret server-only + short-lived URLs    | Controlled document access                                                                                                           |
+| pnpm + phased delivery                              | Reproducible installs; controlled complexity                                                                                         |
 
 When a future change has meaningful security or financial impact, append it here.

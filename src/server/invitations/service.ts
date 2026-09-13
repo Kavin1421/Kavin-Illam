@@ -3,7 +3,13 @@ import { z } from "zod";
 
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
-import { hashPassword, generateOpaqueToken, hashToken, verifyPassword } from "@/server/auth/password";
+import { actorLabel, recordAuditEvent } from "@/server/audit/record";
+import {
+  hashPassword,
+  generateOpaqueToken,
+  hashToken,
+  verifyPassword,
+} from "@/server/auth/password";
 import { requireAuthenticatedUser } from "@/server/auth/session";
 import { getOptionalUser } from "@/server/auth/session";
 import { assertRateLimit, rateLimitKey } from "@/server/auth/rate-limit";
@@ -11,9 +17,7 @@ import { requireProjectPermission } from "@/server/authorization";
 import { absoluteUrl, sendEmail } from "@/server/email/send";
 import { prisma } from "@/server/db/prisma";
 import { ensureProjectMembership } from "@/server/projects/members";
-import {
-  acceptInvitationSchema,
-} from "@/validators/auth";
+import { acceptInvitationSchema } from "@/validators/auth";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -122,6 +126,22 @@ export async function createInvitation(input: unknown) {
     invitationId: invitation.id,
     projectId: ctx.project.id,
     invitedById: inviter.id,
+  });
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: inviter.id,
+    action: "INVITE",
+    entityType: "Invitation",
+    entityId: invitation.id,
+    metadata: {
+      email: invitation.email,
+      role: invitation.role,
+    },
+    activity: {
+      message: `${actorLabel(inviter)} invited ${invitation.email} as ${invitation.role}.`,
+      href: `/p/${ctx.project.slug}/members`,
+    },
   });
 
   return {

@@ -6,7 +6,10 @@ import { redirect } from "next/navigation";
 import { AppError, toUserMessage } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { signIn } from "@/server/auth";
-import { requestPasswordReset, resetPasswordWithToken } from "@/server/auth/password-reset";
+import {
+  requestPasswordReset,
+  resetPasswordWithToken,
+} from "@/server/auth/password-reset";
 import {
   changeCurrentPassword,
   updateCurrentProfile,
@@ -14,7 +17,10 @@ import {
 import { registerUser } from "@/server/auth/register";
 import { assertRateLimit, rateLimitKey } from "@/server/auth/rate-limit";
 import { verifyEmailAddress } from "@/server/auth/verify-email";
-import { acceptInvitation, createInvitation } from "@/server/invitations/service";
+import {
+  acceptInvitation,
+  createInvitation,
+} from "@/server/invitations/service";
 import { loginSchema } from "@/validators/auth";
 
 export type ActionState = {
@@ -37,7 +43,11 @@ export async function loginAction(
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const limit = assertRateLimit(rateLimitKey("login", email), 10, 15 * 60 * 1000);
+  const limit = assertRateLimit(
+    rateLimitKey("login", email),
+    10,
+    15 * 60 * 1000,
+  );
   if (!limit.ok) {
     return {
       error: `Too many sign-in attempts. Try again in ${limit.retryAfterSec}s.`,

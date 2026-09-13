@@ -1,0 +1,7 @@
+# Place TLS materials here (never commit real certificates):
+#   fullchain.pem
+#   privkey.pem
+#
+# Example (Let's Encrypt):
+#   sudo cp /etc/letsencrypt/live/YOUR_DOMAIN/fullchain.pem ./fullchain.pem
+#   sudo cp /etc/letsencrypt/live/YOUR_DOMAIN/privkey.pem ./privkey.pem

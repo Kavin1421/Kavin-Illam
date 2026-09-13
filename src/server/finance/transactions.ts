@@ -1,8 +1,13 @@
-import type { PaymentMethod, TransactionStatus, Visibility } from "@prisma/client";
+import type {
+  PaymentMethod,
+  TransactionStatus,
+  Visibility,
+} from "@prisma/client";
 
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
-import { paiseFromRupeeString } from "@/lib/money";
+import { formatInrFromPaise, paiseFromRupeeString } from "@/lib/money";
+import { actorLabel, recordAuditEvent } from "@/server/audit/record";
 import {
   assertCanViewProjectResource,
   canViewResource,
@@ -142,7 +147,10 @@ export async function createTransaction(slug: string, input: unknown) {
   }
 
   if (parsed.data.status === "PAID" && !parsed.data.transactionDate) {
-    throw new AppError("VALIDATION", "Paid transactions require a payment date.");
+    throw new AppError(
+      "VALIDATION",
+      "Paid transactions require a payment date.",
+    );
   }
 
   const transactionDate = new Date(parsed.data.transactionDate);
@@ -200,7 +208,8 @@ export async function createTransaction(slug: string, input: unknown) {
       paidTo: parsed.data.paidTo || null,
       transactionDate,
       status: parsed.data.status as TransactionStatus,
-      paymentMethod: (parsed.data.paymentMethod as PaymentMethod | undefined) ?? null,
+      paymentMethod:
+        (parsed.data.paymentMethod as PaymentMethod | undefined) ?? null,
       referenceNumber: parsed.data.referenceNumber || null,
       description: parsed.data.description || null,
       notes: parsed.data.notes || null,
@@ -224,6 +233,26 @@ export async function createTransaction(slug: string, input: unknown) {
     actorId: ctx.user.id,
     type: tx.type,
     visibility: tx.visibility,
+  });
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "CREATE",
+    entityType: "FinancialTransaction",
+    entityId: tx.id,
+    metadata: {
+      type: tx.type,
+      amount: tx.amount,
+      status: tx.status,
+      visibility: tx.visibility,
+      transactionNumber: tx.transactionNumber,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} recorded ${formatInrFromPaise(tx.amount)} (${tx.transactionNumber}).`,
+      href: `/p/${slug}/finance/${tx.id}`,
+      visibility: tx.visibility,
+    },
   });
 
   return tx;
@@ -260,6 +289,24 @@ export async function softDeleteTransaction(
     projectId: ctx.project.id,
     transactionId: tx.id,
     actorId: ctx.user.id,
+  });
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "DELETE",
+    entityType: "FinancialTransaction",
+    entityId: tx.id,
+    metadata: {
+      reason: parsed.data.reason,
+      transactionNumber: tx.transactionNumber,
+      amount: tx.amount,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} soft-deleted ${tx.transactionNumber}.`,
+      href: `/p/${slug}/finance/${tx.id}`,
+      visibility: tx.visibility,
+    },
   });
 
   return updated;

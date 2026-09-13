@@ -2,7 +2,8 @@ import type { PaymentMethod, Visibility } from "@prisma/client";
 
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
-import { paiseFromRupeeString } from "@/lib/money";
+import { formatInrFromPaise, paiseFromRupeeString } from "@/lib/money";
+import { actorLabel, recordAuditEvent } from "@/server/audit/record";
 import {
   assertCanViewProjectResource,
   canViewResource,
@@ -28,6 +29,7 @@ import {
   assertValidReviewTransition,
   derivePaymentRequestStatus,
 } from "./invariants";
+import { notifyPaymentRequestCreated } from "./notify";
 
 function toVisibleResource(row: {
   projectId: string;
@@ -50,10 +52,7 @@ async function validateCategory(projectId: string, categoryId?: string) {
   const category = await prisma.category.findFirst({
     where: {
       id: categoryId,
-      OR: [
-        { isSystem: true, projectId: null },
-        { projectId },
-      ],
+      OR: [{ isSystem: true, projectId: null }, { projectId }],
     },
   });
   if (!category) {
@@ -93,7 +92,9 @@ export async function listPaymentRequests(slug: string) {
   );
 
   const pendingCount = authorized.filter((r) => r.status === "PENDING").length;
-  const approvedCount = authorized.filter((r) => r.status === "APPROVED").length;
+  const approvedCount = authorized.filter(
+    (r) => r.status === "APPROVED",
+  ).length;
 
   return {
     project: ctx.project,
@@ -197,6 +198,35 @@ export async function createPaymentRequest(slug: string, input: unknown) {
     actorId: ctx.user.id,
   });
 
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "CREATE",
+    entityType: "PaymentRequest",
+    entityId: request.id,
+    metadata: {
+      requestNumber: request.requestNumber,
+      amount: request.amount,
+      visibility: request.visibility,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} requested ${formatInrFromPaise(request.amount)} — ${request.title}.`,
+      href: `/p/${slug}/payment-requests/${request.id}`,
+      visibility: request.visibility,
+    },
+  });
+
+  await notifyPaymentRequestCreated({
+    projectId: ctx.project.id,
+    projectSlug: ctx.project.slug,
+    projectName: ctx.project.name,
+    requestId: request.id,
+    requestNumber: request.requestNumber,
+    title: request.title,
+    amountPaise: request.amount,
+    requesterName: actorLabel(ctx.user),
+  });
+
   return request;
 }
 
@@ -267,6 +297,31 @@ export async function reviewPaymentRequest(
     actorId: ctx.user.id,
   });
 
+  const auditAction =
+    parsed.data.action === "APPROVE"
+      ? ("APPROVE" as const)
+      : parsed.data.action === "REJECT"
+        ? ("REJECT" as const)
+        : ("REQUEST_CHANGES" as const);
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: auditAction,
+    entityType: "PaymentRequest",
+    entityId: request.id,
+    metadata: {
+      requestNumber: request.requestNumber,
+      fromStatus: request.status,
+      toStatus: nextStatus,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} ${auditAction === "APPROVE" ? "approved" : auditAction === "REJECT" ? "rejected" : "requested changes on"} ${request.requestNumber}.`,
+      href: `/p/${slug}/payment-requests/${request.id}`,
+      visibility: request.visibility,
+    },
+  });
+
   return updated;
 }
 
@@ -291,7 +346,10 @@ export async function resubmitPaymentRequest(
     throw new AppError("NOT_FOUND", "Payment request was not found.");
   }
   if (request.status !== "CHANGES_REQUESTED") {
-    throw new AppError("CONFLICT", "Only requests needing changes can be resubmitted.");
+    throw new AppError(
+      "CONFLICT",
+      "Only requests needing changes can be resubmitted.",
+    );
   }
   if (request.createdById !== ctx.user.id) {
     throw new AppError("FORBIDDEN", "Only the requester can resubmit.");
@@ -384,7 +442,10 @@ export async function payPaymentRequest(
   }
 
   if (request.linkedTransactionId) {
-    throw new AppError("CONFLICT", "This request already has a linked payment.");
+    throw new AppError(
+      "CONFLICT",
+      "This request already has a linked payment.",
+    );
   }
 
   const remaining = request.amount - request.paidAmount;
@@ -475,6 +536,25 @@ export async function payPaymentRequest(
     paidAmount,
     status: nextStatus,
     actorId: ctx.user.id,
+  });
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "PAYMENT",
+    entityType: "PaymentRequest",
+    entityId: request.id,
+    metadata: {
+      requestNumber: request.requestNumber,
+      paidAmount: payAmount,
+      linkedTransactionId: ledger.id,
+      status: nextStatus,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} paid ${formatInrFromPaise(payAmount)} for ${request.requestNumber}.`,
+      href: `/p/${slug}/payment-requests/${request.id}`,
+      visibility: request.visibility,
+    },
   });
 
   return updated;

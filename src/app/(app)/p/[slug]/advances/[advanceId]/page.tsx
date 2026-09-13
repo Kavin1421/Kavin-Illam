@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
+import { withNotFound } from "@/lib/with-not-found";
 import { softDeleteAdvanceAction } from "@/server/advances/actions";
 import { getAdvance } from "@/server/advances/service";
 import { roleHasPermission } from "@/server/authorization";
@@ -29,7 +30,7 @@ export default async function AdvanceDetailPage({
 }) {
   const { slug, advanceId } = await params;
   const [{ role, advance }, accounts] = await Promise.all([
-    getAdvance(slug, advanceId),
+    withNotFound(() => getAdvance(slug, advanceId)),
     listAccounts(slug),
   ]);
   const canCreate = roleHasPermission(role, "FINANCE_CREATE");

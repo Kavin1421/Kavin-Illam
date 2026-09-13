@@ -5,10 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  registerAction,
-  type ActionState,
-} from "@/server/auth/actions";
+import { registerAction, type ActionState } from "@/server/auth/actions";
 
 const initialState: ActionState = {};
 
@@ -22,7 +19,13 @@ export function RegisterForm() {
     <form action={formAction} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="name">Full name</Label>
-        <Input id="name" name="name" required minLength={2} autoComplete="name" />
+        <Input
+          id="name"
+          name="name"
+          required
+          minLength={2}
+          autoComplete="name"
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>

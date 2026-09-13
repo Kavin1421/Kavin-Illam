@@ -24,7 +24,10 @@ async function uniqueSlug(base: string): Promise<string> {
     candidate = `${root}-${i}`;
     i += 1;
     if (i > 100) {
-      throw new AppError("CONFLICT", "Unable to allocate a unique project slug.");
+      throw new AppError(
+        "CONFLICT",
+        "Unable to allocate a unique project slug.",
+      );
     }
   }
   return candidate;
@@ -97,7 +100,9 @@ export async function createProject(input: unknown) {
   }
 
   const slug = await uniqueSlug(parsed.data.name);
-  const estimatedBudget = parseOptionalBudget(parsed.data.estimatedBudgetRupees);
+  const estimatedBudget = parseOptionalBudget(
+    parsed.data.estimatedBudgetRupees,
+  );
 
   const project = await prisma.project.create({
     data: {
@@ -201,7 +206,10 @@ export async function updateProject(slug: string, input: unknown) {
 export async function archiveProject(slug: string) {
   const ctx = await requireProjectPermissionBySlug(slug, "PROJECT_EDIT");
   if (ctx.role !== "OWNER" && ctx.role !== "ADMIN") {
-    throw new AppError("FORBIDDEN", "Only owners or admins can archive projects.");
+    throw new AppError(
+      "FORBIDDEN",
+      "Only owners or admins can archive projects.",
+    );
   }
 
   const project = await prisma.project.update({

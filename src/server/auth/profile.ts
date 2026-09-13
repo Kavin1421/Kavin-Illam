@@ -1,10 +1,7 @@
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/server/db/prisma";
-import {
-  changePasswordSchema,
-  profileUpdateSchema,
-} from "@/validators/auth";
+import { changePasswordSchema, profileUpdateSchema } from "@/validators/auth";
 
 import { hashPassword, verifyPassword } from "./password";
 import { requireAuthenticatedUser } from "./session";

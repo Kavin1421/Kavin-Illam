@@ -19,7 +19,9 @@ export default function RegisterPage() {
     <div className="mx-auto flex w-full max-w-md flex-col justify-center px-4 py-16 sm:px-6">
       <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-2xl">Create account</CardTitle>
+          <CardTitle className="font-heading text-2xl">
+            Create account
+          </CardTitle>
           <CardDescription>
             Register as a homeowner or collaborator. Project invitations land
             next for engineers and contractors.

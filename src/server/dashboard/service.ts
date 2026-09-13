@@ -229,7 +229,10 @@ export async function getProjectDashboard(slug: string) {
     )
     .map((row) => ({
       categoryId: row.categoryId,
-      categoryName: row.category?.name ?? categoryName.get(row.categoryId ?? "") ?? "Uncategorized",
+      categoryName:
+        row.category?.name ??
+        categoryName.get(row.categoryId ?? "") ??
+        "Uncategorized",
       amount: row.amount,
     }));
   const topSpend = rankCategorySpend(spendSlices, 5);
@@ -408,7 +411,10 @@ export async function getProjectDashboard(slug: string) {
     role: ctx.role,
     permissions: {
       canEditBudget: roleHasPermission(ctx.role, "BUDGET_EDIT"),
-      canApprovePayments: roleHasPermission(ctx.role, "PAYMENT_REQUEST_APPROVE"),
+      canApprovePayments: roleHasPermission(
+        ctx.role,
+        "PAYMENT_REQUEST_APPROVE",
+      ),
       canCreateFinance: roleHasPermission(ctx.role, "FINANCE_CREATE"),
     },
     summary: {

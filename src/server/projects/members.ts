@@ -2,9 +2,8 @@ import type { ProjectRole } from "@prisma/client";
 
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
-import {
-  requireProjectPermissionBySlug,
-} from "@/server/authorization";
+import { actorLabel, recordAuditEvent } from "@/server/audit/record";
+import { requireProjectPermissionBySlug } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
 import {
   removeMemberSchema,
@@ -78,6 +77,23 @@ export async function updateMemberRole(slug: string, input: unknown) {
     role: updated.role,
   });
 
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "CHANGE_PERMISSION",
+    entityType: "ProjectMember",
+    entityId: member.id,
+    metadata: {
+      userId: member.userId,
+      fromRole: member.role,
+      toRole: updated.role,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} changed a member role to ${updated.role}.`,
+      href: `/p/${slug}/members`,
+    },
+  });
+
   return updated;
 }
 
@@ -117,6 +133,19 @@ export async function removeMember(slug: string, input: unknown) {
     projectId: ctx.project.id,
     memberId: member.id,
     actorId: ctx.user.id,
+  });
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "REMOVE_MEMBER",
+    entityType: "ProjectMember",
+    entityId: member.id,
+    metadata: { userId: member.userId, role: member.role },
+    activity: {
+      message: `${actorLabel(ctx.user)} removed a project member.`,
+      href: `/p/${slug}/members`,
+    },
   });
 
   return updated;

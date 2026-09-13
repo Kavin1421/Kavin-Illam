@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 
 import { AppError, toUserMessage } from "@/lib/errors";
 import { createAccount } from "@/server/finance/accounts";
-import { createTransaction, softDeleteTransaction } from "@/server/finance/transactions";
+import {
+  createTransaction,
+  softDeleteTransaction,
+} from "@/server/finance/transactions";
 
 export type FinanceActionState = {
   error?: string;

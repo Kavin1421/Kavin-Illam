@@ -43,7 +43,9 @@ export default async function VerifyEmailPage({
         </CardHeader>
         <CardContent className="space-y-4">
           <p
-            className={ok ? "text-sm text-emerald-700" : "text-destructive text-sm"}
+            className={
+              ok ? "text-sm text-emerald-700" : "text-destructive text-sm"
+            }
             role={ok ? "status" : "alert"}
           >
             {message}

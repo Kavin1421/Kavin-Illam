@@ -3,10 +3,7 @@ import type { Project, ProjectMember, ProjectRole } from "@prisma/client";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/server/db/prisma";
 
-import {
-  roleHasPermission,
-  type Permission,
-} from "./permissions";
+import { roleHasPermission, type Permission } from "./permissions";
 import {
   canEditResource,
   canViewResource,
@@ -46,7 +43,9 @@ export async function findActiveMembership(
  * Load a non-archived project or throw NOT_FOUND.
  * Used by both session wrappers and tests.
  */
-export async function loadActiveProjectById(projectId: string): Promise<Project> {
+export async function loadActiveProjectById(
+  projectId: string,
+): Promise<Project> {
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project || project.status === "ARCHIVED") {
     throw new AppError("NOT_FOUND", "Project was not found.");

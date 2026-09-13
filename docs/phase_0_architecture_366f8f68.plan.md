@@ -31,19 +31,19 @@ Create **[`ARCHITECTURE.md`](ARCHITECTURE.md)** at the repo root (plus a minimal
 
 ## Locked technology decisions
 
-| Concern | Choice |
-|---------|--------|
-| Package manager | **pnpm** |
-| Framework | **Next.js** (App Router) + **TypeScript** + **Node 24 LTS** |
-| UI | **Tailwind CSS** + **shadcn/ui** |
-| DB | **MongoDB** via **Prisma** (`provider = "mongodb"`, `DATABASE_URL`) |
-| Auth | **Auth.js (NextAuth v5)** — email/password (Credentials) + invitation acceptance; sessions in DB; recovery/verification via **Resend** |
-| Validation | **Zod** (server + client); forms with **React Hook Form** |
-| Charts | **Recharts** |
-| Files | **Cloudinary** — server-signed upload + private/authenticated delivery; short-lived signed URLs after authz |
-| Money | **Integer minor units** (paise for INR); never JS floats |
-| Dates | UTC in DB; display default **Asia/Kolkata** via shared formatters |
-| Production | **Docker** + **Nginx** reverse proxy (Phase 14); Atlas/replica-set compatible |
+| Concern         | Choice                                                                                                                                 |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Package manager | **pnpm**                                                                                                                               |
+| Framework       | **Next.js** (App Router) + **TypeScript** + **Node 24 LTS**                                                                            |
+| UI              | **Tailwind CSS** + **shadcn/ui**                                                                                                       |
+| DB              | **MongoDB** via **Prisma** (`provider = "mongodb"`, `DATABASE_URL`)                                                                    |
+| Auth            | **Auth.js (NextAuth v5)** — email/password (Credentials) + invitation acceptance; sessions in DB; recovery/verification via **Resend** |
+| Validation      | **Zod** (server + client); forms with **React Hook Form**                                                                              |
+| Charts          | **Recharts**                                                                                                                           |
+| Files           | **Cloudinary** — server-signed upload + private/authenticated delivery; short-lived signed URLs after authz                            |
+| Money           | **Integer minor units** (paise for INR); never JS floats                                                                               |
+| Dates           | UTC in DB; display default **Asia/Kolkata** via shared formatters                                                                      |
+| Production      | **Docker** + **Nginx** reverse proxy (Phase 14); Atlas/replica-set compatible                                                          |
 
 ---
 
@@ -168,16 +168,16 @@ Core collections (conceptual): User, Account (Auth.js), Session, VerificationTok
 
 ## Phased delivery after Phase 0
 
-| Phase | Outcome |
-|-------|---------|
-| 1 | Next.js + Tailwind + shadcn + env + Prisma/Mongo + auth shell + layout + logging — app runs |
-| 2 | Auth complete (login/logout/session/profile/invites foundation) |
-| 3 | Projects, members, invitations, roles |
-| 4 | Centralized authz + isolation tests |
-| 5–7 | Finance core → Advances → Payment requests |
-| 8–9 | Documents/Cloudinary → Budget |
-| 10–12 | Tasks/milestones → Dashboard → Reports/CSV |
-| 13–15 | Audit/hardening → Docker/Nginx → final QA / acceptance scenario |
+| Phase | Outcome                                                                                     |
+| ----- | ------------------------------------------------------------------------------------------- |
+| 1     | Next.js + Tailwind + shadcn + env + Prisma/Mongo + auth shell + layout + logging — app runs |
+| 2     | Auth complete (login/logout/session/profile/invites foundation)                             |
+| 3     | Projects, members, invitations, roles                                                       |
+| 4     | Centralized authz + isolation tests                                                         |
+| 5–7   | Finance core → Advances → Payment requests                                                  |
+| 8–9   | Documents/Cloudinary → Budget                                                               |
+| 10–12 | Tasks/milestones → Dashboard → Reports/CSV                                                  |
+| 13–15 | Audit/hardening → Docker/Nginx → final QA / acceptance scenario                             |
 
 **Rule:** After each phase — `tsc`, lint, tests, build — fix before advancing. Phase summary format as specified in the brief.
 

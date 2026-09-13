@@ -41,7 +41,9 @@ export async function ProjectSwitcher({
       </summary>
       <div className="border-border bg-background absolute right-0 z-50 mt-2 w-56 rounded-lg border p-1 shadow-sm">
         {projects.length === 0 ? (
-          <p className="text-muted-foreground px-3 py-2 text-sm">No projects yet</p>
+          <p className="text-muted-foreground px-3 py-2 text-sm">
+            No projects yet
+          </p>
         ) : (
           projects.map((project) => (
             <Link

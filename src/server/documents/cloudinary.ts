@@ -35,8 +35,8 @@ export function getCloudinary() {
 export function isCloudinaryConfigured(): boolean {
   return Boolean(
     env.CLOUDINARY_CLOUD_NAME &&
-      env.CLOUDINARY_API_KEY &&
-      env.CLOUDINARY_API_SECRET,
+    env.CLOUDINARY_API_KEY &&
+    env.CLOUDINARY_API_SECRET,
   );
 }
 
@@ -45,7 +45,10 @@ export function projectDocumentFolder(projectId: string): string {
   return `kavin-illam/${projectId}/documents`;
 }
 
-export function buildDocumentPublicId(projectId: string, fileStem: string): string {
+export function buildDocumentPublicId(
+  projectId: string,
+  fileStem: string,
+): string {
   const safe = fileStem
     .toLowerCase()
     .replace(/[^a-z0-9_-]+/g, "-")

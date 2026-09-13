@@ -9,12 +9,7 @@ export const registerSchema = z
   .object({
     name: z.string().trim().min(2).max(100),
     email: z.string().trim().email().max(254),
-    phone: z
-      .string()
-      .trim()
-      .max(20)
-      .optional()
-      .or(z.literal("")),
+    phone: z.string().trim().max(20).optional().or(z.literal("")),
     password: passwordSchema,
     confirmPassword: z.string(),
   })
@@ -30,12 +25,7 @@ export const loginSchema = z.object({
 
 export const profileUpdateSchema = z.object({
   name: z.string().trim().min(2).max(100),
-  phone: z
-    .string()
-    .trim()
-    .max(20)
-    .optional()
-    .or(z.literal("")),
+  phone: z.string().trim().max(20).optional().or(z.literal("")),
 });
 
 export const changePasswordSchema = z

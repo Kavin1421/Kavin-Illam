@@ -48,7 +48,10 @@ export default async function LoginPage({
             </p>
             <p>
               No account?{" "}
-              <Link href="/register" className="underline-offset-4 hover:underline">
+              <Link
+                href="/register"
+                className="underline-offset-4 hover:underline"
+              >
                 Create one
               </Link>
             </p>

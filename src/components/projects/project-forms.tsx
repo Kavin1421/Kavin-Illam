@@ -210,7 +210,7 @@ export function InviteMemberForm({ projectId }: { projectId: string }) {
             {state.success}
           </p>
           {state.inviteUrl ? (
-            <p className="text-muted-foreground break-all text-xs">
+            <p className="text-muted-foreground text-xs break-all">
               Invite link: {state.inviteUrl}
             </p>
           ) : null}

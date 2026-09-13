@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/dates";
+import { withNotFound } from "@/lib/with-not-found";
 import { roleHasPermission } from "@/server/authorization";
 import {
   archiveDocumentAction,
@@ -33,7 +34,9 @@ export default async function DocumentDetailPage({
   params: Promise<{ slug: string; documentId: string }>;
 }) {
   const { slug, documentId } = await params;
-  const { role, document, canPreview } = await getDocument(slug, documentId);
+  const { role, document, canPreview } = await withNotFound(() =>
+    getDocument(slug, documentId),
+  );
   const canUpload = roleHasPermission(role, "DOCUMENT_UPLOAD");
   const canEdit = roleHasPermission(role, "DOCUMENT_EDIT");
   const canDelete = roleHasPermission(role, "DOCUMENT_DELETE");
@@ -45,7 +48,9 @@ export default async function DocumentDetailPage({
         <p className="text-muted-foreground font-mono text-xs">
           {document.documentNumber}
         </p>
-        <h2 className="font-heading text-3xl tracking-tight">{document.title}</h2>
+        <h2 className="font-heading text-3xl tracking-tight">
+          {document.title}
+        </h2>
         <div className="flex flex-wrap gap-2">
           <Badge>{document.category.replaceAll("_", " ")}</Badge>
           <Badge variant="secondary">v{document.currentVersion}</Badge>
@@ -67,9 +72,8 @@ export default async function DocumentDetailPage({
             {document.mimeType}
           </p>
           <p>
-            Uploaded by:{" "}
-            {document.uploadedBy.name ?? document.uploadedBy.email} ·{" "}
-            {formatDateTime(document.updatedAt)}
+            Uploaded by: {document.uploadedBy.name ?? document.uploadedBy.email}{" "}
+            · {formatDateTime(document.updatedAt)}
           </p>
           {document.tags.length > 0 ? (
             <p>Tags: {document.tags.join(", ")}</p>
@@ -149,7 +153,9 @@ export default async function DocumentDetailPage({
         <Card>
           <CardHeader>
             <CardTitle>Replace file</CardTitle>
-            <CardDescription>Creates version {document.currentVersion + 1}.</CardDescription>
+            <CardDescription>
+              Creates version {document.currentVersion + 1}.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ReplaceDocumentVersionForm

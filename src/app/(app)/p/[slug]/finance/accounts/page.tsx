@@ -52,7 +52,10 @@ export default async function FinanceAccountsPage({
             <p className="text-muted-foreground text-sm">No accounts yet.</p>
           ) : (
             accounts.map((account) => (
-              <div key={account.id} className="border-border rounded-lg border p-3">
+              <div
+                key={account.id}
+                className="border-border rounded-lg border p-3"
+              >
                 <p className="font-medium">{account.name}</p>
                 <p className="text-muted-foreground text-sm">
                   {account.type}

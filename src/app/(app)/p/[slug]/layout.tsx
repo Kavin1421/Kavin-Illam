@@ -42,6 +42,8 @@ export default async function ProjectLayout({
     { href: `/p/${slug}/documents`, label: "Documents" },
     { href: `/p/${slug}/tasks`, label: "Tasks" },
     { href: `/p/${slug}/milestones`, label: "Milestones" },
+    { href: `/p/${slug}/reports`, label: "Reports" },
+    { href: `/p/${slug}/activity`, label: "Activity" },
     { href: `/p/${slug}/members`, label: "Members" },
     { href: `/p/${slug}/settings`, label: "Settings" },
   ];
@@ -55,9 +57,7 @@ export default async function ProjectLayout({
               <p className="text-muted-foreground text-xs tracking-wide uppercase">
                 Project
               </p>
-              <h1 className="font-heading text-2xl tracking-tight">
-                {projectName}
-              </h1>
+              <h1 className="text-page-title text-foreground">{projectName}</h1>
             </div>
             <ProjectSwitcher currentSlug={slug} />
           </div>

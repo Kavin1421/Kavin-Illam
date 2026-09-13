@@ -1,0 +1,64 @@
+# Local / VPS stack: Nginx → Next.js app → MongoDB Atlas (external)
+#
+# Host ports (avoid clashing with other stacks on 80/443/3000):
+#   Nginx HTTP  → localhost:8080
+#   Nginx HTTPS → localhost:8443
+#   App direct  → localhost:3010  (debug only)
+#
+# Usage:
+#   1. Copy .env.example → .env.production.local and fill secrets
+#   2. docker compose up --build
+#   3. Open http://localhost:8080 (Nginx) or http://localhost:3010 (app direct)
+#
+# Never run `pnpm db:seed` against production databases.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kavin-illam:local
+    restart: unless-stopped
+    env_file:
+      - path: .env.production.local
+        required: false
+      - path: .env.local
+        required: false
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      # Prefer AUTH_URL / NEXTAUTH_URL pointing at the public origin (behind Nginx)
+      AUTH_URL: ${AUTH_URL:-http://localhost:8080}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:8080}
+    expose:
+      - "3000"
+    ports:
+      # Optional direct access for debugging (bypass Nginx)
+      - "3010:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro

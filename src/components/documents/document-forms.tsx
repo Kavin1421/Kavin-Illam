@@ -145,7 +145,12 @@ export function CreateDocumentForm({
     <form action={formAction} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
-        <Input id="title" name="title" required placeholder="Foundation contract" />
+        <Input
+          id="title"
+          name="title"
+          required
+          placeholder="Foundation contract"
+        />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -200,7 +205,9 @@ export function CreateDocumentForm({
           </p>
         ) : null}
         {uploading ? (
-          <p className="text-muted-foreground text-sm">Uploading to Cloudinary…</p>
+          <p className="text-muted-foreground text-sm">
+            Uploading to Cloudinary…
+          </p>
         ) : null}
         {uploadMeta ? (
           <p className="text-sm text-emerald-700">
@@ -226,10 +233,18 @@ export function CreateDocumentForm({
             name="cloudinaryResourceType"
             value={uploadMeta.cloudinaryResourceType}
           />
-          <input type="hidden" name="cloudinaryDeliveryType" value="authenticated" />
+          <input
+            type="hidden"
+            name="cloudinaryDeliveryType"
+            value="authenticated"
+          />
           <input type="hidden" name="fileName" value={uploadMeta.fileName} />
           <input type="hidden" name="mimeType" value={uploadMeta.mimeType} />
-          <input type="hidden" name="fileSize" value={String(uploadMeta.fileSize)} />
+          <input
+            type="hidden"
+            name="fileSize"
+            value={String(uploadMeta.fileSize)}
+          />
           <input type="hidden" name="format" value={uploadMeta.format} />
         </>
       ) : null}
@@ -315,7 +330,9 @@ export function ReplaceDocumentVersionForm({
           <p className="text-muted-foreground text-sm">Uploading…</p>
         ) : null}
         {uploadMeta ? (
-          <p className="text-sm text-emerald-700">Ready: {uploadMeta.fileName}</p>
+          <p className="text-sm text-emerald-700">
+            Ready: {uploadMeta.fileName}
+          </p>
         ) : null}
         {fileError ? (
           <p className="text-destructive text-sm" role="alert">
@@ -335,10 +352,18 @@ export function ReplaceDocumentVersionForm({
             name="cloudinaryResourceType"
             value={uploadMeta.cloudinaryResourceType}
           />
-          <input type="hidden" name="cloudinaryDeliveryType" value="authenticated" />
+          <input
+            type="hidden"
+            name="cloudinaryDeliveryType"
+            value="authenticated"
+          />
           <input type="hidden" name="fileName" value={uploadMeta.fileName} />
           <input type="hidden" name="mimeType" value={uploadMeta.mimeType} />
-          <input type="hidden" name="fileSize" value={String(uploadMeta.fileSize)} />
+          <input
+            type="hidden"
+            name="fileSize"
+            value={String(uploadMeta.fileSize)}
+          />
           <input type="hidden" name="format" value={uploadMeta.format} />
         </>
       ) : null}

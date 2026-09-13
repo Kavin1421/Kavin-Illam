@@ -37,8 +37,8 @@ export default async function NewTransactionPage({
             Add transaction
           </CardTitle>
           <CardDescription>
-            Amounts are stored as integer paise. Private entries stay hidden from
-            collaborators.
+            Amounts are stored as integer paise. Private entries stay hidden
+            from collaborators.
           </CardDescription>
         </CardHeader>
         <CardContent>

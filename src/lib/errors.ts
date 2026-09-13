@@ -4,6 +4,7 @@ export type ErrorCode =
   | "NOT_FOUND"
   | "VALIDATION"
   | "CONFLICT"
+  | "RATE_LIMITED"
   | "INTERNAL";
 
 const defaultMessages: Record<ErrorCode, string> = {
@@ -12,6 +13,7 @@ const defaultMessages: Record<ErrorCode, string> = {
   NOT_FOUND: "The requested resource was not found.",
   VALIDATION: "The submitted data is invalid.",
   CONFLICT: "This action conflicts with the current state.",
+  RATE_LIMITED: "Too many requests. Please try again shortly.",
   INTERNAL: "Something went wrong. Please try again.",
 };
 
@@ -31,6 +33,7 @@ export class AppError extends Error {
         NOT_FOUND: 404,
         VALIDATION: 400,
         CONFLICT: 409,
+        RATE_LIMITED: 429,
         INTERNAL: 500,
       }[code] as number);
   }

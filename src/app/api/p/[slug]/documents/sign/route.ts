@@ -14,9 +14,6 @@ export async function POST(
     return NextResponse.json(signed);
   } catch (error) {
     const status = error instanceof AppError ? error.status : 500;
-    return NextResponse.json(
-      { error: toUserMessage(error) },
-      { status },
-    );
+    return NextResponse.json({ error: toUserMessage(error) }, { status });
   }
 }

@@ -27,7 +27,9 @@ export default async function NewDocumentPage({
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6">
       <div className="space-y-1">
-        <h2 className="font-heading text-2xl tracking-tight">Upload document</h2>
+        <h2 className="font-heading text-2xl tracking-tight">
+          Upload document
+        </h2>
         <p className="text-muted-foreground text-sm">
           Server-signed Cloudinary upload with authenticated delivery.
         </p>
