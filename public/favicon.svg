@@ -1,21 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Kavin Illam">
-  <defs>
-    <linearGradient id="bg" x1="8" y1="0" x2="56" y2="64" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#075A54"/>
-      <stop offset="0.5" stop-color="#063F3A"/>
-      <stop offset="1" stop-color="#021F1D"/>
-    </linearGradient>
-    <linearGradient id="mark" x1="16" y1="12" x2="48" y2="52" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#A7F3D0"/>
-      <stop offset="0.4" stop-color="#00E59A"/>
-      <stop offset="1" stop-color="#00A86A"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" fill="url(#bg)"/>
-  <!-- Geometric KI: stem + K arms + I column, house peak cut from center -->
-  <path
-    fill="url(#mark)"
-    fill-rule="evenodd"
-    d="M17 13h9v14.5L37.5 13H47v7.2L36.8 32 47 43.8V51H37.5L26 36.5V51h-9V13Zm12.8 19L36.8 25.2 43 32l-6.2 6.8L29.8 32Z"
-  />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Kavin Illam home">
+  <rect width="64" height="64" rx="12" fill="#063F3A"/>
+  <!-- Roof -->
+  <path fill="#00D084" d="M32 11 8 33h10v-1l14-13 14 13v1h10L32 11z"/>
+  <!-- Body -->
+  <rect x="18" y="32" width="28" height="22" rx="2" fill="#00D084"/>
+  <!-- Door -->
+  <rect x="28" y="40" width="8" height="14" rx="1" fill="#063F3A"/>
 </svg>
