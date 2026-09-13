@@ -15,6 +15,7 @@ import {
   type VisibleResource,
 } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
+import { notDeleted } from "@/server/db/soft-delete";
 import {
   allocateAdvanceNumber,
   allocateTransactionNumber,
@@ -104,12 +105,12 @@ export async function listAdvances(slug: string) {
   const ctx = await requireProjectPermissionBySlug(slug, "FINANCE_VIEW");
 
   const rows = await prisma.advance.findMany({
-    where: { projectId: ctx.project.id, deletedAt: null },
+    where: { projectId: ctx.project.id, ...notDeleted },
     orderBy: [{ issuedAt: "desc" }, { createdAt: "desc" }],
     take: 100,
     include: {
       settlements: {
-        where: { deletedAt: null },
+        where: { ...notDeleted },
         select: { kind: true, amount: true, deletedAt: true },
       },
     },
@@ -149,7 +150,7 @@ export async function getAdvance(slug: string, advanceId: string) {
     where: { id: advanceId, projectId: ctx.project.id },
     include: {
       settlements: {
-        where: { deletedAt: null },
+        where: { ...notDeleted },
         orderBy: { settledAt: "desc" },
         include: {
           transaction: {
@@ -345,10 +346,10 @@ export async function settleAdvance(
   await validateAccount(ctx.project.id, parsed.data.accountId || undefined);
 
   const advance = await prisma.advance.findFirst({
-    where: { id: advanceId, projectId: ctx.project.id, deletedAt: null },
+    where: { id: advanceId, projectId: ctx.project.id, ...notDeleted },
     include: {
       settlements: {
-        where: { deletedAt: null },
+        where: { ...notDeleted },
         select: { kind: true, amount: true, deletedAt: true },
       },
     },
@@ -491,7 +492,7 @@ export async function softDeleteAdvance(
   }
 
   const advance = await prisma.advance.findFirst({
-    where: { id: advanceId, projectId: ctx.project.id, deletedAt: null },
+    where: { id: advanceId, projectId: ctx.project.id, ...notDeleted },
   });
   if (!advance) {
     throw new AppError("NOT_FOUND", "Advance was not found.");

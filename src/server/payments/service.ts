@@ -11,6 +11,7 @@ import {
   type VisibleResource,
 } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
+import { notDeleted } from "@/server/db/soft-delete";
 import {
   allocatePaymentRequestNumber,
   allocateTransactionNumber,
@@ -74,7 +75,7 @@ export async function listPaymentRequests(slug: string) {
   const ctx = await requireProjectPermissionBySlug(slug, "FINANCE_VIEW");
 
   const rows = await prisma.paymentRequest.findMany({
-    where: { projectId: ctx.project.id, deletedAt: null },
+    where: { projectId: ctx.project.id, ...notDeleted },
     orderBy: [{ createdAt: "desc" }],
     take: 100,
     include: {
@@ -245,7 +246,7 @@ export async function reviewPaymentRequest(
   }
 
   const request = await prisma.paymentRequest.findFirst({
-    where: { id: requestId, projectId: ctx.project.id, deletedAt: null },
+    where: { id: requestId, projectId: ctx.project.id, ...notDeleted },
   });
   if (!request) {
     throw new AppError("NOT_FOUND", "Payment request was not found.");
@@ -340,7 +341,7 @@ export async function resubmitPaymentRequest(
   }
 
   const request = await prisma.paymentRequest.findFirst({
-    where: { id: requestId, projectId: ctx.project.id, deletedAt: null },
+    where: { id: requestId, projectId: ctx.project.id, ...notDeleted },
   });
   if (!request) {
     throw new AppError("NOT_FOUND", "Payment request was not found.");
@@ -420,7 +421,7 @@ export async function payPaymentRequest(
   await validateAccount(ctx.project.id, parsed.data.accountId || undefined);
 
   const request = await prisma.paymentRequest.findFirst({
-    where: { id: requestId, projectId: ctx.project.id, deletedAt: null },
+    where: { id: requestId, projectId: ctx.project.id, ...notDeleted },
   });
   if (!request) {
     throw new AppError("NOT_FOUND", "Payment request was not found.");

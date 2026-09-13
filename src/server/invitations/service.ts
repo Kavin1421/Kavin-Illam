@@ -15,6 +15,7 @@ import { getOptionalUser } from "@/server/auth/session";
 import { assertRateLimit, rateLimitKey } from "@/server/auth/rate-limit";
 import { requireProjectPermission } from "@/server/authorization";
 import { absoluteUrl, sendEmail } from "@/server/email/send";
+import { projectInvitationTemplate } from "@/server/email/templates";
 import { prisma } from "@/server/db/prisma";
 import { ensureProjectMembership } from "@/server/projects/members";
 import { acceptInvitationSchema } from "@/validators/auth";
@@ -111,9 +112,12 @@ export async function createInvitation(input: unknown) {
   try {
     await sendEmail({
       to: email,
-      subject: `Invitation to ${ctx.project.name}`,
-      text: `${inviter.name ?? "A collaborator"} invited you to ${ctx.project.name} as ${parsed.data.role}.\n\nAccept: ${inviteUrl}\n\nThis invite expires in 7 days.`,
-      html: `<p>You have been invited to <strong>${ctx.project.name}</strong> as <strong>${parsed.data.role}</strong>.</p><p><a href="${inviteUrl}">Accept invitation</a></p>`,
+      ...projectInvitationTemplate({
+        inviteUrl,
+        projectName: ctx.project.name,
+        role: parsed.data.role,
+        inviterName: inviter.name,
+      }),
     });
   } catch (error) {
     logger.warn("Invitation created but email failed", {

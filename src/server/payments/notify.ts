@@ -1,6 +1,7 @@
 import { formatInrFromPaise } from "@/lib/money";
 import { logger } from "@/lib/logger";
 import { absoluteUrl, sendEmail } from "@/server/email/send";
+import { paymentRequestNotifyTemplate } from "@/server/email/templates";
 import { prisma } from "@/server/db/prisma";
 
 /**
@@ -43,13 +44,18 @@ export async function notifyPaymentRequestCreated(params: {
       `/p/${params.projectSlug}/payment-requests/${params.requestId}`,
     );
     const amount = formatInrFromPaise(params.amountPaise);
-    const subject = `[${params.projectName}] Payment request ${params.requestNumber}`;
-    const text = `${params.requesterName} requested ${amount} for "${params.title}" (${params.requestNumber}).\n\nReview: ${href}`;
-    const html = `<p><strong>${params.requesterName}</strong> requested <strong>${amount}</strong> for <em>${params.title}</em> (${params.requestNumber}).</p><p><a href="${href}">Review payment request</a></p>`;
+    const mail = paymentRequestNotifyTemplate({
+      href,
+      projectName: params.projectName,
+      requestNumber: params.requestNumber,
+      title: params.title,
+      amount,
+      requesterName: params.requesterName,
+    });
 
     await Promise.all(
       emails.map((to) =>
-        sendEmail({ to, subject, text, html }).catch((error) => {
+        sendEmail({ to, ...mail }).catch((error) => {
           logger.warn("Payment request notify failed", {
             to,
             requestId: params.requestId,

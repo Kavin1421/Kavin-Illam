@@ -11,6 +11,7 @@ import {
   type VisibleResource,
 } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
+import { notDeleted } from "@/server/db/soft-delete";
 import { budgetLineSchema, upsertBudgetSchema } from "@/validators/budget";
 import { z } from "zod";
 
@@ -53,7 +54,7 @@ export async function getBudgetDashboard(slug: string) {
     prisma.financialTransaction.findMany({
       where: {
         projectId: ctx.project.id,
-        deletedAt: null,
+        ...notDeleted,
         status: { in: ["PAID", "PARTIALLY_PAID", "APPROVED"] },
       },
       select: {
@@ -70,7 +71,7 @@ export async function getBudgetDashboard(slug: string) {
       },
     }),
     prisma.paymentRequest.findMany({
-      where: { projectId: ctx.project.id, deletedAt: null },
+      where: { projectId: ctx.project.id, ...notDeleted },
       select: {
         id: true,
         status: true,

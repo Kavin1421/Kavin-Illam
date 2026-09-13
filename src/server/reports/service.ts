@@ -20,6 +20,7 @@ import {
   openCommitmentFromRequest,
 } from "@/server/budget/math";
 import { prisma } from "@/server/db/prisma";
+import { notDeleted } from "@/server/db/soft-delete";
 import { sumAuthorizedFinanceTotals } from "@/server/finance/totals";
 
 import { paiseToCsvRupees, rowsToCsv } from "./csv";
@@ -170,7 +171,7 @@ export async function buildReportCsv(
       case "summary":
       case "cash-flow": {
         const txs = await prisma.financialTransaction.findMany({
-          where: { projectId, deletedAt: null },
+          where: { projectId, ...notDeleted },
           select: {
             projectId: true,
             type: true,
@@ -208,7 +209,7 @@ export async function buildReportCsv(
         const txs = await prisma.financialTransaction.findMany({
           where: {
             projectId,
-            deletedAt: null,
+            ...notDeleted,
             type: { in: ["EXPENSE", "ADVANCE"] },
           },
           orderBy: { transactionDate: "desc" },
@@ -250,7 +251,7 @@ export async function buildReportCsv(
         const txs = await prisma.financialTransaction.findMany({
           where: {
             projectId,
-            deletedAt: null,
+            ...notDeleted,
             status: { in: ["PAID", "PARTIALLY_PAID", "APPROVED"] },
           },
           include: {
@@ -298,7 +299,7 @@ export async function buildReportCsv(
         const txs = await prisma.financialTransaction.findMany({
           where: {
             projectId,
-            deletedAt: null,
+            ...notDeleted,
             status: { in: ["PAID", "PARTIALLY_PAID", "APPROVED"] },
           },
           select: {
@@ -356,10 +357,10 @@ export async function buildReportCsv(
       case "advances":
       case "outstanding": {
         const advances = await prisma.advance.findMany({
-          where: { projectId, deletedAt: null },
+          where: { projectId, ...notDeleted },
           include: {
             settlements: {
-              where: { deletedAt: null },
+              where: { ...notDeleted },
               select: { kind: true, amount: true, deletedAt: true },
             },
           },
@@ -420,7 +421,7 @@ export async function buildReportCsv(
 
       case "payment-requests": {
         const requests = await prisma.paymentRequest.findMany({
-          where: { projectId, deletedAt: null },
+          where: { projectId, ...notDeleted },
           orderBy: { createdAt: "desc" },
           include: { category: { select: { name: true } } },
         });
@@ -480,7 +481,7 @@ export async function buildReportCsv(
           prisma.financialTransaction.findMany({
             where: {
               projectId,
-              deletedAt: null,
+              ...notDeleted,
               status: { in: ["PAID", "PARTIALLY_PAID", "APPROVED"] },
             },
             select: {
@@ -496,7 +497,7 @@ export async function buildReportCsv(
             },
           }),
           prisma.paymentRequest.findMany({
-            where: { projectId, deletedAt: null },
+            where: { projectId, ...notDeleted },
             select: {
               projectId: true,
               status: true,

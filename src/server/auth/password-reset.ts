@@ -1,6 +1,7 @@
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { absoluteUrl, sendEmail } from "@/server/email/send";
+import { passwordResetTemplate } from "@/server/email/templates";
 import { prisma } from "@/server/db/prisma";
 import { forgotPasswordSchema, resetPasswordSchema } from "@/validators/auth";
 
@@ -38,9 +39,7 @@ export async function requestPasswordReset(input: unknown) {
   try {
     await sendEmail({
       to: email,
-      subject: "Reset your Kavin Illam password",
-      text: `Reset your password: ${resetUrl}\n\nThis link expires in 1 hour.\nIf you did not request this, ignore this email.`,
-      html: `<p><a href="${resetUrl}">Reset your password</a></p><p>This link expires in 1 hour.</p>`,
+      ...passwordResetTemplate({ resetUrl }),
     });
   } catch (error) {
     logger.error("Password reset email failed", {

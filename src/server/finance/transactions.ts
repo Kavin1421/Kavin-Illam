@@ -16,6 +16,7 @@ import {
   type VisibleResource,
 } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
+import { notDeleted } from "@/server/db/soft-delete";
 import {
   createTransactionSchema,
   softDeleteTransactionSchema,
@@ -71,7 +72,7 @@ export async function listTransactions(slug: string) {
   const rows = await prisma.financialTransaction.findMany({
     where: {
       projectId: ctx.project.id,
-      deletedAt: null,
+      ...notDeleted,
     },
     orderBy: [{ transactionDate: "desc" }, { createdAt: "desc" }],
     take: 200,
@@ -270,7 +271,7 @@ export async function softDeleteTransaction(
   }
 
   const tx = await prisma.financialTransaction.findFirst({
-    where: { id: transactionId, projectId: ctx.project.id, deletedAt: null },
+    where: { id: transactionId, projectId: ctx.project.id, ...notDeleted },
   });
   if (!tx) {
     throw new AppError("NOT_FOUND", "Transaction was not found.");

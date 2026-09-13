@@ -1,6 +1,7 @@
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { absoluteUrl, sendEmail } from "@/server/email/send";
+import { verifyEmailTemplate } from "@/server/email/templates";
 import { prisma } from "@/server/db/prisma";
 import { registerSchema } from "@/validators/auth";
 
@@ -61,9 +62,10 @@ export async function registerUser(input: unknown) {
     );
     await sendEmail({
       to: email,
-      subject: "Verify your Kavin Illam email",
-      text: `Welcome to Kavin Illam.\n\nVerify your email: ${verifyUrl}\n\nIf you did not create this account, ignore this message.`,
-      html: `<p>Welcome to Kavin Illam.</p><p><a href="${verifyUrl}">Verify your email</a></p>`,
+      ...verifyEmailTemplate({
+        verifyUrl,
+        name: user.name,
+      }),
     });
   } catch (error) {
     logger.warn("Registration succeeded but verification email failed", {

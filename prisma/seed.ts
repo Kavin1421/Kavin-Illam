@@ -1,5 +1,6 @@
 import { hashPassword } from "../src/server/auth/password";
 import { prisma } from "../src/server/db/prisma";
+import { notDeleted } from "../src/server/db/soft-delete";
 import {
   computeAdvanceOutstanding,
   deriveAdvanceStatus,
@@ -305,7 +306,7 @@ async function main() {
     where: {
       projectId: project.id,
       type: "ADVANCE",
-      deletedAt: null,
+      ...notDeleted,
     },
   });
 
@@ -351,11 +352,11 @@ async function main() {
   const engineeringAdvance = await prisma.advance.findFirst({
     where: {
       projectId: project.id,
-      deletedAt: null,
+      ...notDeleted,
       recipientName: "Engineer",
     },
     include: {
-      settlements: { where: { deletedAt: null } },
+      settlements: { where: { ...notDeleted } },
     },
     orderBy: { createdAt: "asc" },
   });

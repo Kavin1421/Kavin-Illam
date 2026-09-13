@@ -17,6 +17,7 @@ import {
   openCommitmentFromRequest,
 } from "@/server/budget/math";
 import { prisma } from "@/server/db/prisma";
+import { notDeleted } from "@/server/db/soft-delete";
 import { sumAuthorizedFinanceTotals } from "@/server/finance/totals";
 import { isOpenTaskStatus } from "@/server/tasks/transitions";
 
@@ -76,7 +77,7 @@ export async function getProjectDashboard(slug: string) {
     categories,
   ] = await Promise.all([
     prisma.financialTransaction.findMany({
-      where: { projectId, deletedAt: null },
+      where: { projectId, ...notDeleted },
       orderBy: { createdAt: "desc" },
       take: 100,
       select: {
@@ -99,7 +100,7 @@ export async function getProjectDashboard(slug: string) {
       },
     }),
     prisma.paymentRequest.findMany({
-      where: { projectId, deletedAt: null },
+      where: { projectId, ...notDeleted },
       orderBy: { createdAt: "desc" },
       take: 50,
       select: {
@@ -120,12 +121,12 @@ export async function getProjectDashboard(slug: string) {
       },
     }),
     prisma.advance.findMany({
-      where: { projectId, deletedAt: null },
+      where: { projectId, ...notDeleted },
       orderBy: { issuedAt: "desc" },
       take: 50,
       include: {
         settlements: {
-          where: { deletedAt: null },
+          where: { ...notDeleted },
           select: { kind: true, amount: true, deletedAt: true },
         },
       },
