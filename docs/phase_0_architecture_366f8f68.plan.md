@@ -21,7 +21,7 @@ isProject: false
 
 ## Discovery result
 
-Workspace [`/Users/kavinkumar/Kavin/Godevs/Kavin-Illam`](/Users/kavinkumar/Kavin/Godevs/Kavin-Illam) is **empty** (no files, no git, no package manager, no Next.js). Everything is built from scratch. No existing code to preserve.
+Workspace is **empty** (no files, no git, no package manager, no Next.js). Everything is built from scratch. No existing code to preserve.
 
 ## Phase 0 deliverable
 

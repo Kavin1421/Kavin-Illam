@@ -33,6 +33,12 @@ Copy [`.env.example`](../.env.example) to `.env.production.local` on the host (g
 
 **Do not** commit `.env*` secrets. **Do not** run `pnpm db:seed` against production.
 
+### Netlify notes
+
+- Prefer site env vars in the Netlify UI (not committed files).
+- `netlify.toml` omits `.netlify/**` and `.next/**` from secrets scanning: Next.js inlines server-only env into SSR chunks at build time; that is expected and not public client JS.
+- `MONGO_DB_NAME` is omitted from key scanning (database name, not a secret).
+
 Validate schema against the target database once before go-live:
 
 ```bash

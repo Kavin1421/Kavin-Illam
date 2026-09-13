@@ -30,9 +30,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  // Standalone is for Docker/self-host. On Vercel, omit it so Next.js can
-  // consolidate App Router routes under Fluid Compute (Hobby-friendly).
-  ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
+  // Standalone is for Docker/self-host. On Vercel/Netlify, omit it so the
+  // platform adapter owns the output (and secrets scanning does not see an
+  // extra copy of env-inlined server chunks under .next/standalone).
+  ...(process.env.VERCEL || process.env.NETLIFY
+    ? {}
+    : { output: "standalone" as const }),
   // Ensure Prisma query engines (incl. Linux Docker target) are in the standalone trace
   outputFileTracingIncludes: {
     "/*": [

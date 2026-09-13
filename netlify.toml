@@ -1,0 +1,14 @@
+# Netlify + Next.js (@netlify/plugin-nextjs)
+#
+# Server env values are intentionally present in SSR/server build artifacts.
+# Netlify secrets scanning would otherwise fail the build by matching those
+# values in .netlify / .next output. Omit build artifacts from the scan; keep
+# scanning source. MONGO_DB_NAME is a database name, not a credential, and
+# collides with the repo folder name in docs/history.
+
+[build]
+  command = "pnpm run build"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_PATHS = ".netlify/**,.next/**"
+  SECRETS_SCAN_OMIT_KEYS = "MONGO_DB_NAME"

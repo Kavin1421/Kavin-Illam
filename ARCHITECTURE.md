@@ -601,7 +601,7 @@ Keep extension points clean (vendors, tax fields, integrations) without building
 
 | Item                         | Finding                                      |
 | ---------------------------- | -------------------------------------------- |
-| Workspace                    | `/Users/kavinkumar/Kavin/Godevs/Kavin-Illam` |
+| Workspace                    | This repository (greenfield checkout)        |
 | Prior application code       | **None** — empty greenfield                  |
 | Package manager / lockfile   | Absent (will use pnpm in Phase 1)            |
 | Next.js / Prisma / Auth / UI | Absent                                       |

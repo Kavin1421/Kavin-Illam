@@ -1,9 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 
 import { env } from "@/config/env";
+import { rewriteSoftDeleteArgs } from "@/server/db/soft-delete";
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma: PrismaClientExtended | undefined;
 };
 
 function createPrismaClient() {
@@ -12,8 +13,18 @@ function createPrismaClient() {
 
   return new PrismaClient({
     log: env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  }).$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ args, query }) {
+          return query(rewriteSoftDeleteArgs(args));
+        },
+      },
+    },
   });
 }
+
+type PrismaClientExtended = ReturnType<typeof createPrismaClient>;
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
