@@ -32,9 +32,11 @@ export default async function InviteAcceptPage({
             Accept invitation
           </CardTitle>
           <CardDescription>
-            {invitation
-              ? `Join Kavin Illam as ${invitation.role.toLowerCase()} (${invitation.email}).`
-              : "This invitation is invalid or has expired."}
+            {invitation?.project
+              ? `Join ${invitation.project.name} as ${invitation.role.toLowerCase()} (${invitation.email}).`
+              : invitation
+                ? `Join as ${invitation.role.toLowerCase()} (${invitation.email}).`
+                : "This invitation is invalid or has expired."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

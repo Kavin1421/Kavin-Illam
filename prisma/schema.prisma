@@ -23,7 +23,6 @@ enum InvitationStatus {
   EXPIRED
 }
 
-/// Future project roles — used by invitations before full RBAC (Phase 3–4)
 enum ProjectRole {
   OWNER
   ADMIN
@@ -32,6 +31,26 @@ enum ProjectRole {
   ARCHITECT
   ACCOUNTANT
   VIEWER
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+enum ProjectType {
+  RESIDENTIAL
+  COMMERCIAL
+  RENOVATION
+  OTHER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INVITED
+  REMOVED
 }
 
 model User {
@@ -48,9 +67,12 @@ model User {
   updatedAt     DateTime   @updatedAt
   lastLoginAt   DateTime?
 
-  accounts           Account[]
-  sessions           Session[]
-  invitationsSent    Invitation[] @relation("InvitationsSent")
+  accounts            Account[]
+  sessions            Session[]
+  invitationsSent     Invitation[]    @relation("InvitationsSent")
+  ownedProjects       Project[]       @relation("ProjectOwner")
+  memberships         ProjectMember[] @relation("MemberUser")
+  membersInvited      ProjectMember[] @relation("MemberInviter")
 }
 
 model Account {
@@ -90,13 +112,70 @@ model VerificationToken {
   @@index([identifier])
 }
 
-/// Platform / project invite foundation. projectId is optional until Phase 3.
+model Project {
+  id                      String        @id @default(auto()) @map("_id") @db.ObjectId
+  name                    String
+  slug                    String        @unique
+  description             String?
+  projectType             ProjectType   @default(RESIDENTIAL)
+  address                 String?
+  startDate               DateTime?
+  expectedCompletionDate  DateTime?
+  actualCompletionDate    DateTime?
+  /// Planned budget in minor units (paise for INR)
+  estimatedBudget         Int?
+  currency                String        @default("INR")
+  status                  ProjectStatus @default(ACTIVE)
+  ownerId                 String        @db.ObjectId
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  owner     User              @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members   ProjectMember[]
+  counters  ProjectCounter[]
+
+  @@index([ownerId, status])
+  @@index([status, updatedAt])
+}
+
+model ProjectMember {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String       @db.ObjectId
+  userId      String       @db.ObjectId
+  role        ProjectRole
+  status      MemberStatus @default(ACTIVE)
+  joinedAt    DateTime     @default(now())
+  invitedById String?      @db.ObjectId
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation("MemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User?   @relation("MemberInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, userId])
+  @@index([userId, status])
+  @@index([projectId, status])
+}
+
+model ProjectCounter {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String   @db.ObjectId
+  key       String
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, key])
+}
+
+/// Project-scoped invitation. projectId is required for new invites (Phase 3+).
 model Invitation {
   id          String           @id @default(auto()) @map("_id") @db.ObjectId
   email       String
   name        String?
   role        ProjectRole      @default(ENGINEER)
-  /// Set when inviting into a specific project (Phase 3+)
   projectId   String?          @db.ObjectId
   tokenHash   String           @unique
   status      InvitationStatus @default(PENDING)

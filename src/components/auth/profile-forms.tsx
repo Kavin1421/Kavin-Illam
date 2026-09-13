@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   changePasswordAction,
-  createInvitationAction,
   updateProfileAction,
   type ActionState,
 } from "@/server/auth/actions";
@@ -112,62 +111,6 @@ export function ChangePasswordForm() {
       ) : null}
       <Button type="submit" disabled={pending}>
         {pending ? "Updating…" : "Change password"}
-      </Button>
-    </form>
-  );
-}
-
-export function InviteForm() {
-  const [state, formAction, pending] = useActionState(
-    createInvitationAction,
-    initialState,
-  );
-
-  return (
-    <form action={formAction} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Invitee email</Label>
-        <Input id="email" name="email" type="email" required />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="name">Name (optional)</Label>
-        <Input id="name" name="name" />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="role">Role</Label>
-        <select
-          id="role"
-          name="role"
-          defaultValue="ENGINEER"
-          className="border-input bg-background h-8 w-full rounded-lg border px-2 text-sm"
-        >
-          <option value="ENGINEER">Engineer</option>
-          <option value="ARCHITECT">Architect</option>
-          <option value="CONTRACTOR">Contractor</option>
-          <option value="ACCOUNTANT">Accountant</option>
-          <option value="VIEWER">Viewer</option>
-          <option value="ADMIN">Admin</option>
-        </select>
-      </div>
-      {state.error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.success ? (
-        <div className="space-y-2">
-          <p className="text-sm text-emerald-700" role="status">
-            {state.success}
-          </p>
-          {state.inviteUrl ? (
-            <p className="text-muted-foreground break-all text-xs">
-              Invite link: {state.inviteUrl}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-      <Button type="submit" disabled={pending}>
-        {pending ? "Sending…" : "Send invitation"}
       </Button>
     </form>
   );

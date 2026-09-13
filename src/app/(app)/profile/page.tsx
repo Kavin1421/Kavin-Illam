@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import {
   ChangePasswordForm,
-  InviteForm,
   ProfileForm,
 } from "@/components/auth/profile-forms";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +29,7 @@ export default async function ProfilePage() {
       <div className="space-y-2">
         <h1 className="font-heading text-3xl tracking-tight">Profile</h1>
         <p className="text-muted-foreground text-sm">
-          Manage your account details, security, and invitations.
+          Manage your account details and security.
         </p>
       </div>
 
@@ -81,23 +80,10 @@ export default async function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Invite collaborator</CardTitle>
-          <CardDescription>
-            Invitation foundation for engineers and other roles. Project binding
-            expands in Phase 3.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <InviteForm />
-        </CardContent>
-      </Card>
-
       <Separator />
       <p className="text-muted-foreground text-sm">
-        <Link href="/" className="underline-offset-4 hover:underline">
-          Back to home
+        <Link href="/projects" className="underline-offset-4 hover:underline">
+          Back to projects
         </Link>
       </p>
     </div>

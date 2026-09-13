@@ -18,7 +18,7 @@ export default async function HomePage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
       <section className="max-w-2xl space-y-5">
-        <Badge variant="secondary">Phase 2 · Authentication</Badge>
+        <Badge variant="secondary">Phase 3 · Projects</Badge>
         <h1 className="font-heading text-4xl leading-tight tracking-tight sm:text-5xl">
           Kavin Illam
         </h1>
@@ -30,10 +30,10 @@ export default async function HomePage() {
         <div className="flex flex-wrap gap-3 pt-2">
           {user ? (
             <Link
-              href="/profile"
+              href="/projects"
               className={cn(buttonVariants({ size: "lg" }))}
             >
-              Open profile
+              Open projects
             </Link>
           ) : (
             <>
@@ -51,47 +51,41 @@ export default async function HomePage() {
               </Link>
             </>
           )}
-          <Link
-            href="/api/health"
-            className={cn(buttonVariants({ variant: "ghost", size: "lg" }))}
-          >
-            Health check
-          </Link>
         </div>
       </section>
 
       <section className="mt-12 grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Secure accounts</CardTitle>
+            <CardTitle>Multi-project</CardTitle>
             <CardDescription>
-              Registration, sessions, password recovery, and email verification.
+              Isolated members, settings, and future finance per project.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">
-            Collaborator invitations are ready for Phase 3 project binding.
+            Switch projects from the header without mixing data.
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Auditable finance</CardTitle>
+            <CardTitle>Roles & invites</CardTitle>
             <CardDescription>
-              Ledger-style transactions with integer money units.
+              Invite engineers and collaborators into a specific project.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">
-            Core finance modules begin in Phase 5.
+            Accepting an invite creates project membership with the assigned role.
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Secure documents</CardTitle>
+            <CardTitle>Authorization ready</CardTitle>
             <CardDescription>
-              Cloudinary private delivery with server-side authorization.
+              Membership and permission checks run on the server.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">
-            Document workflows begin in Phase 8.
+            Phase 4 expands isolation tests and visibility enforcement.
           </CardContent>
         </Card>
       </section>

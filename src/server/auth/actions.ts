@@ -48,7 +48,7 @@ export async function loginAction(
     await signIn("credentials", {
       email,
       password: parsed.data.password,
-      redirectTo: "/profile",
+      redirectTo: "/projects",
     });
     return {};
   } catch (error) {
@@ -68,7 +68,7 @@ export async function registerAction(
     await signIn("credentials", {
       email: user.email,
       password: String(formData.get("password") ?? ""),
-      redirectTo: "/profile",
+      redirectTo: "/projects",
     });
     return {};
   } catch (error) {
@@ -174,10 +174,13 @@ export async function acceptInvitationAction(
 ): Promise<ActionState> {
   try {
     const accepted = await acceptInvitation(formObject(formData));
+    const dest = accepted.projectSlug
+      ? `/p/${accepted.projectSlug}`
+      : "/projects";
     await signIn("credentials", {
       email: accepted.email,
       password: String(formData.get("password") ?? ""),
-      redirectTo: "/profile",
+      redirectTo: dest,
     });
     return {};
   } catch (error) {

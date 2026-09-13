@@ -1,7 +1,7 @@
 # Kavin Illam — Architecture
 
 **Product:** Multi-project construction management, finance, and document portal  
-**Status:** Phase 2 authentication complete. Phase 3 (projects) is next.  
+**Status:** Phase 3 projects complete. Phase 4 (authorization hardening + isolation tests) is next.  
 **Audience:** Homeowner + engineer initially; designed for additional collaborators later.
 
 This document is the source of truth for stack, module layout, data strategy, authorization, finance rules, document security, and deployment. Implementation must follow it phase by phase.
@@ -613,6 +613,9 @@ Nothing existing was overwritten.
 |----------|-----------|
 | Permission checks, not role switches in domain code | Prevents brittle role sprawl and privilege bugs |
 | Credentials auth uses JWT sessions | Auth.js does not support database sessions with the Credentials provider; Prisma Session/Account models remain for adapter readiness |
+| Auth rate limits are in-memory | Fine for single-instance; use Redis (or equivalent) before multi-instance production |
+| Invitation.projectId optional | Phase 2 invite foundation; project membership binding lands in Phase 3 |
+| Role→permission matrix in code | Seeded defaults in `src/server/authorization/permissions.ts`; editable DB matrix can come later |
 | Integer minor units | Avoids IEEE-754 money errors |
 | Soft delete for finance | Auditability and recovery |
 | Explicit payment-request ↔ transaction link | Prevents duplicate ledger entries |
