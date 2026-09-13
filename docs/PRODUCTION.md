@@ -1,26 +1,24 @@
 # Production deployment
 
-Self-host **Kavin Illam** behind Nginx with a Node 24 container. MongoDB is expected to be **Atlas** (or your own replica set) — not bundled in Compose.
+Deploy **Kavin Illam** either on **Netlify** (Next.js runtime) or **self-host** behind Nginx with a Node 24 container. MongoDB is expected to be **Atlas** (or your own replica set) — not bundled in Compose.
 
 ```text
-Internet → Nginx (TLS, headers, reverse proxy)
-                → Next.js (standalone, port 3000)
-                      → MongoDB Atlas
-                      → Cloudinary
-                      → Resend / SMTP
+Internet → Netlify CDN / Functions   OR   Nginx (TLS) → Next.js standalone
+                → MongoDB Atlas
+                → Cloudinary
+                → Resend / SMTP
 ```
 
 ## Prerequisites
 
-- Docker Engine 24+ and Docker Compose v2
 - MongoDB Atlas (or replica-set) connection string
 - Cloudinary project (documents)
 - SMTP or Resend for email
-- Domain + TLS certificates for production HTTPS
+- For self-host: Docker Engine 24+, Docker Compose v2, domain + TLS
 
 ## Environment
 
-Copy [`.env.example`](../.env.example) to `.env.production.local` on the host (gitignored).
+Copy [`.env.example`](../.env.example) for local/self-host (gitignored). On Netlify, set the same keys in **Site configuration → Environment variables** — never commit secrets.
 
 | Variable                     | Required          | Notes                                               |
 | ---------------------------- | ----------------- | --------------------------------------------------- |
@@ -30,14 +28,34 @@ Copy [`.env.example`](../.env.example) to `.env.production.local` on the host (g
 | `CLOUDINARY_*`               | Yes if using docs | Secret never exposed to browser                     |
 | `RESEND_API_KEY` or `SMTP_*` | Recommended       | Invitations / recovery                              |
 | `SMTP_FROM`                  | With email        | From address                                        |
+| `MONGO_DB_NAME`              | Optional          | Atlas DB name only — not a credential               |
 
 **Do not** commit `.env*` secrets. **Do not** run `pnpm db:seed` against production.
 
-### Netlify notes
+## Netlify
 
-- Prefer site env vars in the Netlify UI (not committed files).
-- `netlify.toml` omits `.netlify/**` and `.next/**` from secrets scanning: Next.js inlines server-only env into SSR chunks at build time; that is expected and not public client JS.
-- `MONGO_DB_NAME` is omitted from key scanning (database name, not a secret).
+Config lives in [`netlify.toml`](../netlify.toml). The `@netlify/plugin-nextjs` (OpenNext) adapter provisions SSR; you do **not** need `output: "standalone"` on Netlify.
+
+### Required UI settings (or deploys will fail)
+
+1. **Site configuration → Build & deploy → Build settings**
+   - **Build command:** leave empty or match `pnpm run build` (toml wins).
+   - **Publish directory:** must be **empty / cleared**.  
+     If it is `.next`, Netlify packs cache + traces into `___netlify-server-handler` and fails with **“function exceeds the maximum size of 250 MB”**.
+2. **Plugins:** Next.js runtime / `@netlify/plugin-nextjs` enabled (also declared in `netlify.toml`).
+3. After fixing publish: use **Clear cache and deploy site** once.
+
+### What `netlify.toml` already does
+
+- Sets `publish = "public"` so UI cannot force `.next`
+- Runs `rm -rf .next/cache` after build
+- Omits `.netlify/**` / `.next/**` from secrets scanning (server env is inlined into SSR chunks by design)
+- Omits `MONGO_DB_NAME` from secrets key scanning (name, not a secret)
+- Prisma `rhel-openssl-3.0.x` binary target for Lambda
+
+### Env on Netlify
+
+Set at least: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `NEXTAUTH_URL`, plus Cloudinary/SMTP as needed. Prefer the Netlify UI or CLI — not committed files.
 
 Validate schema against the target database once before go-live:
 
@@ -48,7 +66,7 @@ pnpm db:push
 
 Prefer controlled migrations / reviews for schema changes; `db:push` is fine for early Atlas setups but review indexes in Atlas.
 
-## Build & run (Compose)
+## Build & run (Compose / self-host)
 
 ```bash
 # Fill .env.production.local first
@@ -115,6 +133,10 @@ Application-level soft deletes do **not** replace database backups.
 
 ## Updates & rollback
 
+**Netlify:** redeploy a previous deploy from the Deploys UI, or revert the git commit.
+
+**Docker:**
+
 1. Build a new image tagged with git SHA.
 2. `docker compose up -d --build app` (or pull the new tag).
 3. Confirm `/api/health` and a smoke login.
@@ -122,16 +144,18 @@ Application-level soft deletes do **not** replace database backups.
 
 ## Security checklist
 
-- [ ] TLS terminated at Nginx; HSTS enabled in prod
+- [ ] TLS (Netlify HTTPS or Nginx); HSTS in hardened self-host
 - [ ] `AUTH_URL` matches the public HTTPS origin
 - [ ] Strong unique `AUTH_SECRET`
 - [ ] Atlas IP allowlist / private networking
 - [ ] Seed/demo data never applied in production
-- [ ] Container runs as non-root (`nextjs` user)
+- [ ] Netlify **Publish directory** is not `.next`
+- [ ] Container runs as non-root (`nextjs` user) when self-hosting
 - [ ] `client_max_body_size` sized for document uploads (32m default)
 
 ## Related
 
 - Architecture: [`ARCHITECTURE.md`](../ARCHITECTURE.md)
+- Netlify: [`netlify.toml`](../netlify.toml)
 - Compose: [`docker-compose.yml`](../docker-compose.yml)
 - Nginx: [`docker/nginx/`](../docker/nginx/)

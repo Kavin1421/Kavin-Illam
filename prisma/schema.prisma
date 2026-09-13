@@ -2,9 +2,11 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider      = "prisma-client-js"
-  // native = local/dev; debian = Node 24 bookworm Docker image
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider = "prisma-client-js"
+  // native  = local macOS/Windows/Linux dev
+  // debian  = Node bookworm Docker image (self-host)
+  // rhel    = Netlify / AWS Lambda Node runtime
+  binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

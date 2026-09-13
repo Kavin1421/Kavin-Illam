@@ -1,14 +1,25 @@
-# Netlify + Next.js (@netlify/plugin-nextjs)
+# Netlify + Next.js (OpenNext / @netlify/plugin-nextjs)
 #
-# Server env values are intentionally present in SSR/server build artifacts.
-# Netlify secrets scanning would otherwise fail the build by matching those
-# values in .netlify / .next output. Omit build artifacts from the scan; keep
-# scanning source. MONGO_DB_NAME is a database name, not a credential, and
-# collides with the repo folder name in docs/history.
+# CRITICAL: Do not publish the `.next` folder.
+# Publishing `.next` (common UI misconfig) packs cache + server traces into
+# `___netlify-server-handler` and exceeds the 250 MB Lambda limit.
+# The Next.js runtime owns publish/routing — use `public` only as a stub so the
+# Netlify UI cannot force `publish = ".next"`.
+#
+# After changing this file: Site settings → Build & deploy → clear any custom
+# Publish directory (or set it blank), then "Clear cache and deploy site".
 
 [build]
-  command = "pnpm run build"
+  command = "pnpm run build && rm -rf .next/cache"
+  publish = "public"
 
 [build.environment]
+  # Next.js inlines server env into SSR chunks at build time (not client JS).
   SECRETS_SCAN_OMIT_PATHS = ".netlify/**,.next/**"
+  # Database name is not a credential; collides with repo folder name in docs.
   SECRETS_SCAN_OMIT_KEYS = "MONGO_DB_NAME"
+  # Ensure Prisma generates the Lambda (RHEL) engine during Netlify CI.
+  # (schema.prisma also lists rhel-openssl-3.0.x explicitly)
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

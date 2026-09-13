@@ -19,7 +19,11 @@ pnpm dev
 
 Seeded: `kevin@kavinillam.local` (OWNER), `engineer@kavinillam.local` (ENGINEER), project `kavin-illam`.
 
-## Production (self-host)
+## Production
+
+**Netlify:** connect the repo, set env vars, and ensure **Publish directory is blank** (never `.next`). See [`docs/PRODUCTION.md`](docs/PRODUCTION.md) and [`netlify.toml`](netlify.toml).
+
+**Self-host (Docker):**
 
 ```bash
 docker compose up --build -d

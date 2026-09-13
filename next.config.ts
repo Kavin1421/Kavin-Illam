@@ -28,21 +28,26 @@ const securityHeaders = [
   },
 ];
 
+/** Docker / self-host only — never on Vercel or Netlify (Lambda size limits). */
+const useStandaloneOutput = !process.env.VERCEL && !process.env.NETLIFY;
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  // Standalone is for Docker/self-host. On Vercel/Netlify, omit it so the
-  // platform adapter owns the output (and secrets scanning does not see an
-  // extra copy of env-inlined server chunks under .next/standalone).
-  ...(process.env.VERCEL || process.env.NETLIFY
-    ? {}
-    : { output: "standalone" as const }),
-  // Ensure Prisma query engines (incl. Linux Docker target) are in the standalone trace
-  outputFileTracingIncludes: {
-    "/*": [
-      "./node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/**/*",
-      "./node_modules/@prisma/client/**/*",
-    ],
-  },
+  ...(useStandaloneOutput ? { output: "standalone" as const } : {}),
+  // Only for standalone Docker traces. Broad Prisma globs on Netlify/Vercel
+  // pull multi-platform engines + pnpm trees into the serverless handler and
+  // can exceed the 250 MB unzipped function limit.
+  ...(useStandaloneOutput
+    ? {
+        outputFileTracingIncludes: {
+          "/*": [
+            "./node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/libquery_engine-*",
+            "./node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/schema.prisma",
+            "./node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/index.js",
+          ],
+        },
+      }
+    : {}),
   headers: async () => [
     {
       source: "/(.*)",
