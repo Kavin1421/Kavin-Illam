@@ -3,39 +3,9 @@ import { z } from "zod";
 import { AppError } from "@/lib/errors";
 import { requireProjectPermissionBySlug } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
+import { SYSTEM_CATEGORY_SEEDS } from "@/server/finance/default-seeds";
 
-export const SYSTEM_CATEGORY_SEEDS = [
-  { code: "LAND", name: "Land" },
-  { code: "ARCHITECTURE", name: "Architecture" },
-  { code: "ENGINEERING", name: "Engineering" },
-  { code: "CIVIL_WORK", name: "Civil work" },
-  { code: "MATERIALS", name: "Materials" },
-  { code: "CEMENT", name: "Cement" },
-  { code: "STEEL", name: "Steel" },
-  { code: "BRICKS", name: "Bricks" },
-  { code: "SAND", name: "Sand" },
-  { code: "AGGREGATE", name: "Aggregate" },
-  { code: "PLUMBING", name: "Plumbing" },
-  { code: "ELECTRICAL", name: "Electrical" },
-  { code: "CARPENTRY", name: "Carpentry" },
-  { code: "PAINTING", name: "Painting" },
-  { code: "FLOORING", name: "Flooring" },
-  { code: "TILES", name: "Tiles" },
-  { code: "DOORS", name: "Doors" },
-  { code: "WINDOWS", name: "Windows" },
-  { code: "KITCHEN", name: "Kitchen" },
-  { code: "BATHROOM", name: "Bathroom" },
-  { code: "INTERIOR", name: "Interior" },
-  { code: "LABOUR", name: "Labour" },
-  { code: "TRANSPORT", name: "Transport" },
-  { code: "EQUIPMENT", name: "Equipment" },
-  { code: "GOVERNMENT_FEES", name: "Government fees" },
-  { code: "LEGAL", name: "Legal" },
-  { code: "DOCUMENTATION", name: "Documentation" },
-  { code: "UTILITY", name: "Utility" },
-  { code: "MISCELLANEOUS", name: "Miscellaneous" },
-  { code: "PERSONAL", name: "Personal" },
-] as const;
+export { SYSTEM_CATEGORY_SEEDS } from "@/server/finance/default-seeds";
 
 export async function ensureSystemCategories() {
   for (const seed of SYSTEM_CATEGORY_SEEDS) {
@@ -58,6 +28,8 @@ export async function ensureSystemCategories() {
 
 export async function listCategoriesForProject(slug: string) {
   await requireProjectPermissionBySlug(slug, "FINANCE_VIEW");
+  // Heal after DB wipes / fresh environments so finance forms never see an empty list.
+  await ensureSystemCategories();
   const project = await prisma.project.findUnique({ where: { slug } });
   if (!project) {
     throw new AppError("NOT_FOUND", "Project was not found.");

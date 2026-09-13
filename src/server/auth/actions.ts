@@ -1,6 +1,7 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 
 import { AppError, toUserMessage } from "@/lib/errors";
@@ -62,6 +63,7 @@ export async function loginAction(
     });
     return {};
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     if (error instanceof AuthError) {
       return { error: "Invalid email or password." };
     }
@@ -82,6 +84,8 @@ export async function registerAction(
     });
     return {};
   } catch (error) {
+    // Successful sign-in uses redirect(); swallowing it looks like a failure.
+    if (isRedirectError(error)) throw error;
     if (error instanceof AuthError) {
       return {
         success: "Account created. Please sign in.",
@@ -120,6 +124,7 @@ export async function resetPasswordAction(
     await resetPasswordWithToken(formObject(formData));
     redirect("/login?reset=1");
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     if (error instanceof AppError) {
       return { error: error.message };
     }
@@ -194,6 +199,7 @@ export async function acceptInvitationAction(
     });
     return {};
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     if (error instanceof AuthError) {
       return { success: "Account ready. Please sign in." };
     }

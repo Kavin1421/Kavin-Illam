@@ -1,0 +1,55 @@
+/** Pure catalogs for finance form dropdowns — no DB / auth imports. */
+
+export const SYSTEM_CATEGORY_SEEDS = [
+  { code: "LAND", name: "Land" },
+  { code: "ARCHITECTURE", name: "Architecture" },
+  { code: "ENGINEERING", name: "Engineering" },
+  { code: "CIVIL_WORK", name: "Civil work" },
+  { code: "MATERIALS", name: "Materials" },
+  { code: "CEMENT", name: "Cement" },
+  { code: "STEEL", name: "Steel" },
+  { code: "BRICKS", name: "Bricks" },
+  { code: "SAND", name: "Sand" },
+  { code: "AGGREGATE", name: "Aggregate" },
+  { code: "PLUMBING", name: "Plumbing" },
+  { code: "ELECTRICAL", name: "Electrical" },
+  { code: "CARPENTRY", name: "Carpentry" },
+  { code: "PAINTING", name: "Painting" },
+  { code: "FLOORING", name: "Flooring" },
+  { code: "TILES", name: "Tiles" },
+  { code: "DOORS", name: "Doors" },
+  { code: "WINDOWS", name: "Windows" },
+  { code: "KITCHEN", name: "Kitchen" },
+  { code: "BATHROOM", name: "Bathroom" },
+  { code: "INTERIOR", name: "Interior" },
+  { code: "LABOUR", name: "Labour" },
+  { code: "TRANSPORT", name: "Transport" },
+  { code: "EQUIPMENT", name: "Equipment" },
+  { code: "GOVERNMENT_FEES", name: "Government fees" },
+  { code: "LEGAL", name: "Legal" },
+  { code: "DOCUMENTATION", name: "Documentation" },
+  { code: "UTILITY", name: "Utility" },
+  { code: "MISCELLANEOUS", name: "Miscellaneous" },
+  { code: "PERSONAL", name: "Personal" },
+] as const;
+
+export const DEFAULT_FINANCIAL_ACCOUNT_SEEDS = [
+  {
+    name: "Cash",
+    type: "CASH" as const,
+    institution: null as string | null,
+    maskedIdentifier: null as string | null,
+  },
+  {
+    name: "HDFC Bank",
+    type: "BANK" as const,
+    institution: "HDFC",
+    maskedIdentifier: "XXXX4210" as string | null,
+  },
+  {
+    name: "Indian Bank",
+    type: "BANK" as const,
+    institution: "Indian Bank",
+    maskedIdentifier: null as string | null,
+  },
+] as const;

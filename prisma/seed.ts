@@ -159,6 +159,41 @@ async function main() {
     });
   }
 
+  let indianBank = await prisma.financialAccount.findFirst({
+    where: { projectId: project.id, name: "Indian Bank" },
+  });
+  if (!indianBank) {
+    indianBank = await prisma.financialAccount.create({
+      data: {
+        projectId: project.id,
+        ownerId: kevin.id,
+        name: "Indian Bank",
+        type: "BANK",
+        institution: "Indian Bank",
+        openingBalance: 0,
+        currency: "INR",
+        status: "ACTIVE",
+      },
+    });
+  }
+
+  const cash = await prisma.financialAccount.findFirst({
+    where: { projectId: project.id, name: "Cash" },
+  });
+  if (!cash) {
+    await prisma.financialAccount.create({
+      data: {
+        projectId: project.id,
+        ownerId: kevin.id,
+        name: "Cash",
+        type: "CASH",
+        openingBalance: 0,
+        currency: "INR",
+        status: "ACTIVE",
+      },
+    });
+  }
+
   const engineering = await prisma.category.findFirst({
     where: { code: "ENGINEERING", isSystem: true },
   });

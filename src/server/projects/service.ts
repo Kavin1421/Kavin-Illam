@@ -11,6 +11,8 @@ import {
   requireProjectPermissionBySlug,
 } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
+import { ensureDefaultFinancialAccounts } from "@/server/finance/accounts";
+import { ensureSystemCategories } from "@/server/finance/categories";
 import { canCreateProjectFromRoles } from "@/server/projects/create-policy";
 import {
   createProjectSchema,
@@ -163,6 +165,13 @@ export async function createProject(input: unknown) {
         ],
       },
     },
+  });
+
+  await ensureSystemCategories();
+  await ensureDefaultFinancialAccounts({
+    projectId: project.id,
+    ownerId: user.id,
+    currency: project.currency,
   });
 
   logger.info("Project created", { projectId: project.id, ownerId: user.id });
