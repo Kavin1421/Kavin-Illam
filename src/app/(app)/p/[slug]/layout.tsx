@@ -34,12 +34,14 @@ export default async function ProjectLayout({
   }
 
   const nav = [
-    { href: `/p/${slug}`, label: "Overview" },
+    { href: `/p/${slug}`, label: "Dashboard" },
     { href: `/p/${slug}/finance`, label: "Finance" },
     { href: `/p/${slug}/budget`, label: "Budget" },
     { href: `/p/${slug}/advances`, label: "Advances" },
     { href: `/p/${slug}/payment-requests`, label: "Requests" },
     { href: `/p/${slug}/documents`, label: "Documents" },
+    { href: `/p/${slug}/tasks`, label: "Tasks" },
+    { href: `/p/${slug}/milestones`, label: "Milestones" },
     { href: `/p/${slug}/members`, label: "Members" },
     { href: `/p/${slug}/settings`, label: "Settings" },
   ];

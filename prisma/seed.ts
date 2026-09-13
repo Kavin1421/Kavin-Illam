@@ -13,7 +13,9 @@ import { ensureSystemCategories } from "../src/server/finance/categories";
 import {
   allocateAdvanceNumber,
   allocateDocumentNumber,
+  allocateMilestoneNumber,
   allocatePaymentRequestNumber,
+  allocateTaskNumber,
   allocateTransactionNumber,
 } from "../src/server/finance/numbering";
 
@@ -601,12 +603,118 @@ async function main() {
     }
   }
 
+  // Phase 10 — milestones + tasks.
+  const existingMilestoneCount = await prisma.milestone.count({
+    where: { projectId: project.id },
+  });
+
+  if (existingMilestoneCount === 0) {
+    const foundationNumber = await allocateMilestoneNumber({
+      projectId: project.id,
+      projectSlug: project.slug,
+    });
+    const foundation = await prisma.milestone.create({
+      data: {
+        projectId: project.id,
+        milestoneNumber: foundationNumber,
+        title: "Foundation complete",
+        description: "Excavation, footing, and plinth beam",
+        status: "IN_PROGRESS",
+        targetDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+        visibility: "PROJECT_SHARED",
+        allowedUserIds: [],
+        createdById: kevin.id,
+        sortOrder: 0,
+      },
+    });
+
+    const structureNumber = await allocateMilestoneNumber({
+      projectId: project.id,
+      projectSlug: project.slug,
+    });
+    await prisma.milestone.create({
+      data: {
+        projectId: project.id,
+        milestoneNumber: structureNumber,
+        title: "Structure complete",
+        description: "Columns, slabs, and roof slab",
+        status: "UPCOMING",
+        targetDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000),
+        visibility: "PROJECT_SHARED",
+        allowedUserIds: [],
+        createdById: kevin.id,
+        sortOrder: 1,
+      },
+    });
+
+    const task1Number = await allocateTaskNumber({
+      projectId: project.id,
+      projectSlug: project.slug,
+    });
+    await prisma.task.create({
+      data: {
+        projectId: project.id,
+        taskNumber: task1Number,
+        title: "Mark excavation layout",
+        description: "Verify setbacks and dig lines with engineer",
+        status: "DONE",
+        priority: "HIGH",
+        milestoneId: foundation.id,
+        assigneeId: engineer.id,
+        completedAt: new Date(),
+        visibility: "PROJECT_SHARED",
+        allowedUserIds: [],
+        createdById: kevin.id,
+      },
+    });
+
+    const task2Number = await allocateTaskNumber({
+      projectId: project.id,
+      projectSlug: project.slug,
+    });
+    await prisma.task.create({
+      data: {
+        projectId: project.id,
+        taskNumber: task2Number,
+        title: "Schedule concrete pour",
+        description: "Coordinate cement, labour, and curing plan",
+        status: "IN_PROGRESS",
+        priority: "URGENT",
+        milestoneId: foundation.id,
+        assigneeId: engineer.id,
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        visibility: "PROJECT_SHARED",
+        allowedUserIds: [],
+        createdById: kevin.id,
+      },
+    });
+
+    const task3Number = await allocateTaskNumber({
+      projectId: project.id,
+      projectSlug: project.slug,
+    });
+    await prisma.task.create({
+      data: {
+        projectId: project.id,
+        taskNumber: task3Number,
+        title: "Order steel for columns",
+        status: "TODO",
+        priority: "MEDIUM",
+        assigneeId: kevin.id,
+        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        visibility: "PROJECT_SHARED",
+        allowedUserIds: [],
+        createdById: engineer.id,
+      },
+    });
+  }
+
   console.log(
-    "Seeded users + project + finance + advances + payment requests + documents + budget:",
+    "Seeded users + project + finance + advances + payment requests + documents + budget + tasks:",
   );
   console.log(`- ${kevin.name} <${kevin.email}> OWNER`);
   console.log(`- ${engineer.name} <${engineer.email}> ENGINEER`);
-  console.log(`- Project: ${project.name} (/p/${project.slug}/budget)`);
+  console.log(`- Project: ${project.name} (/p/${project.slug}/tasks)`);
   console.log("Password: value from SEED_PASSWORD (or local default).");
 }
 

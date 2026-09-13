@@ -121,3 +121,55 @@ export async function allocateDocumentNumber(params: {
   const seq = String(counter.value).padStart(6, "0");
   return `${code}-DOC-${seq}`;
 }
+
+export async function allocateTaskNumber(params: {
+  projectId: string;
+  projectSlug: string;
+}): Promise<string> {
+  const counter = await prisma.projectCounter.upsert({
+    where: {
+      projectId_key: {
+        projectId: params.projectId,
+        key: "TSK",
+      },
+    },
+    create: {
+      projectId: params.projectId,
+      key: "TSK",
+      value: 1,
+    },
+    update: {
+      value: { increment: 1 },
+    },
+  });
+
+  const code = projectCodeFromSlug(params.projectSlug);
+  const seq = String(counter.value).padStart(6, "0");
+  return `${code}-TSK-${seq}`;
+}
+
+export async function allocateMilestoneNumber(params: {
+  projectId: string;
+  projectSlug: string;
+}): Promise<string> {
+  const counter = await prisma.projectCounter.upsert({
+    where: {
+      projectId_key: {
+        projectId: params.projectId,
+        key: "MS",
+      },
+    },
+    create: {
+      projectId: params.projectId,
+      key: "MS",
+      value: 1,
+    },
+    update: {
+      value: { increment: 1 },
+    },
+  });
+
+  const code = projectCodeFromSlug(params.projectSlug);
+  const seq = String(counter.value).padStart(6, "0");
+  return `${code}-MS-${seq}`;
+}

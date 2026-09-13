@@ -1,7 +1,7 @@
 # Kavin Illam — Architecture
 
 **Product:** Multi-project construction management, finance, and document portal  
-**Status:** Phase 9 budget complete. Phase 10 (tasks + milestones) is next.  
+**Status:** Phase 11 premium dashboard complete. Phase 12 (reports + CSV) is next.  
 **Audience:** Homeowner + engineer initially; designed for additional collaborators later.
 
 This document is the source of truth for stack, module layout, data strategy, authorization, finance rules, document security, and deployment. Implementation must follow it phase by phase.

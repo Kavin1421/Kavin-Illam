@@ -4,11 +4,11 @@ Private, multi-project construction management, finance, and document portal.
 
 ## Status
 
-**Phase 9 — Budget: complete**
+**Phase 11 — Premium dashboard: complete**
 
-Category planned amounts with visibility-aware **paid** (shared ledger) and **committed** (open payment requests). Remaining is labeled as either vs paid or vs committed — never mixed.
+Owner-ready project dashboard: spent, category breakdown, budget remaining (vs paid / vs committed), outstanding advances, pending requests, overdue tasks, upcoming milestones, and recent activity — all visibility-filtered on the server.
 
-## Try budget
+## Try the dashboard
 
 ```bash
 pnpm db:push
@@ -16,12 +16,12 @@ pnpm db:seed
 pnpm dev
 ```
 
-Kevin → **Kavin Illam** → **Budget**. Engineer can view but not edit.
+Sign in as Kevin → **Kavin Illam** → **Dashboard**.
 
 ## Phase map
 
 | Phase | Status |
 |-------|--------|
-| 0–8 | Complete |
-| 9 Budget | Complete |
-| 10 Tasks + milestones | Next |
+| 0–10 | Complete |
+| 11 Premium dashboard | Complete |
+| 12 Reports + CSV | Next |
