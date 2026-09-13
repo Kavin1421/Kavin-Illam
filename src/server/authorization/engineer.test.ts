@@ -5,7 +5,8 @@ import {
   engineerForbiddenPermissions,
   roleHasPermission,
 } from "@/server/authorization/permissions";
-import { canCreateProjectFromRoles } from "@/server/projects/create-policy";
+import { canCreateProjectAsSuperadmin } from "@/server/projects/create-policy";
+import { isSuperadminEmail } from "@/server/auth/superadmin";
 
 describe("engineer restriction matrix", () => {
   it("denies administrative and destructive finance permissions", () => {
@@ -27,12 +28,14 @@ describe("engineer restriction matrix", () => {
   });
 });
 
-describe("engineer cannot create another project", () => {
-  it("denies project creation for engineer-only memberships", () => {
-    expect(canCreateProjectFromRoles(["ENGINEER"])).toBe(false);
+describe("project creation is superadmin-only", () => {
+  it("denies project creation for non-superadmins", () => {
+    expect(canCreateProjectAsSuperadmin(false)).toBe(false);
+    expect(isSuperadminEmail("engineer@example.com")).toBe(false);
   });
 
-  it("allows owners to create additional projects", () => {
-    expect(canCreateProjectFromRoles(["OWNER"])).toBe(true);
+  it("allows the platform superadmin email", () => {
+    expect(isSuperadminEmail("kkavinkumar24@gmail.com")).toBe(true);
+    expect(canCreateProjectAsSuperadmin(true)).toBe(true);
   });
 });

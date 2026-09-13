@@ -1,11 +1,7 @@
-import type { ProjectRole } from "@prisma/client";
-
 /**
- * Only project owners may create additional projects.
- * Bootstrap: users with zero memberships may create their first project.
- * Engineers and other non-owner roles cannot add another project.
+ * Only platform superadmins may create projects directly.
+ * Everyone else must submit an access request for superadmin approval.
  */
-export function canCreateProjectFromRoles(roles: ProjectRole[]): boolean {
-  if (roles.length === 0) return true;
-  return roles.includes("OWNER");
+export function canCreateProjectAsSuperadmin(isSuperadmin: boolean): boolean {
+  return isSuperadmin;
 }

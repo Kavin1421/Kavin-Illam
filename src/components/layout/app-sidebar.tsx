@@ -9,6 +9,7 @@ import {
   extractProjectSlug,
   globalNavGroups,
   isNavActive,
+  platformAdminNavGroup,
   projectNavGroups,
   type ShellNavItem,
   type ShellProject,
@@ -30,6 +31,7 @@ function NavLink({
   const pathname = usePathname();
   const active = isNavActive(pathname, item.href, item.exact);
   const Icon = item.icon;
+  const badge = item.badge && item.badge > 0 ? item.badge : null;
 
   return (
     <Link
@@ -52,18 +54,32 @@ function NavLink({
           className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-cta"
         />
       ) : null}
-      <Icon
-        className={cn(
-          "size-[1.125rem] shrink-0 transition-ki-fast",
-          active
-            ? "text-cta"
-            : "opacity-80 group-hover:translate-x-px group-hover:opacity-100",
-        )}
-      />
+      <span className="relative shrink-0">
+        <Icon
+          className={cn(
+            "size-[1.125rem] transition-ki-fast",
+            active
+              ? "text-cta"
+              : "opacity-80 group-hover:translate-x-px group-hover:opacity-100",
+          )}
+        />
+        {collapsed && badge ? (
+          <span className="bg-cta text-primary-foreground absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full text-[9px] font-bold">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        ) : null}
+      </span>
       {!collapsed ? (
-        <span className={cn("truncate", active && "font-medium")}>
-          {item.label}
-        </span>
+        <>
+          <span className={cn("min-w-0 flex-1 truncate", active && "font-medium")}>
+            {item.label}
+          </span>
+          {badge ? (
+            <span className="bg-cta/20 text-mint rounded-full px-2 py-0.5 text-[11px] font-semibold">
+              {badge}
+            </span>
+          ) : null}
+        </>
       ) : null}
     </Link>
   );
@@ -144,6 +160,8 @@ export function AppSidebar({
   mobileOpen,
   onCloseMobile,
   canCreateProject = false,
+  isSuperadmin = false,
+  pendingAccessRequests = 0,
 }: {
   projects: ShellProject[];
   user: { name?: string | null; email?: string | null };
@@ -152,10 +170,15 @@ export function AppSidebar({
   mobileOpen: boolean;
   onCloseMobile: () => void;
   canCreateProject?: boolean;
+  isSuperadmin?: boolean;
+  pendingAccessRequests?: number;
 }) {
   const pathname = usePathname();
   const slug = extractProjectSlug(pathname);
-  const groups = slug ? projectNavGroups(slug) : globalNavGroups;
+  const groups = [
+    ...(slug ? projectNavGroups(slug) : globalNavGroups),
+    ...(isSuperadmin ? [platformAdminNavGroup(pendingAccessRequests)] : []),
+  ];
   const current = projects.find((project) => project.slug === slug) ?? null;
 
   const body = (
@@ -205,6 +228,8 @@ export function AppSidebar({
           collapsed={collapsed}
           onNavigate={onCloseMobile}
           canCreateProject={canCreateProject}
+          isSuperadmin={isSuperadmin}
+          pendingAccessRequests={pendingAccessRequests}
         />
       </div>
 

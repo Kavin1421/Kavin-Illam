@@ -41,11 +41,15 @@ export function AppShellFrame({
   user,
   projects,
   canCreateProject = false,
+  isSuperadmin = false,
+  pendingAccessRequests = 0,
 }: {
   children: ReactNode;
   user: { name?: string | null; email?: string | null };
   projects: ShellProject[];
   canCreateProject?: boolean;
+  isSuperadmin?: boolean;
+  pendingAccessRequests?: number;
 }) {
   const collapsed = useSyncExternalStore(
     subscribeCollapse,
@@ -83,6 +87,8 @@ export function AppShellFrame({
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
         canCreateProject={canCreateProject}
+        isSuperadmin={isSuperadmin}
+        pendingAccessRequests={pendingAccessRequests}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader

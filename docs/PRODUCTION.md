@@ -29,8 +29,15 @@ Copy [`.env.example`](../.env.example) for local/self-host (gitignored). On Netl
 | `RESEND_API_KEY` or `SMTP_*` | Recommended       | Invitations / recovery                              |
 | `SMTP_FROM`                  | With email        | From address                                        |
 | `MONGO_DB_NAME`              | Optional          | Atlas DB name only — not a credential               |
+| `SUPERADMIN_EMAILS`          | Optional          | Extra superadmins (comma-separated). Always includes `kkavinkumar24@gmail.com` |
 
 **Do not** commit `.env*` secrets. **Do not** run `pnpm db:seed` against production.
+
+### Access control
+
+- Platform superadmin (`kkavinkumar24@gmail.com`, plus optional `SUPERADMIN_EMAILS`) is the only account that can create projects directly.
+- Other users request **join existing** or **create new** from `/projects/request`; superadmin approves at `/admin/access-requests`.
+- Project owners can still invite members the usual way after a project exists.
 
 ## Netlify
 

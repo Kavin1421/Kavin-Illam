@@ -16,12 +16,16 @@ export function SidebarProjectSwitcher({
   collapsed,
   onNavigate,
   canCreateProject = false,
+  isSuperadmin = false,
+  pendingAccessRequests = 0,
 }: {
   projects: ShellProject[];
   currentSlug: string | null;
   collapsed?: boolean;
   onNavigate?: () => void;
   canCreateProject?: boolean;
+  isSuperadmin?: boolean;
+  pendingAccessRequests?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -212,6 +216,28 @@ export function SidebarProjectSwitcher({
               >
                 <Plus className="size-4 opacity-70" />
                 New project
+              </Link>
+            ) : (
+              <Link
+                href="/projects/request"
+                onClick={closeAndNavigate}
+                className="text-sidebar-foreground/85 hover:bg-white/5 hover:text-white flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-ki-fast"
+              >
+                <Plus className="size-4 opacity-70" />
+                Request access
+              </Link>
+            )}
+            {isSuperadmin ? (
+              <Link
+                href="/admin/access-requests"
+                onClick={closeAndNavigate}
+                className="text-sidebar-foreground/85 hover:bg-white/5 hover:text-white flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-ki-fast"
+              >
+                <FolderKanban className="size-4 opacity-70" />
+                Access requests
+                {pendingAccessRequests > 0
+                  ? ` (${pendingAccessRequests})`
+                  : ""}
               </Link>
             ) : null}
           </div>

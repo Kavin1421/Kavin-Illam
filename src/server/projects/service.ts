@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { paiseFromRupeeString } from "@/lib/money";
 import { slugify } from "@/lib/slug";
 import { requireAuthenticatedUser } from "@/server/auth/session";
+import { isSuperadminEmail } from "@/server/auth/superadmin";
 import {
   requireProjectMemberBySlug,
   requireProjectPermission,
@@ -13,7 +14,7 @@ import {
 import { prisma } from "@/server/db/prisma";
 import { ensureDefaultFinancialAccounts } from "@/server/finance/accounts";
 import { ensureSystemCategories } from "@/server/finance/categories";
-import { canCreateProjectFromRoles } from "@/server/projects/create-policy";
+import { canCreateProjectAsSuperadmin } from "@/server/projects/create-policy";
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -87,17 +88,15 @@ export async function listMyProjects() {
 }
 
 /**
- * Only project owners may create additional projects.
- * Bootstrap exception: a user with zero memberships may create their first project.
- * Engineers and other non-owner roles cannot add another project.
+ * Only platform superadmins may create projects directly.
+ * Other users must request create/join for superadmin approval.
  */
 export async function userCanCreateProject(userId: string): Promise<boolean> {
-  const memberships = await prisma.projectMember.findMany({
-    where: { userId, status: "ACTIVE" },
-    select: { role: true },
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
   });
-
-  return canCreateProjectFromRoles(memberships.map((m) => m.role));
+  return canCreateProjectAsSuperadmin(isSuperadminEmail(user?.email));
 }
 
 export async function requireCanCreateProject() {
@@ -106,10 +105,15 @@ export async function requireCanCreateProject() {
   if (!allowed) {
     throw new AppError(
       "FORBIDDEN",
-      "Only project owners can create new projects. Ask an owner if you need another workspace.",
+      "Only the platform superadmin can create projects. Request access from the projects page and wait for approval.",
     );
   }
   return user;
+}
+
+export async function isCurrentUserSuperadmin(): Promise<boolean> {
+  const user = await requireAuthenticatedUser();
+  return isSuperadminEmail(user.email);
 }
 
 export async function getProjectForMember(slug: string) {

@@ -57,6 +57,18 @@ enum MemberStatus {
   REMOVED
 }
 
+enum AccessRequestType {
+  JOIN_PROJECT
+  CREATE_PROJECT
+}
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum Visibility {
   PRIVATE
   PROJECT_SHARED
@@ -180,6 +192,8 @@ model User {
   tasksAssigned Task[] @relation("TaskAssignee")
   auditLogs AuditLog[] @relation("AuditActor")
   activities Activity[] @relation("ActivityActor")
+  accessRequestsRequested ProjectAccessRequest[] @relation("AccessRequestRequester")
+  accessRequestsReviewed  ProjectAccessRequest[] @relation("AccessRequestReviewer")
 }
 
 model Account {
@@ -252,9 +266,39 @@ model Project {
   tasks Task[]
   auditLogs AuditLog[]
   activities Activity[]
+  accessRequests ProjectAccessRequest[]
 
   @@index([ownerId, status])
   @@index([status, updatedAt])
+}
+
+model ProjectAccessRequest {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  type                AccessRequestType
+  status              AccessRequestStatus @default(PENDING)
+  requesterId         String              @db.ObjectId
+  /// Required when type = JOIN_PROJECT
+  projectId           String?             @db.ObjectId
+  requestedRole       ProjectRole         @default(ENGINEER)
+  /// Required when type = CREATE_PROJECT
+  proposedName        String?
+  proposedType        ProjectType?
+  proposedDescription String?
+  proposedAddress     String?
+  message             String?
+  reviewedById        String?             @db.ObjectId
+  reviewedAt          DateTime?
+  reviewNote          String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  requester User     @relation("AccessRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  reviewer  User?    @relation("AccessRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([requesterId, status])
+  @@index([projectId, status])
 }
 
 model ProjectMember {

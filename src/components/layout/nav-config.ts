@@ -8,6 +8,7 @@ import {
   FolderKanban,
   FolderOpen,
   HandCoins,
+  Inbox,
   LayoutDashboard,
   PiggyBank,
   Settings,
@@ -22,6 +23,8 @@ export type ShellNavItem = {
   icon: LucideIcon;
   /** Exact match only (e.g. Dashboard at /p/slug) */
   exact?: boolean;
+  /** Optional count badge (e.g. pending access requests) */
+  badge?: number;
 };
 
 export type ShellNavGroup = {
@@ -108,6 +111,23 @@ export const globalNavGroups: ShellNavGroup[] = [
     ],
   },
 ];
+
+export function platformAdminNavGroup(
+  pendingAccessRequests = 0,
+): ShellNavGroup {
+  return {
+    id: "platform",
+    label: "Platform",
+    items: [
+      {
+        href: "/admin/access-requests",
+        label: "Access requests",
+        icon: Inbox,
+        badge: pendingAccessRequests > 0 ? pendingAccessRequests : undefined,
+      },
+    ],
+  };
+}
 
 export const globalNavItems: ShellNavItem[] = globalNavGroups.flatMap(
   (group) => group.items,

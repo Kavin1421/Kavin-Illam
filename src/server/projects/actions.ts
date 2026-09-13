@@ -1,5 +1,6 @@
 "use server";
 
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 
 import { AppError, toUserMessage } from "@/lib/errors";
@@ -29,6 +30,7 @@ export async function createProjectAction(
     const project = await createProject(formObject(formData));
     redirect(`/p/${project.slug}`);
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     if (error instanceof AppError) {
       return { error: error.message };
     }

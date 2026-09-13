@@ -29,8 +29,8 @@ export default async function NewProjectPage() {
         <CardHeader>
           <CardTitle className="font-heading text-2xl">New project</CardTitle>
           <CardDescription>
-            You will be the owner. Invite engineers and other collaborators from
-            the project members page.
+            Only the platform superadmin can create projects. You will be the
+            owner; invite engineers and other collaborators from Members.
           </CardDescription>
         </CardHeader>
         <CardContent>
