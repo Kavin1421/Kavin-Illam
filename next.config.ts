@@ -17,6 +17,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https://res.cloudinary.com",
       "font-src 'self' data:",
       "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com",
+      "frame-src 'self' https://res.cloudinary.com",
       "worker-src 'self'",
       "manifest-src 'self'",
       "frame-ancestors 'none'",

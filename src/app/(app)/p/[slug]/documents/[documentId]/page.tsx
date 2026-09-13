@@ -97,7 +97,13 @@ export default async function DocumentDetailPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DocumentAccessButtons slug={slug} documentId={documentId} />
+          <DocumentAccessButtons
+            slug={slug}
+            documentId={documentId}
+            mimeType={document.mimeType}
+            fileName={document.fileName}
+            canPreview={canPreview}
+          />
         </CardContent>
       </Card>
 

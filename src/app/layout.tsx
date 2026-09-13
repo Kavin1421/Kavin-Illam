@@ -1,20 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
+import { Comic_Neue, JetBrains_Mono } from "next/font/google";
 
 import { PwaRegister } from "@/components/pwa-register";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
 
-const inter = Inter({
+const comicNeue = Comic_Neue({
   variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "700"],
   display: "swap",
 });
 
-const playfair = Playfair_Display({
+const comicNeueHeading = Comic_Neue({
   variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -73,7 +75,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${comicNeue.variable} ${comicNeueHeading.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="bg-background text-foreground min-h-full font-sans text-[15px] leading-relaxed tracking-[-0.01em]">
         {children}

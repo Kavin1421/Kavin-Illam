@@ -382,47 +382,189 @@ export function ReplaceDocumentVersionForm({
 export function DocumentAccessButtons({
   slug,
   documentId,
+  mimeType,
+  fileName,
+  canPreview,
 }: {
   slug: string;
   documentId: string;
+  mimeType: string;
+  fileName: string;
+  canPreview: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
 
-  function openUrl(download: boolean) {
+  const isImage = mimeType.startsWith("image/");
+  const isPdf =
+    mimeType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
+
+  async function fetchSignedUrl(download: boolean) {
+    const result = await issueDocumentUrlAction(slug, documentId, download);
+    if (result.error || !result.url) {
+      throw new Error(result.error || "Could not issue URL.");
+    }
+    return result.url;
+  }
+
+  function openInNewTab() {
     setError(null);
     startTransition(async () => {
-      const result = await issueDocumentUrlAction(slug, documentId, download);
-      if (result.error || !result.url) {
-        setError(result.error || "Could not issue URL.");
-        return;
+      try {
+        const url = await fetchSignedUrl(false);
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not open file.");
       }
-      window.open(result.url, "_blank", "noopener,noreferrer");
+    });
+  }
+
+  function downloadFile() {
+    setError(null);
+    startTransition(async () => {
+      try {
+        const url = await fetchSignedUrl(true);
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Could not download file.",
+        );
+      }
+    });
+  }
+
+  function showInlinePreview() {
+    setError(null);
+    startTransition(async () => {
+      try {
+        const url = await fetchSignedUrl(false);
+        setPreviewUrl(url);
+        setPreviewOpen(true);
+        setLightbox(false);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Could not prepare preview.",
+        );
+      }
     });
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        <Button type="button" disabled={pending} onClick={() => openUrl(false)}>
-          {pending ? "Preparing…" : "Preview / open"}
+        {canPreview ? (
+          <Button type="button" disabled={pending} onClick={showInlinePreview}>
+            {pending ? "Preparing…" : "Preview"}
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          disabled={pending}
+          onClick={openInNewTab}
+        >
+          Open in new tab
         </Button>
         <Button
           type="button"
           variant="outline"
           disabled={pending}
-          onClick={() => openUrl(true)}
+          onClick={downloadFile}
         >
           Download
         </Button>
       </div>
       <p className="text-muted-foreground text-xs">
-        Opens a short-lived signed Cloudinary URL after authorization.
+        Preview stays on this page. New tab and download still use a short-lived
+        signed Cloudinary URL after authorization.
       </p>
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
         </p>
+      ) : null}
+
+      {previewOpen && previewUrl ? (
+        <div className="surface-card space-y-3 rounded-[1.125rem] border border-white/[0.09] p-3 sm:p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-white">In-page preview</p>
+            <div className="flex flex-wrap gap-2">
+              {isImage ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setLightbox(true)}
+                >
+                  Expand
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setPreviewOpen(false);
+                  setLightbox(false);
+                }}
+              >
+                Close preview
+              </Button>
+            </div>
+          </div>
+
+          {isImage ? (
+            // eslint-disable-next-line @next/next/no-img-element -- signed Cloudinary URL, short-lived
+            <img
+              src={previewUrl}
+              alt={fileName}
+              className="mx-auto max-h-[min(70vh,36rem)] w-full cursor-zoom-in rounded-xl bg-black/20 object-contain"
+              onClick={() => setLightbox(true)}
+            />
+          ) : isPdf ? (
+            <iframe
+              title={`Preview of ${fileName}`}
+              src={previewUrl}
+              className="h-[min(70vh,36rem)] w-full rounded-xl border border-white/10 bg-black/20"
+            />
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              Inline preview is not available for this file type. Use Open in
+              new tab or Download.
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {lightbox && previewUrl && isImage ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview"
+          onClick={() => setLightbox(false)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setLightbox(false);
+          }}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-sm text-white transition-ki-fast hover:bg-white/20"
+            onClick={() => setLightbox(false)}
+          >
+            Close
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element -- signed Cloudinary URL, short-lived */}
+          <img
+            src={previewUrl}
+            alt={fileName}
+            className="max-h-[90vh] max-w-[min(96vw,72rem)] rounded-xl object-contain shadow-ki-lg"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
       ) : null}
     </div>
   );
