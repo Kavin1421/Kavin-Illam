@@ -1,7 +1,7 @@
 # Kavin Illam — Architecture
 
 **Product:** Multi-project construction management, finance, and document portal  
-**Status:** Phase 3 projects complete. Phase 4 (authorization hardening + isolation tests) is next.  
+**Status:** Phase 5 financial core complete. Phase 6 (advances) is next.  
 **Audience:** Homeowner + engineer initially; designed for additional collaborators later.
 
 This document is the source of truth for stack, module layout, data strategy, authorization, finance rules, document security, and deployment. Implementation must follow it phase by phase.
@@ -616,6 +616,8 @@ Nothing existing was overwritten.
 | Auth rate limits are in-memory | Fine for single-instance; use Redis (or equivalent) before multi-instance production |
 | Invitation.projectId optional | Phase 2 invite foundation; project membership binding lands in Phase 3 |
 | Role→permission matrix in code | Seeded defaults in `src/server/authorization/permissions.ts`; editable DB matrix can come later |
+| Non-members get NOT_FOUND | Avoids project-id enumeration via FORBIDDEN vs NOT_FOUND distinction |
+| Private visibility | Creator or project OWNER only; never in shared totals; collaborators get NOT_FOUND |
 | Integer minor units | Avoids IEEE-754 money errors |
 | Soft delete for finance | Auditability and recovery |
 | Explicit payment-request ↔ transaction link | Prevents duplicate ledger entries |

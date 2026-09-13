@@ -4,44 +4,26 @@ Private, multi-project construction management, finance, and document portal.
 
 ## Status
 
-**Phase 3 — Projects: complete**
+**Phase 5 — Financial core: complete**
 
-Project CRUD, project switcher, members, role-permission matrix, and project-bound invitations.
+Accounts, construction categories, ledger transactions (integer paise), visibility-aware lists/totals, soft delete, and seed sample data for Kavin Illam.
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full system design.
-
-## Setup
+## Try finance
 
 ```bash
-pnpm install
 pnpm db:push
 pnpm db:seed
 pnpm dev
 ```
 
-Seeded:
+Sign in as Kevin → **Kavin Illam** → **Finance**.
 
-- Kevin (`kevin@kavinillam.local`) — OWNER of **Kavin Illam**
-- Engineer (`engineer@kavinillam.local`) — ENGINEER member
-- Project: `/p/kavin-illam`
-
-Password comes from `SEED_PASSWORD` or the seed default in `prisma/seed.ts`.
-
-## Key routes
-
-| Route | Purpose |
-|-------|---------|
-| `/projects` | List your projects |
-| `/projects/new` | Create project |
-| `/p/[slug]` | Project overview |
-| `/p/[slug]/members` | Members + invites |
-| `/p/[slug]/settings` | Edit / archive |
-| `/invite/[token]` | Accept project invitation |
+Engineer can see shared expenses/advances but not Kevin’s private personal furniture expense.
 
 ## Phase map
 
 | Phase | Status |
 |-------|--------|
-| 0–2 | Complete |
-| 3 Projects | Complete |
-| 4 Authorization tests | Next |
+| 0–4 | Complete |
+| 5 Financial core | Complete |
+| 6 Advances | Next |

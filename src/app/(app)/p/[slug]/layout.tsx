@@ -35,6 +35,7 @@ export default async function ProjectLayout({
 
   const nav = [
     { href: `/p/${slug}`, label: "Overview" },
+    { href: `/p/${slug}/finance`, label: "Finance" },
     { href: `/p/${slug}/members`, label: "Members" },
     { href: `/p/${slug}/settings`, label: "Settings" },
   ];

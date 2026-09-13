@@ -79,8 +79,14 @@ export default async function ProjectOverviewPage({
           <p>Address: {project.address || "—"}</p>
           <div className="flex flex-wrap gap-2 pt-2">
             <Link
-              href={`/p/${slug}/members`}
+              href={`/p/${slug}/finance`}
               className={cn(buttonVariants({ size: "sm" }))}
+            >
+              Finance
+            </Link>
+            <Link
+              href={`/p/${slug}/members`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >
               Members
             </Link>

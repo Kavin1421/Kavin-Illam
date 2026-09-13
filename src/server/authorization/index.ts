@@ -1,13 +1,20 @@
 import type { Project, ProjectMember, ProjectRole } from "@prisma/client";
 
-import { AppError } from "@/lib/errors";
 import { requireAuthenticatedUser } from "@/server/auth/session";
-import { prisma } from "@/server/db/prisma";
 
 import {
-  roleHasPermission,
+  assertCanEditProjectResource,
+  assertCanViewProjectResource,
+  assertProjectMembership,
+  assertProjectMembershipBySlug,
+  assertProjectPermission,
+  loadActiveProjectById,
+  loadActiveProjectBySlug,
+} from "./access";
+import {
   type Permission,
 } from "./permissions";
+import type { VisibleResource } from "./visibility";
 
 export type ProjectContext = {
   user: { id: string; name?: string | null; email?: string | null };
@@ -16,80 +23,104 @@ export type ProjectContext = {
   role: ProjectRole;
 };
 
+function toContext(
+  user: { id: string; name?: string | null; email?: string | null },
+  access: Awaited<ReturnType<typeof assertProjectMembership>>,
+): ProjectContext {
+  return {
+    user,
+    project: access.project,
+    membership: access.membership,
+    role: access.role,
+  };
+}
+
 export async function resolveProjectById(projectId: string) {
-  const project = await prisma.project.findUnique({ where: { id: projectId } });
-  if (!project || project.status === "ARCHIVED") {
-    throw new AppError("NOT_FOUND", "Project was not found.");
-  }
-  return project;
+  return loadActiveProjectById(projectId);
 }
 
 export async function resolveProjectBySlug(slug: string) {
-  const project = await prisma.project.findUnique({ where: { slug } });
-  if (!project || project.status === "ARCHIVED") {
-    throw new AppError("NOT_FOUND", "Project was not found.");
-  }
-  return project;
+  return loadActiveProjectBySlug(slug);
 }
 
 export async function requireProjectMember(
   projectId: string,
 ): Promise<ProjectContext> {
   const user = await requireAuthenticatedUser();
-  const project = await resolveProjectById(projectId);
-
-  const membership = await prisma.projectMember.findUnique({
-    where: {
-      projectId_userId: {
-        projectId: project.id,
-        userId: user.id,
-      },
-    },
-  });
-
-  if (!membership || membership.status !== "ACTIVE") {
-    throw new AppError(
-      "FORBIDDEN",
-      "You are not a member of this project.",
-    );
-  }
-
-  return {
-    user,
-    project,
-    membership,
-    role: membership.role,
-  };
+  const access = await assertProjectMembership(projectId, user.id);
+  return toContext(user, access);
 }
 
 export async function requireProjectMemberBySlug(
   slug: string,
 ): Promise<ProjectContext> {
-  const project = await resolveProjectBySlug(slug);
-  return requireProjectMember(project.id);
+  const user = await requireAuthenticatedUser();
+  const access = await assertProjectMembershipBySlug(slug, user.id);
+  return toContext(user, access);
 }
 
 export async function requireProjectPermission(
   projectId: string,
   permission: Permission,
 ): Promise<ProjectContext> {
-  const ctx = await requireProjectMember(projectId);
-  if (!roleHasPermission(ctx.role, permission)) {
-    throw new AppError(
-      "FORBIDDEN",
-      "You do not have permission to perform this action.",
-    );
-  }
-  return ctx;
+  const user = await requireAuthenticatedUser();
+  const access = await assertProjectPermission(projectId, user.id, permission);
+  return toContext(user, access);
 }
 
 export async function requireProjectPermissionBySlug(
   slug: string,
   permission: Permission,
 ): Promise<ProjectContext> {
-  const project = await resolveProjectBySlug(slug);
+  const project = await loadActiveProjectBySlug(slug);
   return requireProjectPermission(project.id, permission);
 }
 
-export { roleHasPermission };
+export async function requireCanViewResource(
+  projectId: string,
+  resource: VisibleResource,
+): Promise<ProjectContext> {
+  const user = await requireAuthenticatedUser();
+  const access = await assertCanViewProjectResource(
+    projectId,
+    user.id,
+    resource,
+  );
+  return toContext(user, access);
+}
+
+export async function requireCanEditResource(
+  projectId: string,
+  resource: VisibleResource,
+): Promise<ProjectContext> {
+  const user = await requireAuthenticatedUser();
+  const access = await assertCanEditProjectResource(
+    projectId,
+    user.id,
+    resource,
+  );
+  return toContext(user, access);
+}
+
+export {
+  assertProjectMembership,
+  assertProjectPermission,
+  assertCanViewProjectResource,
+  assertCanEditProjectResource,
+  findActiveMembership,
+} from "./access";
+export {
+  roleHasPermission,
+  engineerForbiddenPermissions,
+  engineerAllowedSamplePermissions,
+} from "./permissions";
 export type { Permission };
+export {
+  canViewResource,
+  canEditResource,
+  includeInSharedProjectTotals,
+  filterVisibleResources,
+  VISIBILITY,
+  type Visibility,
+  type VisibleResource,
+} from "./visibility";

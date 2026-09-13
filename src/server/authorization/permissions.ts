@@ -96,3 +96,32 @@ export function roleHasPermission(
 ): boolean {
   return ROLE_PERMISSIONS[role].includes(permission);
 }
+
+/** Engineer must not receive these — used by Phase 4 restriction proofs. */
+export function engineerForbiddenPermissions(): Permission[] {
+  return [
+    "PROJECT_EDIT",
+    "FINANCE_APPROVE",
+    "FINANCE_DELETE",
+    "PAYMENT_REQUEST_APPROVE",
+    "BUDGET_EDIT",
+    "MEMBER_INVITE",
+    "MEMBER_REMOVE",
+    "AUDIT_VIEW",
+    "DOCUMENT_DELETE",
+  ];
+}
+
+export function engineerAllowedSamplePermissions(): Permission[] {
+  return [
+    "PROJECT_VIEW",
+    "FINANCE_VIEW",
+    "FINANCE_CREATE",
+    "PAYMENT_REQUEST_CREATE",
+    "DOCUMENT_VIEW",
+    "DOCUMENT_UPLOAD",
+    "TASK_VIEW",
+    "TASK_CREATE",
+    "MEMBER_VIEW",
+  ];
+}

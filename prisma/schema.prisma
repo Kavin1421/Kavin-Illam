@@ -53,6 +53,65 @@ enum MemberStatus {
   REMOVED
 }
 
+enum Visibility {
+  PRIVATE
+  PROJECT_SHARED
+  RESTRICTED
+}
+
+enum FinancialAccountType {
+  BANK
+  CASH
+  CREDIT_CARD
+  UPI
+  OTHER
+}
+
+enum FinancialAccountStatus {
+  ACTIVE
+  INACTIVE
+  CLOSED
+}
+
+enum TransactionType {
+  EXPENSE
+  INCOME
+  TRANSFER
+  REFUND
+  ADJUSTMENT
+  ADVANCE
+  SETTLEMENT
+}
+
+enum TransactionDirection {
+  OUTFLOW
+  INFLOW
+  INTERNAL
+}
+
+enum TransactionStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  PAID
+  PARTIALLY_PAID
+  CANCELLED
+  REJECTED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  UPI
+  CARD
+  CHEQUE
+  NEFT
+  RTGS
+  IMPS
+  OTHER
+}
+
 model User {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
@@ -73,6 +132,11 @@ model User {
   ownedProjects       Project[]       @relation("ProjectOwner")
   memberships         ProjectMember[] @relation("MemberUser")
   membersInvited      ProjectMember[] @relation("MemberInviter")
+  financialAccounts   FinancialAccount[] @relation("FinancialAccountOwner")
+  transactionsCreated FinancialTransaction[] @relation("TransactionCreator")
+  transactionsPaid    FinancialTransaction[] @relation("TransactionPayer")
+  transactionsApproved FinancialTransaction[] @relation("TransactionApprover")
+  transactionsDeleted FinancialTransaction[] @relation("TransactionDeleter")
 }
 
 model Account {
@@ -133,6 +197,9 @@ model Project {
   owner     User              @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   members   ProjectMember[]
   counters  ProjectCounter[]
+  financialAccounts FinancialAccount[]
+  categories Category[]
+  transactions FinancialTransaction[]
 
   @@index([ownerId, status])
   @@index([status, updatedAt])
@@ -189,4 +256,95 @@ model Invitation {
 
   @@index([email, status])
   @@index([projectId, status])
+}
+
+model FinancialAccount {
+  id               String                  @id @default(auto()) @map("_id") @db.ObjectId
+  projectId        String                  @db.ObjectId
+  ownerId          String                  @db.ObjectId
+  name             String
+  type             FinancialAccountType    @default(BANK)
+  institution      String?
+  /// Masked account/UPI identifier only — never full credentials
+  maskedIdentifier String?
+  openingBalance   Int                     @default(0)
+  currency         String                  @default("INR")
+  status           FinancialAccountStatus  @default(ACTIVE)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  project      Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner        User                    @relation("FinancialAccountOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  transactions FinancialTransaction[]
+
+  @@index([projectId, status])
+}
+
+model Category {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// null = system seed category available to all projects
+  projectId   String?  @db.ObjectId
+  code        String
+  name        String
+  parentId    String?  @db.ObjectId
+  isSystem    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project      Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  transactions FinancialTransaction[]
+
+  @@index([projectId, isActive])
+  @@index([code])
+}
+
+model FinancialTransaction {
+  id                String               @id @default(auto()) @map("_id") @db.ObjectId
+  projectId         String               @db.ObjectId
+  transactionNumber String
+  type              TransactionType
+  direction         TransactionDirection
+  /// Amount in minor units (paise for INR)
+  amount            Int
+  currency          String               @default("INR")
+  categoryId        String?              @db.ObjectId
+  accountId         String?              @db.ObjectId
+  paidByUserId      String?              @db.ObjectId
+  paidTo            String?
+  recipientType     String?
+  recipientId       String?              @db.ObjectId
+  transactionDate   DateTime
+  dueDate           DateTime?
+  status            TransactionStatus    @default(PAID)
+  paymentMethod     PaymentMethod?
+  referenceNumber   String?
+  description       String?
+  notes             String?
+  visibility        Visibility           @default(PROJECT_SHARED)
+  allowedUserIds    String[]             @db.ObjectId
+  createdById       String               @db.ObjectId
+  approvedById      String?              @db.ObjectId
+  approvedAt        DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  deletedAt         DateTime?
+  deletedById       String?              @db.ObjectId
+  deletionReason    String?
+
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category  Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  account   FinancialAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  createdBy User              @relation("TransactionCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  paidBy    User?             @relation("TransactionPayer", fields: [paidByUserId], references: [id], onDelete: SetNull)
+  approvedBy User?            @relation("TransactionApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  deletedBy User?             @relation("TransactionDeleter", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, transactionNumber])
+  @@index([projectId, transactionDate])
+  @@index([projectId, categoryId])
+  @@index([projectId, status])
+  @@index([projectId, createdAt])
+  @@index([projectId, visibility, createdById])
+  @@index([projectId, type, status])
 }
