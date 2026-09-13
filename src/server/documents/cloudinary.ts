@@ -119,6 +119,22 @@ export function createSignedUploadParams(params: {
 const DEFAULT_URL_TTL_SECONDS = 5 * 60;
 
 /**
+ * Cloudinary CDN (`res.cloudinary.com`) often returns 401 for PDFs when
+ * "Allow delivery of PDF and ZIP files" is off. The Admin download API still
+ * works. Raw files are safer on that path too.
+ */
+export function shouldUseCloudinaryDownloadApi(params: {
+  forDownload?: boolean;
+  format?: string | null;
+  resourceType: string;
+}): boolean {
+  if (params.forDownload) return true;
+  if (params.resourceType === "raw") return true;
+  const format = (params.format ?? "").toLowerCase();
+  return format === "pdf";
+}
+
+/**
  * Short-lived signed delivery URL for authenticated assets.
  * Issued only after server-side authorization.
  */
@@ -135,15 +151,14 @@ export function createSignedDeliveryUrl(params: {
   const expiresAt = new Date(Date.now() + ttl * 1000);
   const type = params.deliveryType || "authenticated";
 
-  // Authenticated assets require sign_url. Prefer private_download_url for downloads
-  // (time-bound API download endpoint).
-  if (params.forDownload) {
+  // Prefer private_download_url for downloads and for formats the CDN blocks (PDF).
+  if (shouldUseCloudinaryDownloadApi(params)) {
     const format = params.format || "bin";
     const url = cld.utils.private_download_url(params.publicId, format, {
       resource_type: params.resourceType,
       type,
       expires_at: Math.floor(expiresAt.getTime() / 1000),
-      attachment: true,
+      attachment: Boolean(params.forDownload),
     });
     return { url, expiresAt };
   }

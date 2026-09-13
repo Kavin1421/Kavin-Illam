@@ -92,7 +92,7 @@ async function main() {
         projectType: "RESIDENTIAL",
         address: "Tamil Nadu, India",
         currency: "INR",
-        estimatedBudget: 500_000_000,
+        estimatedBudget: 392_000_000,
         status: "ACTIVE",
         ownerId: kevin.id,
         counters: {
@@ -552,92 +552,73 @@ async function main() {
     }
   }
 
-  // Phase 9 — active project budget with category lines.
+  // Phase 9 — stage-wise payment schedule (₹39,20,000 contract).
+  const PAYMENT_STAGES = [
+    {
+      title: "Mobility advance up to basement",
+      pct: 20,
+      amount: 78_400_000,
+    },
+    {
+      title: "Advance up to Ground Floor (GF) roof concrete",
+      pct: 25,
+      amount: 98_000_000,
+    },
+    {
+      title: "Advance for First Floor (FF) roof concrete",
+      pct: 10,
+      amount: 39_200_000,
+    },
+    {
+      title:
+        "Advance for inner plastering, electrical, plumbing and tile laying",
+      pct: 25,
+      amount: 98_000_000,
+    },
+    {
+      title: "Advance for outer plastering",
+      pct: 15,
+      amount: 58_800_000,
+    },
+    {
+      title: "Painting and final-stage payment",
+      pct: 5,
+      amount: 19_600_000,
+    },
+  ] as const;
+  const CONTRACT_TOTAL_PAISE = 392_000_000;
+
   const existingBudget = await prisma.budget.findFirst({
     where: { projectId: project.id, status: "ACTIVE" },
   });
 
   if (!existingBudget) {
-    const materials = await prisma.category.findFirst({
-      where: { code: "MATERIALS", isSystem: true },
-    });
-    const misc = await prisma.category.findFirst({
-      where: { code: "MISCELLANEOUS", isSystem: true },
-    });
-
-    const lines = [
-      engineering && {
-        categoryId: engineering.id,
-        label: "Engineering",
-        plannedAmount: 80_000_000,
-        sortOrder: 0,
-      },
-      cement && {
-        categoryId: cement.id,
-        label: "Cement",
-        plannedAmount: 40_000_000,
-        sortOrder: 1,
-      },
-      steel && {
-        categoryId: steel.id,
-        label: "Steel",
-        plannedAmount: 50_000_000,
-        sortOrder: 2,
-      },
-      labour && {
-        categoryId: labour.id,
-        label: "Labour",
-        plannedAmount: 60_000_000,
-        sortOrder: 3,
-      },
-      materials && {
-        categoryId: materials.id,
-        label: "Materials",
-        plannedAmount: 70_000_000,
-        sortOrder: 4,
-      },
-      misc && {
-        categoryId: misc.id,
-        label: "Contingency",
-        plannedAmount: 200_000_000,
-        sortOrder: 5,
-      },
-    ].filter(Boolean) as Array<{
-      categoryId: string;
-      label: string;
-      plannedAmount: number;
-      sortOrder: number;
-    }>;
-
-    if (lines.length > 0) {
-      const plannedSum = lines.reduce((s, l) => s + l.plannedAmount, 0);
-      await prisma.budget.create({
-        data: {
-          projectId: project.id,
-          name: "Kavin Illam construction budget",
-          currency: "INR",
-          totalPlanned: 500_000_000,
-          status: "ACTIVE",
-          defaultRemainingMode: "VS_PAID",
-          notes: "Seeded Phase 9 budget — planned ₹50L total",
-          createdById: kevin.id,
-          categories: {
-            create: lines.map((line) => ({
-              projectId: project.id,
-              categoryId: line.categoryId,
-              label: line.label,
-              plannedAmount: line.plannedAmount,
-              sortOrder: line.sortOrder,
-            })),
-          },
+    await prisma.budget.create({
+      data: {
+        projectId: project.id,
+        name: "Stage-wise payment schedule",
+        currency: "INR",
+        totalPlanned: CONTRACT_TOTAL_PAISE,
+        status: "ACTIVE",
+        defaultRemainingMode: "VS_PAID",
+        notes:
+          "Payment Terms Summary — 100% across 6 construction milestones. Payments progressive upon reaching each stage.",
+        createdById: kevin.id,
+        categories: {
+          create: PAYMENT_STAGES.map((stage, i) => ({
+            projectId: project.id,
+            label: `${i + 1}. ${stage.title} (${stage.pct}%)`,
+            plannedAmount: stage.amount,
+            sortOrder: i,
+            notes: `Stage ${i + 1} · ${stage.pct}%`,
+          })),
         },
-      });
-      await prisma.project.update({
-        where: { id: project.id },
-        data: { estimatedBudget: 500_000_000 },
-      });
-      void plannedSum;
-    }
+      },
+    });
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { estimatedBudget: CONTRACT_TOTAL_PAISE },
+    });
   }
 
   // Phase 10 — milestones + tasks.
@@ -646,43 +627,34 @@ async function main() {
   });
 
   if (existingMilestoneCount === 0) {
-    const foundationNumber = await allocateMilestoneNumber({
-      projectId: project.id,
-      projectSlug: project.slug,
-    });
-    const foundation = await prisma.milestone.create({
-      data: {
+    const createdMilestones = [];
+    for (let i = 0; i < PAYMENT_STAGES.length; i++) {
+      const stage = PAYMENT_STAGES[i];
+      const milestoneNumber = await allocateMilestoneNumber({
         projectId: project.id,
-        milestoneNumber: foundationNumber,
-        title: "Foundation complete",
-        description: "Excavation, footing, and plinth beam",
-        status: "IN_PROGRESS",
-        targetDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
-        visibility: "PROJECT_SHARED",
-        allowedUserIds: [],
-        createdById: kevin.id,
-        sortOrder: 0,
-      },
-    });
+        projectSlug: project.slug,
+      });
+      const rupees = (stage.amount / 100).toLocaleString("en-IN");
+      const milestone = await prisma.milestone.create({
+        data: {
+          projectId: project.id,
+          milestoneNumber,
+          title: stage.title,
+          description: `${stage.pct}% of contract · ₹${rupees}. Payment upon reaching this construction milestone.`,
+          status: i === 0 ? "IN_PROGRESS" : "UPCOMING",
+          targetDate: new Date(
+            Date.now() + (i + 1) * 45 * 24 * 60 * 60 * 1000,
+          ),
+          visibility: "PROJECT_SHARED",
+          allowedUserIds: [],
+          createdById: kevin.id,
+          sortOrder: i,
+        },
+      });
+      createdMilestones.push(milestone);
+    }
 
-    const structureNumber = await allocateMilestoneNumber({
-      projectId: project.id,
-      projectSlug: project.slug,
-    });
-    await prisma.milestone.create({
-      data: {
-        projectId: project.id,
-        milestoneNumber: structureNumber,
-        title: "Structure complete",
-        description: "Columns, slabs, and roof slab",
-        status: "UPCOMING",
-        targetDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000),
-        visibility: "PROJECT_SHARED",
-        allowedUserIds: [],
-        createdById: kevin.id,
-        sortOrder: 1,
-      },
-    });
+    const basement = createdMilestones[0];
 
     const task1Number = await allocateTaskNumber({
       projectId: project.id,
@@ -696,7 +668,7 @@ async function main() {
         description: "Verify setbacks and dig lines with engineer",
         status: "DONE",
         priority: "HIGH",
-        milestoneId: foundation.id,
+        milestoneId: basement.id,
         assigneeId: engineer.id,
         completedAt: new Date(),
         visibility: "PROJECT_SHARED",
@@ -713,11 +685,11 @@ async function main() {
       data: {
         projectId: project.id,
         taskNumber: task2Number,
-        title: "Schedule concrete pour",
+        title: "Schedule basement concrete pour",
         description: "Coordinate cement, labour, and curing plan",
         status: "IN_PROGRESS",
         priority: "URGENT",
-        milestoneId: foundation.id,
+        milestoneId: basement.id,
         assigneeId: engineer.id,
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         visibility: "PROJECT_SHARED",
@@ -737,6 +709,7 @@ async function main() {
         title: "Order steel for columns",
         status: "TODO",
         priority: "MEDIUM",
+        milestoneId: basement.id,
         assigneeId: kevin.id,
         dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
         visibility: "PROJECT_SHARED",

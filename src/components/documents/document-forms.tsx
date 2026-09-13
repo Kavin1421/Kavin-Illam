@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import {
   addDocumentVersionAction,
   createDocumentAction,
-  issueDocumentUrlAction,
   type DocumentActionState,
 } from "@/server/documents/actions";
 
@@ -402,46 +401,55 @@ export function DocumentAccessButtons({
   const isPdf =
     mimeType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
 
-  async function fetchSignedUrl(download: boolean) {
-    const result = await issueDocumentUrlAction(slug, documentId, download);
-    if (result.error || !result.url) {
-      throw new Error(result.error || "Could not issue URL.");
-    }
-    return result.url;
+  function fileProxyUrl(download = false) {
+    const params = new URLSearchParams();
+    if (download) params.set("download", "1");
+    const query = params.toString();
+    return `/api/p/${slug}/documents/${documentId}/file${query ? `?${query}` : ""}`;
+  }
+
+  function revokePreviewUrl() {
+    setPreviewUrl((current) => {
+      if (current?.startsWith("blob:")) {
+        URL.revokeObjectURL(current);
+      }
+      return null;
+    });
+  }
+
+  function closePreview() {
+    setPreviewOpen(false);
+    setLightbox(false);
+    revokePreviewUrl();
   }
 
   function openInNewTab() {
     setError(null);
-    startTransition(async () => {
-      try {
-        const url = await fetchSignedUrl(false);
-        window.open(url, "_blank", "noopener,noreferrer");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not open file.");
-      }
-    });
+    window.open(fileProxyUrl(false), "_blank", "noopener,noreferrer");
   }
 
   function downloadFile() {
     setError(null);
-    startTransition(async () => {
-      try {
-        const url = await fetchSignedUrl(true);
-        window.open(url, "_blank", "noopener,noreferrer");
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Could not download file.",
-        );
-      }
-    });
+    window.open(fileProxyUrl(true), "_blank", "noopener,noreferrer");
   }
 
   function showInlinePreview() {
     setError(null);
     startTransition(async () => {
       try {
-        const url = await fetchSignedUrl(false);
-        setPreviewUrl(url);
+        revokePreviewUrl();
+        const res = await fetch(fileProxyUrl(false), {
+          credentials: "same-origin",
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+          throw new Error(body?.error || "Could not load document.");
+        }
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setPreviewUrl(objectUrl);
         setPreviewOpen(true);
         setLightbox(false);
       } catch (err) {
@@ -478,8 +486,7 @@ export function DocumentAccessButtons({
         </Button>
       </div>
       <p className="text-muted-foreground text-xs">
-        Preview stays on this page. New tab and download still use a short-lived
-        signed Cloudinary URL after authorization.
+        Files are authorized on this app, then streamed from secure storage.
       </p>
       {error ? (
         <p className="text-destructive text-sm" role="alert">
@@ -502,22 +509,14 @@ export function DocumentAccessButtons({
                   Expand
                 </Button>
               ) : null}
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setPreviewOpen(false);
-                  setLightbox(false);
-                }}
-              >
+              <Button type="button" size="sm" variant="ghost" onClick={closePreview}>
                 Close preview
               </Button>
             </div>
           </div>
 
           {isImage ? (
-            // eslint-disable-next-line @next/next/no-img-element -- signed Cloudinary URL, short-lived
+            // eslint-disable-next-line @next/next/no-img-element -- blob/object URL after auth
             <img
               src={previewUrl}
               alt={fileName}
@@ -557,7 +556,7 @@ export function DocumentAccessButtons({
           >
             Close
           </button>
-          {/* eslint-disable-next-line @next/next/no-img-element -- signed Cloudinary URL, short-lived */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- blob/object URL after auth */}
           <img
             src={previewUrl}
             alt={fileName}
