@@ -170,14 +170,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     background-color: var(--ki-bg);
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-      var(--ki-app-wash);
-    background-size:
-      48px 48px,
-      48px 48px,
-      auto;
+    background-image: var(--ki-app-wash);
     background-attachment: fixed;
   }
 
@@ -269,25 +262,24 @@
     text-wrap: balance;
   }
 
-  /* Surfaces */
+  /* Surfaces — readable, not extreme glass */
   .surface-card {
-    background: var(--ki-glass);
-    backdrop-filter: blur(14px);
+    background: color-mix(in srgb, var(--ki-surface) 88%, white 4%);
     box-shadow: var(--ki-shadow-md);
     border: 1px solid var(--ki-border);
-    border-radius: var(--radius-xl);
+    border-radius: 1rem;
   }
 
   .surface-elevated {
-    background: var(--ki-glass-strong);
-    backdrop-filter: blur(18px);
+    background: color-mix(in srgb, var(--ki-surface) 82%, white 6%);
     box-shadow: var(--ki-shadow-lg);
     border: 1px solid var(--ki-border);
+    border-radius: 1.25rem;
   }
 
   .surface-glass {
-    background: var(--ki-glass);
-    backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.045);
+    backdrop-filter: blur(10px);
     border: 1px solid var(--ki-border-subtle);
   }
 
@@ -303,11 +295,9 @@
     background-image: var(--ki-gradient-primary);
   }
 
+  /* Deprecated — kept as no-op so old class names do not reintroduce grids */
   .texture-blueprint {
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 48px 48px;
+    background-image: none;
   }
 
   .glow-emerald {
@@ -436,6 +426,50 @@
     line-height: 1.2;
     letter-spacing: -0.02em;
     font-weight: 600;
+  }
+}
+
+/* Print: invoice / specs only — hide app chrome */
+@media print {
+  body {
+    background: white !important;
+    background-image: none !important;
+    color: #17202a !important;
+  }
+
+  [data-print-hide],
+  aside,
+  header.app-chrome,
+  nav[data-shell],
+  .app-sidebar,
+  .app-header {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .invoice-paper,
+  .specs-print-root {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .specs-print-root,
+  .specs-print-root * {
+    color: #17202a !important;
+    background: transparent !important;
+    border-color: #e2e8e5 !important;
+    box-shadow: none !important;
+  }
+
+  .specs-print-root section {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
 

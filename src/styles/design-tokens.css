@@ -70,19 +70,21 @@
   --ki-gradient-premium: var(--ki-gradient-teal);
   --ki-gradient-gold: var(--ki-gradient-primary);
 
-  /* Subtle layered app canvas — not neon */
+  /* Clean plain dark teal canvas — no grid / blueprint */
   --ki-app-wash:
     radial-gradient(
-      circle at 80% 0%,
-      rgba(0, 208, 132, 0.13),
-      transparent 28%
+      circle at 85% 0%,
+      rgba(0, 208, 132, 0.08),
+      transparent 32%
     ),
-    radial-gradient(
-      circle at 20% 60%,
-      rgba(34, 211, 238, 0.06),
-      transparent 30%
-    ),
-    linear-gradient(135deg, #042f2c 0%, #063f3a 45%, #053532 100%);
+    linear-gradient(135deg, #052f2c 0%, #063f3a 45%, #064842 100%);
+
+  --ki-invoice-paper: #f8faf9;
+  --ki-invoice-ink: #17202a;
+  --ki-invoice-muted: #667085;
+  --ki-invoice-accent: #008f62;
+  --ki-invoice-border: #e2e8e5;
+  --ki-invoice-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
 
   --ki-sidebar-width: 15.625rem; /* 250px */
   --ki-sidebar-collapsed: 4.5rem;

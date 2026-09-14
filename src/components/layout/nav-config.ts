@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   BarChart3,
+  BookOpen,
   CheckSquare,
   FileText,
   Flag,
@@ -80,6 +81,7 @@ export function projectNavGroups(slug: string): ShellNavGroup[] {
       id: "build",
       label: "Build",
       items: [
+        { href: `${base}/specs`, label: "Work specs", icon: BookOpen },
         { href: `${base}/documents`, label: "Documents", icon: FolderOpen },
         { href: `${base}/tasks`, label: "Tasks", icon: CheckSquare },
         { href: `${base}/milestones`, label: "Milestones", icon: Flag },
