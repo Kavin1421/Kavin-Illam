@@ -3,11 +3,18 @@ import nodemailer from "nodemailer";
 import { env } from "@/config/env";
 import { logger } from "@/lib/logger";
 
+export type EmailAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+};
+
 export type EmailMessage = {
   to: string;
   subject: string;
   text: string;
   html?: string;
+  attachments?: EmailAttachment[];
 };
 
 function appBaseUrl(): string {
@@ -56,6 +63,11 @@ async function sendViaSmtp(message: EmailMessage): Promise<void> {
     subject: message.subject,
     text: message.text,
     html: message.html,
+    attachments: message.attachments?.map((file) => ({
+      filename: file.filename,
+      content: file.content,
+      contentType: file.contentType,
+    })),
   });
 }
 
@@ -72,6 +84,11 @@ async function sendViaResend(message: EmailMessage): Promise<void> {
       subject: message.subject,
       text: message.text,
       html: message.html,
+      attachments: message.attachments?.map((file) => ({
+        filename: file.filename,
+        content: file.content.toString("base64"),
+        content_type: file.contentType,
+      })),
     }),
   });
 

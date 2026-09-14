@@ -33,6 +33,7 @@ const useStandaloneOutput = !process.env.VERCEL && !process.env.NETLIFY;
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  serverExternalPackages: ["@react-pdf/renderer"],
   ...(useStandaloneOutput ? { output: "standalone" as const } : {}),
   // Only for standalone Docker traces. Broad Prisma globs on Netlify/Vercel
   // pull multi-platform engines + pnpm trees into the serverless handler and

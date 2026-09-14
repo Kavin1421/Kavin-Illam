@@ -87,6 +87,8 @@ export function TransactionInvoice({
 }: TransactionInvoiceProps) {
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadDone, setDownloadDone] = useState(false);
   const [pendingPrint, startPrint] = useTransition();
   const [sending, startSend] = useTransition();
 
@@ -112,11 +114,63 @@ export function TransactionInvoice({
 
   function onPrint() {
     startPrint(() => {
-      toast.message("Opening print dialog…", {
-        description: "Choose “Save as PDF” to download a clean A4 receipt.",
-      });
+      toast.message("Opening print dialog…");
       window.setTimeout(() => window.print(), 120);
     });
+  }
+
+  async function onDownloadPdf() {
+    if (downloading) return;
+    setDownloading(true);
+    setDownloadDone(false);
+    toast.message("Preparing your receipt…");
+
+    try {
+      const response = await fetch(
+        `/api/p/${slug}/finance/${transaction.id}/pdf`,
+        { method: "GET", credentials: "same-origin" },
+      );
+
+      if (!response.ok) {
+        let message = "Unable to generate receipt.";
+        try {
+          const body = (await response.json()) as { error?: string };
+          if (body.error) message = body.error;
+        } catch {
+          // keep default message
+        }
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition") ?? "";
+      const match = /filename="([^"]+)"/i.exec(disposition);
+      const fileName =
+        match?.[1] ??
+        `Kavin-Illam-Payment-Receipt-${transaction.transactionNumber}.pdf`;
+
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = fileName;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+
+      setDownloadDone(true);
+      toast.success("Receipt downloaded");
+      window.setTimeout(() => setDownloadDone(false), 2000);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to generate receipt. Please try again.",
+      );
+    } finally {
+      setDownloading(false);
+    }
   }
 
   async function onCopyId() {
@@ -163,8 +217,17 @@ export function TransactionInvoice({
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={onPrint} disabled={pendingPrint}>
-            {pendingPrint ? "Preparing…" : "Download PDF"}
+          <Button
+            type="button"
+            onClick={onDownloadPdf}
+            disabled={downloading}
+            aria-label="Download transaction receipt as PDF"
+          >
+            {downloading
+              ? "Generating PDF…"
+              : downloadDone
+                ? "Downloaded ✓"
+                : "Download PDF"}
           </Button>
           <Button
             type="button"
@@ -174,15 +237,22 @@ export function TransactionInvoice({
               setEmailOpen(true);
             }}
             disabled={!emailConfigured}
+            aria-label="Email transaction receipt"
             title={
               emailConfigured
                 ? "Email this receipt"
                 : "Email is not configured on this server"
             }
           >
-            Email
+            Email receipt
           </Button>
-          <Button type="button" variant="ghost" onClick={onPrint}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onPrint}
+            disabled={pendingPrint}
+            aria-label="Print transaction receipt"
+          >
             Print
           </Button>
           <Button type="button" variant="ghost" onClick={onCopyId}>
@@ -383,7 +453,7 @@ export function TransactionInvoice({
                 Email payment receipt
               </h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                Sends a message with a secure link to this receipt.
+                Generates the same PDF receipt and attaches it to the email.
               </p>
             </div>
             <form action={onEmailSubmit} className="space-y-3">
@@ -419,8 +489,8 @@ export function TransactionInvoice({
                 />
               </div>
               <p className="text-muted-foreground text-xs">
-                Recipient receives a secure ledger link (
-                {transaction.transactionNumber}).
+                Attachment: Kavin-Illam-Payment-Receipt-
+                {transaction.transactionNumber}.pdf
               </p>
               {emailError ? (
                 <p className="text-destructive text-sm" role="alert">

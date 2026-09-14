@@ -3,9 +3,8 @@
 import { z } from "zod";
 
 import { AppError, toUserMessage } from "@/lib/errors";
-import { formatInrFromPaise } from "@/lib/money";
 import { absoluteUrl, isEmailConfigured, sendEmail } from "@/server/email/send";
-import { getTransaction } from "@/server/finance/transactions";
+import { generateTransactionReceiptPdf } from "@/server/pdf/generate-transaction-receipt";
 
 const emailReceiptSchema = z.object({
   to: z.string().trim().email("Enter a valid email address."),
@@ -43,29 +42,24 @@ export async function emailPaymentReceiptAction(
       };
     }
 
-    const { project, transaction } = await getTransaction(slug, transactionId);
-    const amount = formatInrFromPaise(transaction.amount);
-    const receiptUrl = absoluteUrl(`/p/${slug}/finance/${transaction.id}`);
+    // Same authorized PDF generator used by Download PDF.
+    const pdf = await generateTransactionReceiptPdf(slug, transactionId);
+    const receiptUrl = absoluteUrl(`/p/${slug}/finance/${transactionId}`);
 
     const text = [
       parsed.data.message,
       "",
       "—",
-      `Project: ${project.name}`,
-      `Receipt: ${transaction.transactionNumber}`,
-      `Amount: ${amount}`,
-      `Date: ${transaction.transactionDate.toISOString().slice(0, 10)}`,
-      `Method: ${transaction.paymentMethod ?? "—"}`,
-      `Paid to: ${transaction.paidTo ?? "—"}`,
+      `Receipt: ${pdf.transactionNumber}`,
+      `Attachment: ${pdf.fileName}`,
       `View receipt: ${receiptUrl}`,
     ].join("\n");
 
     const html = `
       <p>${parsed.data.message.replaceAll("\n", "<br/>")}</p>
       <hr />
-      <p><strong>${project.name}</strong></p>
-      <p>Receipt <code>${transaction.transactionNumber}</code></p>
-      <p>Amount paid: <strong>${amount}</strong></p>
+      <p>Receipt <code>${pdf.transactionNumber}</code></p>
+      <p>Attached: <strong>${pdf.fileName}</strong></p>
       <p><a href="${receiptUrl}">Open payment receipt</a></p>
     `;
 
@@ -74,6 +68,13 @@ export async function emailPaymentReceiptAction(
       subject: parsed.data.subject,
       text,
       html,
+      attachments: [
+        {
+          filename: pdf.fileName,
+          content: pdf.bytes,
+          contentType: pdf.contentType,
+        },
+      ],
     });
 
     if (!result.delivered) {
@@ -83,7 +84,9 @@ export async function emailPaymentReceiptAction(
       };
     }
 
-    return { success: "Receipt sent successfully." };
+    return {
+      success: `Receipt sent successfully to ${parsed.data.to}.`,
+    };
   } catch (error) {
     if (error instanceof AppError) {
       return { error: error.message };
