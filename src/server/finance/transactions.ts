@@ -140,9 +140,13 @@ export async function getTransaction(slug: string, transactionId: string) {
     toVisibleResource(tx),
   );
 
+  // Extended Prisma client typings can lag behind schema for new scalars;
+  // read proofDocumentIds through an explicit shape check.
+  const extraProofIds = readProofDocumentIds(tx);
+
   const proofIds = Array.from(
     new Set(
-      [tx.proofDocumentId, ...(tx.proofDocumentIds ?? [])].filter(
+      [tx.proofDocumentId, ...extraProofIds].filter(
         (id): id is string => Boolean(id),
       ),
     ),
@@ -182,6 +186,13 @@ export async function getTransaction(slug: string, transactionId: string) {
       proofDocuments: orderedProofs,
     },
   };
+}
+
+function readProofDocumentIds(row: unknown): string[] {
+  if (!row || typeof row !== "object") return [];
+  const value = (row as { proofDocumentIds?: unknown }).proofDocumentIds;
+  if (!Array.isArray(value)) return [];
+  return value.filter((id): id is string => typeof id === "string" && id.length > 0);
 }
 
 export async function createTransaction(slug: string, input: unknown) {

@@ -7,7 +7,7 @@ import { rewriteSoftDeleteArgs } from "@/server/db/soft-delete";
  * Bump when adding Prisma models so Next.js HMR does not keep a stale
  * global client missing new delegates.
  */
-const PRISMA_CLIENT_REV = 4;
+const PRISMA_CLIENT_REV = 5;
 
 type PrismaClientExtended = ReturnType<typeof createPrismaClient>;
 
