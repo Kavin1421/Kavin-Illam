@@ -419,8 +419,10 @@ model FinancialTransaction {
   referenceNumber   String?
   description       String?
   notes             String?
-  /// Screenshot / UTR proof required when paymentMethod is not CASH
+  /// Primary screenshot / UTR proof (first upload). Required when paymentMethod is not CASH.
   proofDocumentId   String?              @db.ObjectId
+  /// Additional payment proof document IDs (up to 5 total including primary).
+  proofDocumentIds  String[]             @db.ObjectId @default([])
   visibility        Visibility           @default(PROJECT_SHARED)
   allowedUserIds    String[]             @db.ObjectId
   createdById       String               @db.ObjectId

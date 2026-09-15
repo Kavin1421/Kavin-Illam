@@ -3,15 +3,14 @@ import type { DocumentCategory, Visibility } from "@prisma/client";
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { actorLabel, recordAuditEvent } from "@/server/audit/record";
-import {
-  assertOwnedPublicId,
-} from "@/server/documents/cloudinary";
+import { assertOwnedPublicId } from "@/server/documents/cloudinary";
 import { validateUploadFile } from "@/server/documents/validation";
 import { allocateDocumentNumber } from "@/server/finance/numbering";
 import { prisma } from "@/server/db/prisma";
 import {
-  hasPaymentProofUpload,
+  extractPaymentProofs,
   paymentMethodRequiresProof,
+  type PaymentProofItem,
   type PaymentProofUpload,
 } from "@/validators/payment-proof";
 
@@ -23,29 +22,15 @@ type ProjectActor = {
   userEmail?: string | null;
 };
 
-/**
- * Creates a PAYMENT_PROOF document from Cloudinary upload fields when the
- * payment method is not cash. Returns null for cash / missing method.
- */
-export async function resolvePaymentProofDocumentId(params: {
+async function createPaymentProofDocument(params: {
   actor: ProjectActor;
-  paymentMethod?: string | null;
-  proof: PaymentProofUpload;
+  proof: PaymentProofItem;
   visibility: Visibility;
   title: string;
   description?: string | null;
-}): Promise<string | null> {
-  if (!paymentMethodRequiresProof(params.paymentMethod)) {
-    return null;
-  }
-
-  if (!hasPaymentProofUpload(params.proof)) {
-    throw new AppError(
-      "VALIDATION",
-      "Upload a payment screenshot when the payment method is not cash.",
-    );
-  }
-
+  index: number;
+  total: number;
+}): Promise<string> {
   try {
     validateUploadFile({
       fileName: params.proof.proofFileName,
@@ -66,11 +51,14 @@ export async function resolvePaymentProofDocumentId(params: {
     projectSlug: params.actor.projectSlug,
   });
 
+  const suffix =
+    params.total > 1 ? ` (${params.index + 1}/${params.total})` : "";
+
   const document = await prisma.document.create({
     data: {
       projectId: params.actor.projectId,
       documentNumber,
-      title: params.title.slice(0, 160),
+      title: `${params.title.slice(0, 140)}${suffix}`.slice(0, 160),
       description: params.description || null,
       category: "PAYMENT_PROOF" as DocumentCategory,
       tags: ["payment-proof"],
@@ -112,6 +100,7 @@ export async function resolvePaymentProofDocumentId(params: {
     projectId: params.actor.projectId,
     documentId: document.id,
     actorId: params.actor.userId,
+    index: params.index,
   });
 
   await recordAuditEvent({
@@ -139,20 +128,97 @@ export async function resolvePaymentProofDocumentId(params: {
 }
 
 /**
- * Links a proof document onto a ledger row.
- * Uses an unchecked scalar write so Prisma `$extends` Exact<> typing does not
- * reject the newly added `proofDocumentId` field.
+ * Creates 1–5 PAYMENT_PROOF documents from uploaded Cloudinary fields.
+ * Returns [] for cash / missing method.
+ */
+export async function resolvePaymentProofDocumentIds(params: {
+  actor: ProjectActor;
+  paymentMethod?: string | null;
+  proof: PaymentProofUpload;
+  visibility: Visibility;
+  title: string;
+  description?: string | null;
+}): Promise<string[]> {
+  if (!paymentMethodRequiresProof(params.paymentMethod)) {
+    return [];
+  }
+
+  let proofs: PaymentProofItem[];
+  try {
+    proofs = extractPaymentProofs(params.proof);
+  } catch (error) {
+    throw new AppError(
+      "VALIDATION",
+      error instanceof Error
+        ? error.message
+        : "Upload valid payment screenshots.",
+    );
+  }
+
+  if (proofs.length === 0) {
+    throw new AppError(
+      "VALIDATION",
+      "Upload at least one payment screenshot when the payment method is not cash.",
+    );
+  }
+
+  const ids: string[] = [];
+  for (let index = 0; index < proofs.length; index += 1) {
+    const proof = proofs[index];
+    if (!proof) continue;
+    const id = await createPaymentProofDocument({
+      actor: params.actor,
+      proof,
+      visibility: params.visibility,
+      title: params.title,
+      description: params.description,
+      index,
+      total: proofs.length,
+    });
+    ids.push(id);
+  }
+
+  return ids;
+}
+
+/** @deprecated Prefer resolvePaymentProofDocumentIds — kept for single-id call sites. */
+export async function resolvePaymentProofDocumentId(params: {
+  actor: ProjectActor;
+  paymentMethod?: string | null;
+  proof: PaymentProofUpload;
+  visibility: Visibility;
+  title: string;
+  description?: string | null;
+}): Promise<string | null> {
+  const ids = await resolvePaymentProofDocumentIds(params);
+  return ids[0] ?? null;
+}
+
+/**
+ * Links proof documents onto a ledger row.
+ * Primary id stays on proofDocumentId; full list on proofDocumentIds.
+ */
+export async function linkTransactionProofDocuments(
+  transactionId: string,
+  proofDocumentIds: string[],
+): Promise<void> {
+  if (proofDocumentIds.length === 0) return;
+
+  await prisma.financialTransaction.update({
+    where: { id: transactionId },
+    data: {
+      proofDocumentId: proofDocumentIds[0],
+      proofDocumentIds,
+    },
+  } as Parameters<typeof prisma.financialTransaction.update>[0]);
+}
+
+/**
+ * Links a single proof document (backward-compatible helper).
  */
 export async function linkTransactionProofDocument(
   transactionId: string,
   proofDocumentId: string,
 ): Promise<void> {
-  // Prisma `$extends` wraps writes in Exact<>; after adding proofDocumentId the
-  // extended client types can reject the new scalar until a full TS restart.
-  // Runtime client + generated UncheckedUpdateInput both accept this field.
-  await prisma.financialTransaction.update({
-    where: { id: transactionId },
-    data: { proofDocumentId },
-  } as Parameters<typeof prisma.financialTransaction.update>[0]);
+  await linkTransactionProofDocuments(transactionId, [proofDocumentId]);
 }
-

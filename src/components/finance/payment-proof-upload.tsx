@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MAX_PAYMENT_PROOFS } from "@/validators/payment-proof";
 
 type SignedUpload = {
   uploadUrl: string;
@@ -60,15 +62,16 @@ async function uploadToCloudinary(file: File, signed: SignedUpload) {
 export type PaymentProofMeta = {
   cloudinaryPublicId: string;
   cloudinaryResourceType: string;
-  fileName: string;
-  mimeType: string;
-  fileSize: number;
-  format: string;
+  cloudinaryDeliveryType: "authenticated";
+  proofFileName: string;
+  proofMimeType: string;
+  proofFileSize: number;
+  proofFormat: string;
 };
 
 /**
- * Shows screenshot upload when payment method is not cash.
- * Renders hidden Cloudinary fields for the parent form.
+ * Multi-file payment screenshot upload (1–5) for non-cash methods.
+ * Posts `paymentProofsJson` for the parent form.
  */
 export function PaymentProofUpload({
   slug,
@@ -84,33 +87,53 @@ export function PaymentProofUpload({
   const needsProof = Boolean(paymentMethod && paymentMethod !== "CASH");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [meta, setMeta] = useState<PaymentProofMeta | null>(null);
+  const [items, setItems] = useState<PaymentProofMeta[]>([]);
 
   if (!needsProof) {
     return null;
   }
 
+  const remaining = MAX_PAYMENT_PROOFS - items.length;
+
   async function onFileChange(fileList: FileList | null) {
     setError(null);
-    setMeta(null);
-    const file = fileList?.[0];
-    if (!file) return;
+    if (!fileList || fileList.length === 0) return;
     if (!cloudinaryReady) {
       setError("File storage is not configured.");
       return;
     }
+
+    const selected = Array.from(fileList);
+    const slots = MAX_PAYMENT_PROOFS - items.length;
+    if (slots <= 0) {
+      setError(`You can upload at most ${MAX_PAYMENT_PROOFS} screenshots.`);
+      return;
+    }
+
+    const toUpload = selected.slice(0, slots);
+    if (selected.length > slots) {
+      setError(
+        `Only ${slots} more screenshot${slots === 1 ? "" : "s"} allowed (max ${MAX_PAYMENT_PROOFS}).`,
+      );
+    }
+
     setUploading(true);
     try {
-      const signed = await requestSignature(slug, file);
-      const uploaded = await uploadToCloudinary(file, signed);
-      setMeta({
-        cloudinaryPublicId: uploaded.public_id,
-        cloudinaryResourceType: uploaded.resource_type || signed.resourceType,
-        fileName: signed.fileName,
-        mimeType: signed.mimeType,
-        fileSize: uploaded.bytes || signed.fileSize,
-        format: uploaded.format || "",
-      });
+      const uploaded: PaymentProofMeta[] = [];
+      for (const file of toUpload) {
+        const signed = await requestSignature(slug, file);
+        const result = await uploadToCloudinary(file, signed);
+        uploaded.push({
+          cloudinaryPublicId: result.public_id,
+          cloudinaryResourceType: result.resource_type || signed.resourceType,
+          cloudinaryDeliveryType: "authenticated",
+          proofFileName: signed.fileName,
+          proofMimeType: signed.mimeType,
+          proofFileSize: result.bytes || signed.fileSize,
+          proofFormat: result.format || "",
+        });
+      }
+      setItems((prev) => [...prev, ...uploaded].slice(0, MAX_PAYMENT_PROOFS));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -118,31 +141,62 @@ export function PaymentProofUpload({
     }
   }
 
+  function removeAt(index: number) {
+    setItems((prev) => prev.filter((_, i) => i !== index));
+    setError(null);
+  }
+
   return (
     <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
       <Label htmlFor="paymentProof">
-        Payment screenshot{required ? " *" : ""}
+        Payment screenshots{required ? " *" : ""}
       </Label>
       <p className="text-muted-foreground text-xs">
-        Required for UPI, bank transfer, and other non-cash methods. Upload a
-        clear screenshot or PDF of the payment confirmation.
+        Required for UPI, bank transfer, and other non-cash methods. Upload 1–
+        {MAX_PAYMENT_PROOFS} clear screenshots or PDF confirmations.
       </p>
       <Input
         id="paymentProof"
         type="file"
         accept="image/*,application/pdf,.pdf,.png,.jpg,.jpeg,.webp"
-        required={required && !meta}
-        disabled={uploading || !cloudinaryReady}
-        onChange={(event) => void onFileChange(event.target.files)}
+        multiple
+        required={required && items.length === 0}
+        disabled={uploading || !cloudinaryReady || remaining === 0}
+        onChange={(event) => {
+          void onFileChange(event.target.files);
+          event.target.value = "";
+        }}
       />
       {uploading ? (
         <p className="text-muted-foreground text-xs">Uploading…</p>
       ) : null}
-      {meta ? (
-        <p className="text-xs text-emerald-600" role="status">
-          Ready: {meta.fileName}
-        </p>
+      {items.length > 0 ? (
+        <ul className="space-y-1.5" aria-label="Uploaded payment proofs">
+          {items.map((item, index) => (
+            <li
+              key={`${item.cloudinaryPublicId}-${index}`}
+              className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs"
+            >
+              <span className="truncate text-emerald-500">
+                {index + 1}. {item.proofFileName}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                onClick={() => removeAt(index)}
+                aria-label={`Remove ${item.proofFileName}`}
+              >
+                Remove
+              </Button>
+            </li>
+          ))}
+        </ul>
       ) : null}
+      <p className="text-muted-foreground text-[11px]">
+        {items.length}/{MAX_PAYMENT_PROOFS} uploaded
+        {remaining > 0 ? ` · ${remaining} remaining` : " · limit reached"}
+      </p>
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
@@ -154,28 +208,12 @@ export function PaymentProofUpload({
           uploaded.
         </p>
       ) : null}
-      {meta ? (
-        <>
-          <input
-            type="hidden"
-            name="cloudinaryPublicId"
-            value={meta.cloudinaryPublicId}
-          />
-          <input
-            type="hidden"
-            name="cloudinaryResourceType"
-            value={meta.cloudinaryResourceType}
-          />
-          <input type="hidden" name="cloudinaryDeliveryType" value="authenticated" />
-          <input type="hidden" name="proofFileName" value={meta.fileName} />
-          <input type="hidden" name="proofMimeType" value={meta.mimeType} />
-          <input
-            type="hidden"
-            name="proofFileSize"
-            value={String(meta.fileSize)}
-          />
-          <input type="hidden" name="proofFormat" value={meta.format} />
-        </>
+      {items.length > 0 ? (
+        <input
+          type="hidden"
+          name="paymentProofsJson"
+          value={JSON.stringify(items)}
+        />
       ) : null}
     </div>
   );

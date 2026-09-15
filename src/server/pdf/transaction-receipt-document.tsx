@@ -419,25 +419,35 @@ export function TransactionReceiptDocument({
           </View>
         ) : null}
 
-        {transaction.proofDocument ? (
-          <View style={styles.block}>
-            <Text style={styles.sectionLabel}>Payment proof</Text>
-            <View style={styles.proofBox}>
-              <Text style={styles.proofName}>
-                {transaction.proofDocument.fileName}
+        {(() => {
+          const proofs =
+            transaction.proofDocuments && transaction.proofDocuments.length > 0
+              ? transaction.proofDocuments
+              : transaction.proofDocument
+                ? [transaction.proofDocument]
+                : [];
+          if (proofs.length === 0) return null;
+          return (
+            <View style={styles.block}>
+              <Text style={styles.sectionLabel}>
+                Payment proof{proofs.length > 1 ? "s" : ""}
               </Text>
-              <Text style={styles.proofMeta}>
-                {[
-                  transaction.proofDocument.title,
-                  transaction.proofDocument.documentNumber,
-                  transaction.proofDocument.mimeType,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </Text>
+              {proofs.map((doc, index) => (
+                <View key={doc.id} style={styles.proofBox} wrap={false}>
+                  <Text style={styles.proofName}>
+                    {proofs.length > 1 ? `${index + 1}. ` : ""}
+                    {doc.fileName}
+                  </Text>
+                  <Text style={styles.proofMeta}>
+                    {[doc.title, doc.documentNumber, doc.mimeType]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Text>
+                </View>
+              ))}
             </View>
-          </View>
-        ) : null}
+          );
+        })()}
 
         <View style={styles.footer} fixed>
           <View>

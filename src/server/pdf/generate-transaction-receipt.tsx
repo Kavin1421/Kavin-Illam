@@ -58,6 +58,13 @@ function toReceiptData(
             mimeType: transaction.proofDocument.mimeType,
           }
         : null,
+      proofDocuments: (transaction.proofDocuments ?? []).map((doc) => ({
+        id: doc.id,
+        title: doc.title,
+        documentNumber: doc.documentNumber,
+        fileName: doc.fileName,
+        mimeType: doc.mimeType,
+      })),
     },
   };
 }

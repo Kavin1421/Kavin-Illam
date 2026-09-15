@@ -24,8 +24,8 @@ import {
 
 import { allocateTransactionNumber } from "./numbering";
 import {
-  linkTransactionProofDocument,
-  resolvePaymentProofDocumentId,
+  linkTransactionProofDocuments,
+  resolvePaymentProofDocumentIds,
 } from "./payment-proof";
 import { defaultDirectionForType, sumAuthorizedFinanceTotals } from "./totals";
 
@@ -140,7 +140,48 @@ export async function getTransaction(slug: string, transactionId: string) {
     toVisibleResource(tx),
   );
 
-  return { project: ctx.project, role: ctx.role, transaction: tx };
+  const proofIds = Array.from(
+    new Set(
+      [tx.proofDocumentId, ...(tx.proofDocumentIds ?? [])].filter(
+        (id): id is string => Boolean(id),
+      ),
+    ),
+  );
+
+  const proofDocuments =
+    proofIds.length === 0
+      ? []
+      : await prisma.document.findMany({
+          where: {
+            id: { in: proofIds },
+            projectId: ctx.project.id,
+          },
+          select: {
+            id: true,
+            title: true,
+            documentNumber: true,
+            fileName: true,
+            mimeType: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "asc" },
+        });
+
+  // Preserve upload order from proofDocumentIds / primary id.
+  const byId = new Map(proofDocuments.map((doc) => [doc.id, doc]));
+  const orderedProofs = proofIds
+    .map((id) => byId.get(id))
+    .filter((doc): doc is (typeof proofDocuments)[number] => Boolean(doc));
+
+  return {
+    project: ctx.project,
+    role: ctx.role,
+    transaction: {
+      ...tx,
+      proofDocument: orderedProofs[0] ?? tx.proofDocument,
+      proofDocuments: orderedProofs,
+    },
+  };
 }
 
 export async function createTransaction(slug: string, input: unknown) {
@@ -148,7 +189,9 @@ export async function createTransaction(slug: string, input: unknown) {
   const parsed = createTransactionSchema.safeParse(input);
   if (!parsed.success) {
     const proofIssue = parsed.error.issues.find(
-      (issue) => issue.path[0] === "cloudinaryPublicId",
+      (issue) =>
+        issue.path[0] === "cloudinaryPublicId" ||
+        issue.path[0] === "paymentProofsJson",
     );
     throw new AppError(
       "VALIDATION",
@@ -214,7 +257,7 @@ export async function createTransaction(slug: string, input: unknown) {
 
   const direction = defaultDirectionForType(parsed.data.type);
 
-  const proofDocumentId = await resolvePaymentProofDocumentId({
+  const proofDocumentIds = await resolvePaymentProofDocumentIds({
     actor: {
       projectId: ctx.project.id,
       projectSlug: ctx.project.slug,
@@ -265,8 +308,8 @@ export async function createTransaction(slug: string, input: unknown) {
     },
   });
 
-  if (proofDocumentId) {
-    await linkTransactionProofDocument(tx.id, proofDocumentId);
+  if (proofDocumentIds.length > 0) {
+    await linkTransactionProofDocuments(tx.id, proofDocumentIds);
   }
 
   logger.info("Transaction created", {

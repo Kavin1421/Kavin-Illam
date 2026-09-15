@@ -9,7 +9,7 @@ export type ReceiptProof = {
   documentNumber: string;
   fileName: string;
   mimeType?: string | null;
-} | null;
+};
 
 export type TransactionReceiptData = {
   projectName: string;
@@ -31,7 +31,8 @@ export type TransactionReceiptData = {
     accountName?: string | null;
     createdBy: ReceiptParty;
     paidBy?: ReceiptParty | null;
-    proofDocument?: ReceiptProof;
+    proofDocument?: ReceiptProof | null;
+    proofDocuments?: ReceiptProof[];
   };
   generatedAt: Date;
 };

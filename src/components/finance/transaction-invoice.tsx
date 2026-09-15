@@ -22,7 +22,7 @@ type InvoiceProof = {
   title: string;
   documentNumber: string;
   fileName: string;
-} | null;
+};
 
 export type TransactionInvoiceProps = {
   slug: string;
@@ -48,7 +48,8 @@ export type TransactionInvoiceProps = {
     account?: { name: string } | null;
     createdBy: InvoiceParty;
     paidBy?: InvoiceParty | null;
-    proofDocument?: InvoiceProof;
+    proofDocument?: InvoiceProof | null;
+    proofDocuments?: InvoiceProof[];
   };
 };
 
@@ -100,6 +101,12 @@ export function TransactionInvoice({
     "—";
 
   const amountLabel = formatInrFromPaise(transaction.amount);
+  const proofDocuments =
+    transaction.proofDocuments && transaction.proofDocuments.length > 0
+      ? transaction.proofDocuments
+      : transaction.proofDocument
+        ? [transaction.proofDocument]
+        : [];
   const txDate =
     typeof transaction.transactionDate === "string"
       ? new Date(transaction.transactionDate)
@@ -405,17 +412,29 @@ export function TransactionInvoice({
                 construction
               </p>
             </div>
-            {transaction.proofDocument ? (
-              <Link
-                href={`/p/${slug}/documents/${transaction.proofDocument.id}`}
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "sm" }),
-                  "border-[#d0ddd8] text-[#063f3a] hover:bg-[#eef7f2]",
-                )}
-                data-print-hide
-              >
-                View payment proof
-              </Link>
+            {proofDocuments.length > 0 ? (
+              <div className="space-y-2" data-print-hide>
+                <p className="text-[11px] tracking-[0.14em] text-[#667085] uppercase">
+                  Payment proof
+                </p>
+                <ul className="space-y-1.5">
+                  {proofDocuments.map((doc, index) => (
+                    <li key={doc.id}>
+                      <Link
+                        href={`/p/${slug}/documents/${doc.id}`}
+                        className={cn(
+                          buttonVariants({ variant: "outline", size: "sm" }),
+                          "border-[#d0ddd8] text-[#063f3a] hover:bg-[#eef7f2]",
+                        )}
+                      >
+                        {proofDocuments.length > 1
+                          ? `${index + 1}. ${doc.fileName}`
+                          : "View payment proof"}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : (
               <p className="text-xs text-[#667085]" data-print-hide>
                 {transaction.paymentMethod === "CASH"

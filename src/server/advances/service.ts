@@ -21,8 +21,8 @@ import {
   allocateTransactionNumber,
 } from "@/server/finance/numbering";
 import {
-  linkTransactionProofDocument,
-  resolvePaymentProofDocumentId,
+  linkTransactionProofDocuments,
+  resolvePaymentProofDocumentIds,
 } from "@/server/finance/payment-proof";
 import { defaultDirectionForType } from "@/server/finance/totals";
 import {
@@ -202,7 +202,9 @@ export async function createAdvance(slug: string, input: unknown) {
   const parsed = createAdvanceSchema.safeParse(input);
   if (!parsed.success) {
     const proofIssue = parsed.error.issues.find(
-      (issue) => issue.path[0] === "cloudinaryPublicId",
+      (issue) =>
+        issue.path[0] === "cloudinaryPublicId" ||
+        issue.path[0] === "paymentProofsJson",
     );
     throw new AppError(
       "VALIDATION",
@@ -255,7 +257,7 @@ export async function createAdvance(slug: string, input: unknown) {
         })
       : transactionNumber;
 
-  const proofDocumentId = await resolvePaymentProofDocumentId({
+  const proofDocumentIds = await resolvePaymentProofDocumentIds({
     actor: {
       projectId: ctx.project.id,
       projectSlug: ctx.project.slug,
@@ -299,8 +301,8 @@ export async function createAdvance(slug: string, input: unknown) {
     },
   });
 
-  if (proofDocumentId) {
-    await linkTransactionProofDocument(funding.id, proofDocumentId);
+  if (proofDocumentIds.length > 0) {
+    await linkTransactionProofDocuments(funding.id, proofDocumentIds);
   }
 
   const result = await prisma.advance.create({

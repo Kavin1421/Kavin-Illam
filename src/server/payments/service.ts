@@ -17,8 +17,8 @@ import {
   allocateTransactionNumber,
 } from "@/server/finance/numbering";
 import {
-  linkTransactionProofDocument,
-  resolvePaymentProofDocumentId,
+  linkTransactionProofDocuments,
+  resolvePaymentProofDocumentIds,
 } from "@/server/finance/payment-proof";
 import { defaultDirectionForType } from "@/server/finance/totals";
 import {
@@ -405,7 +405,9 @@ export async function payPaymentRequest(
   const parsed = payPaymentRequestSchema.safeParse(input);
   if (!parsed.success) {
     const proofIssue = parsed.error.issues.find(
-      (issue) => issue.path[0] === "cloudinaryPublicId",
+      (issue) =>
+        issue.path[0] === "cloudinaryPublicId" ||
+        issue.path[0] === "paymentProofsJson",
     );
     throw new AppError(
       "VALIDATION",
@@ -473,7 +475,7 @@ export async function payPaymentRequest(
     type: "EXPENSE",
   });
 
-  const proofDocumentId = await resolvePaymentProofDocumentId({
+  const proofDocumentIds = await resolvePaymentProofDocumentIds({
     actor: {
       projectId: ctx.project.id,
       projectSlug: ctx.project.slug,
@@ -517,8 +519,8 @@ export async function payPaymentRequest(
     },
   });
 
-  if (proofDocumentId) {
-    await linkTransactionProofDocument(ledger.id, proofDocumentId);
+  if (proofDocumentIds.length > 0) {
+    await linkTransactionProofDocuments(ledger.id, proofDocumentIds);
   }
 
   const paidAmount = request.paidAmount + payAmount;

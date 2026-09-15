@@ -60,4 +60,48 @@ describe("payment proof requirement", () => {
     });
     expect(parsed.success).toBe(true);
   });
+
+  it("allows up to five screenshots via paymentProofsJson", () => {
+    const items = Array.from({ length: 5 }, (_, i) => ({
+      cloudinaryPublicId: `kavin-illam/proj/documents/shot-${i}`,
+      cloudinaryResourceType: "image",
+      cloudinaryDeliveryType: "authenticated",
+      proofFileName: `shot-${i}.png`,
+      proofMimeType: "image/png",
+      proofFileSize: 1000 + i,
+      proofFormat: "png",
+    }));
+    const parsed = createTransactionSchema.safeParse({
+      amountRupees: "1000",
+      type: "EXPENSE",
+      paymentMethod: "UPI",
+      transactionDate: "2026-09-14",
+      status: "PAID",
+      visibility: "PROJECT_SHARED",
+      paymentProofsJson: JSON.stringify(items),
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects more than five screenshots", () => {
+    const items = Array.from({ length: 6 }, (_, i) => ({
+      cloudinaryPublicId: `kavin-illam/proj/documents/shot-${i}`,
+      cloudinaryResourceType: "image",
+      cloudinaryDeliveryType: "authenticated",
+      proofFileName: `shot-${i}.png`,
+      proofMimeType: "image/png",
+      proofFileSize: 1000 + i,
+      proofFormat: "png",
+    }));
+    const parsed = createTransactionSchema.safeParse({
+      amountRupees: "1000",
+      type: "EXPENSE",
+      paymentMethod: "UPI",
+      transactionDate: "2026-09-14",
+      status: "PAID",
+      visibility: "PROJECT_SHARED",
+      paymentProofsJson: JSON.stringify(items),
+    });
+    expect(parsed.success).toBe(false);
+  });
 });
