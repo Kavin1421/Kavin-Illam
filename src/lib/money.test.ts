@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { formatInrFromPaise, paiseFromRupeeString } from "./money";
+import {
+  formatInrForPdf,
+  formatInrFromPaise,
+  paiseFromRupeeString,
+} from "./money";
 
 describe("money helpers", () => {
   it("formats INR from paise with Indian grouping", () => {
@@ -14,5 +18,11 @@ describe("money helpers", () => {
 
   it("rejects non-integer paise formatting", () => {
     expect(() => formatInrFromPaise(1.5)).toThrow(/integer/);
+  });
+
+  it("formats PDF amounts with Rs. and Indian grouping", () => {
+    expect(formatInrForPdf(11000000)).toBe("Rs. 1,10,000.00");
+    expect(formatInrForPdf(-5000000)).toBe("-Rs. 50,000.00");
+    expect(() => formatInrForPdf(1.5)).toThrow(/integer/);
   });
 });

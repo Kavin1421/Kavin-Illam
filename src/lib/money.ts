@@ -13,6 +13,22 @@ export function formatInrFromPaise(paise: number): string {
   }).format(rupees);
 }
 
+/**
+ * Receipt PDFs use Helvetica, which has no ₹ glyph.
+ * "Rs." keeps the same Indian grouping without a missing character.
+ */
+export function formatInrForPdf(paise: number): string {
+  if (!Number.isInteger(paise)) {
+    throw new Error("Money amounts must be integer minor units (paise).");
+  }
+  const negative = paise < 0;
+  const formatted = new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(paise) / 100);
+  return `${negative ? "-" : ""}Rs. ${formatted}`;
+}
+
 /** Whole rupees when possible, so edit fields stay readable (`50000`, not `50000.00`). */
 export function rupeeInputFromPaise(paise: number): string {
   if (!Number.isInteger(paise)) {

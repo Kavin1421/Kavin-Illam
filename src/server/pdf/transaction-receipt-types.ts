@@ -9,6 +9,8 @@ export type ReceiptProof = {
   documentNumber: string;
   fileName: string;
   mimeType?: string | null;
+  /** Absolute portal URL. Opens the document after sign-in. */
+  href?: string | null;
 };
 
 export type TransactionReceiptData = {

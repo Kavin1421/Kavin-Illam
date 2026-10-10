@@ -1,5 +1,6 @@
 import {
   Document,
+  Link,
   Page,
   StyleSheet,
   Text,
@@ -7,7 +8,7 @@ import {
 } from "@react-pdf/renderer";
 
 import { formatDate, formatDateTime } from "@/lib/dates";
-import { formatInrFromPaise } from "@/lib/money";
+import { formatInrForPdf } from "@/lib/money";
 
 import {
   amountSectionLabel,
@@ -202,6 +203,9 @@ const styles = StyleSheet.create({
     color: colors.ink,
     lineHeight: 1.45,
   },
+  proofList: {
+    gap: 8,
+  },
   proofBox: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -214,10 +218,22 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: colors.ink,
   },
+  proofNameLink: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: colors.primary,
+    textDecoration: "underline",
+  },
   proofMeta: {
     fontSize: 8,
     color: colors.muted,
     marginTop: 3,
+  },
+  proofLink: {
+    fontSize: 8,
+    color: colors.accent,
+    marginTop: 4,
+    textDecoration: "underline",
   },
   footer: {
     position: "absolute",
@@ -261,7 +277,7 @@ export function TransactionReceiptDocument({
   data: TransactionReceiptData;
 }) {
   const { transaction, projectName, projectType, generatedAt } = data;
-  const amountLabel = formatInrFromPaise(transaction.amount);
+  const amountLabel = formatInrForPdf(transaction.amount);
   const accent = typeAccentColor(transaction.type);
   const badge = statusBadgeColors(transaction.status);
   const recordedBy = partyLabel(
@@ -332,7 +348,7 @@ export function TransactionReceiptDocument({
           {(transaction.outOfContractAmount ?? 0) > 0 ? (
             <Text style={styles.amountMeta}>
               {(transaction.contractAmount ?? 0) > 0
-                ? `${formatInrFromPaise(transaction.contractAmount ?? 0)} in contract · ${formatInrFromPaise(transaction.outOfContractAmount ?? 0)} out of contract`
+                ? `${formatInrForPdf(transaction.contractAmount ?? 0)} in contract  ·  ${formatInrForPdf(transaction.outOfContractAmount ?? 0)} out of contract`
                 : "Out of contract"}
             </Text>
           ) : null}
@@ -439,19 +455,32 @@ export function TransactionReceiptDocument({
               <Text style={styles.sectionLabel}>
                 Payment proof{proofs.length > 1 ? "s" : ""}
               </Text>
-              {proofs.map((doc, index) => (
-                <View key={doc.id} style={styles.proofBox} wrap={false}>
-                  <Text style={styles.proofName}>
-                    {proofs.length > 1 ? `${index + 1}. ` : ""}
-                    {doc.fileName}
-                  </Text>
-                  <Text style={styles.proofMeta}>
-                    {[doc.title, doc.documentNumber, doc.mimeType]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </Text>
-                </View>
-              ))}
+              <View style={styles.proofList}>
+                {proofs.map((doc, index) => {
+                  const label = `${proofs.length > 1 ? `${index + 1}. ` : ""}${doc.fileName}`;
+                  return (
+                    <View key={doc.id} style={styles.proofBox} wrap={false}>
+                      {doc.href ? (
+                        <Link src={doc.href} style={styles.proofNameLink}>
+                          {label}
+                        </Link>
+                      ) : (
+                        <Text style={styles.proofName}>{label}</Text>
+                      )}
+                      <Text style={styles.proofMeta}>
+                        {[doc.title, doc.documentNumber, doc.mimeType]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </Text>
+                      {doc.href ? (
+                        <Link src={doc.href} style={styles.proofLink}>
+                          Open in portal
+                        </Link>
+                      ) : null}
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           );
         })()}

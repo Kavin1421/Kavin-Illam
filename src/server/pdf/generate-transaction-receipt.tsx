@@ -1,6 +1,7 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 
 import { logger } from "@/lib/logger";
+import { absoluteUrl } from "@/server/email/send";
 import {
   contractAmountPaise,
   outOfContractAmountPaise,
@@ -20,7 +21,12 @@ export type GeneratedTransactionReceipt = {
   transactionNumber: string;
 };
 
+function proofHref(slug: string, documentId: string): string {
+  return absoluteUrl(`/p/${slug}/documents/${documentId}`);
+}
+
 function toReceiptData(
+  slug: string,
   project: { name: string; projectType: string },
   transaction: Awaited<ReturnType<typeof getTransaction>>["transaction"],
 ): TransactionReceiptData {
@@ -62,6 +68,7 @@ function toReceiptData(
             documentNumber: transaction.proofDocument.documentNumber,
             fileName: transaction.proofDocument.fileName,
             mimeType: transaction.proofDocument.mimeType,
+            href: proofHref(slug, transaction.proofDocument.id),
           }
         : null,
       proofDocuments: (transaction.proofDocuments ?? []).map((doc) => ({
@@ -70,6 +77,7 @@ function toReceiptData(
         documentNumber: doc.documentNumber,
         fileName: doc.fileName,
         mimeType: doc.mimeType,
+        href: proofHref(slug, doc.id),
       })),
     },
   };
@@ -84,7 +92,7 @@ export async function generateTransactionReceiptPdf(
   transactionId: string,
 ): Promise<GeneratedTransactionReceipt> {
   const { project, transaction } = await getTransaction(slug, transactionId);
-  const data = toReceiptData(project, transaction);
+  const data = toReceiptData(slug, project, transaction);
 
   const bytes = await renderToBuffer(
     <TransactionReceiptDocument data={data} />,
