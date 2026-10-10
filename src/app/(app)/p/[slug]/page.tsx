@@ -19,6 +19,7 @@ import {
   AnimatedPercent,
 } from "@/components/dashboard/animated-money";
 import { MetricCard } from "@/components/dashboard/metric-card";
+import { ContractSplitMark } from "@/components/finance/contract-split-mark";
 import { MonthlySpendChart } from "@/components/dashboard/monthly-chart";
 import { ProgressBar } from "@/components/dashboard/progress-bar";
 import { SpendDonut } from "@/components/dashboard/spend-charts";
@@ -247,8 +248,8 @@ export default async function ProjectDashboardPage({
           paise={summary.outOfContractSpent}
           hint={
             summary.outOfContractCount > 0
-              ? `${summary.outOfContractCount} payment${summary.outOfContractCount === 1 ? "" : "s"} · not in contract total`
-              : "Not added to the contract budget"
+              ? `${summary.outOfContractCount} payment${summary.outOfContractCount === 1 ? "" : "s"} kept off the contract`
+              : "Nothing kept outside the contract"
           }
           accent="amber"
           icon={<Wallet className="size-4" />}
@@ -270,6 +271,48 @@ export default async function ProjectDashboardPage({
           spark={sparkFromMonthly("committed")}
         />
       </section>
+
+      {data.outOfContractItems.length > 0 ? (
+        <section className="surface-card overflow-hidden rounded-[1.125rem]">
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/10 px-5 py-4">
+            <div>
+              <p className="text-[11px] font-medium tracking-[0.16em] text-amber-200/80 uppercase">
+                Outside the contract
+              </p>
+              <h3 className="text-section mt-1">Kept off the main budget</h3>
+            </div>
+            <p className="font-tabular text-xl font-semibold text-amber-100">
+              {formatInrFromPaise(summary.outOfContractSpent)}
+            </p>
+          </div>
+          <ul className="grid sm:grid-cols-2">
+            {data.outOfContractItems.map((item) => (
+              <li
+                key={item.id}
+                className="border-b border-white/[0.06] sm:[&:nth-child(odd)]:border-r"
+              >
+                <Link
+                  href={`/p/${slug}/finance/${item.id}`}
+                  className="flex items-center justify-between gap-4 px-5 py-4 transition-ki-fast hover:bg-white/[0.035]"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-white">
+                      {item.title}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted-white">
+                      {formatDate(item.at)}
+                    </span>
+                    <ContractSplitMark row={item} />
+                  </span>
+                  <span className="shrink-0 text-right font-tabular text-sm font-semibold text-white">
+                    {formatInrFromPaise(item.amount)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* Charts + milestones — ~50 / 25 / 25 */}
       <section className="grid gap-4 xl:grid-cols-12 xl:gap-5">
@@ -400,6 +443,7 @@ export default async function ProjectDashboardPage({
                       <span className="block text-xs text-muted-white">
                         {tx.categoryName} · {formatDate(tx.at)}
                       </span>
+                      <ContractSplitMark row={tx} />
                     </span>
                     <span className="text-right">
                       <span className="block font-tabular text-sm text-white">

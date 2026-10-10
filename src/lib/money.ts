@@ -13,6 +13,20 @@ export function formatInrFromPaise(paise: number): string {
   }).format(rupees);
 }
 
+/** Whole rupees when possible, so edit fields stay readable (`50000`, not `50000.00`). */
+export function rupeeInputFromPaise(paise: number): string {
+  if (!Number.isInteger(paise)) {
+    throw new Error("Money amounts must be integer minor units (paise).");
+  }
+  const negative = paise < 0;
+  const abs = Math.abs(paise);
+  const whole = Math.floor(abs / 100);
+  const fraction = abs % 100;
+  const body =
+    fraction === 0 ? String(whole) : `${whole}.${String(fraction).padStart(2, "0")}`;
+  return negative ? `-${body}` : body;
+}
+
 export function paiseFromRupeeString(value: string): number {
   const normalized = value.replace(/,/g, "").trim();
   if (!/^-?\d+(\.\d{1,2})?$/.test(normalized)) {

@@ -18,11 +18,15 @@ function paiseOrNull(value: string): number | null {
 
 export function ContractScopeFields({
   amountRupees,
+  defaultScope = "MERGED",
+  defaultIncludedRupees = "",
 }: {
   amountRupees: string;
+  defaultScope?: string;
+  defaultIncludedRupees?: string;
 }) {
-  const [scope, setScope] = useState("MERGED");
-  const [includedRupees, setIncludedRupees] = useState("");
+  const [scope, setScope] = useState(defaultScope);
+  const [includedRupees, setIncludedRupees] = useState(defaultIncludedRupees);
 
   const totalPaise = paiseOrNull(amountRupees);
   const includedPaise = paiseOrNull(includedRupees);

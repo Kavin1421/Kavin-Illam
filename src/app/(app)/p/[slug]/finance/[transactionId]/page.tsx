@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { TransactionInvoice } from "@/components/finance/transaction-invoice";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -30,6 +31,7 @@ export default async function TransactionDetailPage({
     getTransaction(slug, transactionId),
   );
   const canDelete = roleHasPermission(role, "FINANCE_DELETE");
+  const canEdit = roleHasPermission(role, "FINANCE_EDIT");
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 sm:px-6">
@@ -40,6 +42,14 @@ export default async function TransactionDetailPage({
         >
           ← Back to finance
         </Link>
+        {canEdit && !transaction.deletedAt ? (
+          <Link
+            href={`/p/${slug}/finance/${transactionId}/edit`}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto")}
+          >
+            Edit
+          </Link>
+        ) : null}
         <span className="text-white/20">/</span>
         <span className="text-muted-foreground">Invoice</span>
         <span className="text-white/20">/</span>

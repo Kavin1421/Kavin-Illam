@@ -10,14 +10,11 @@ import {
 } from "lucide-react";
 
 import { MetricCard } from "@/components/dashboard/metric-card";
+import { ContractSplitMark } from "@/components/finance/contract-split-mark";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
-import {
-  contractAmountPaise,
-  outOfContractAmountPaise,
-} from "@/server/budget/math";
 import { cn } from "@/lib/utils";
 import { roleHasPermission } from "@/server/authorization";
 import { listTransactions } from "@/server/finance/transactions";
@@ -25,18 +22,6 @@ import { listTransactions } from "@/server/finance/transactions";
 export const metadata: Metadata = {
   title: "Finance",
 };
-
-function contractSplitNote(tx: {
-  amount: number;
-  includeInContract?: boolean | null;
-  outOfContractAmount?: number | null;
-}): string | null {
-  const outPaise = outOfContractAmountPaise(tx);
-  if (outPaise <= 0) return null;
-  const inPaise = contractAmountPaise(tx);
-  if (inPaise <= 0) return "Out of contract";
-  return `${formatInrFromPaise(inPaise)} in contract · ${formatInrFromPaise(outPaise)} out`;
-}
 
 function statusTone(status: string) {
   switch (status) {
@@ -69,6 +54,7 @@ export default async function FinancePage({
   const { role, transactions, totals, sharedTotals } =
     await listTransactions(slug);
   const canCreate = roleHasPermission(role, "FINANCE_CREATE");
+  const canEdit = roleHasPermission(role, "FINANCE_EDIT");
   const pendingCount = transactions.filter((tx) => tx.status === "PENDING").length;
 
   return (
@@ -213,17 +199,21 @@ export default async function FinancePage({
                       >
                         {formatDate(tx.transactionDate)}
                       </Link>
+                      {canEdit ? (
+                        <Link
+                          href={`/p/${slug}/finance/${tx.id}/edit`}
+                          className="mt-1 block text-xs text-mint hover:text-mint-light"
+                        >
+                          Edit
+                        </Link>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-muted-white">
                       {tx.transactionNumber}
                     </td>
                     <td className="px-4 py-3 text-muted-white">
-                      {tx.type}
-                      {contractSplitNote(tx) ? (
-                        <span className="mt-1 block text-[11px] tracking-wide text-amber-300 uppercase">
-                          {contractSplitNote(tx)}
-                        </span>
-                      ) : null}
+                      <span className="text-white/80">{tx.type}</span>
+                      <ContractSplitMark row={tx} />
                     </td>
                     <td className="px-4 py-3 text-white/90">
                       {tx.category?.name ?? "—"}
@@ -255,11 +245,14 @@ export default async function FinancePage({
 
           <div className="space-y-2 md:hidden">
             {transactions.map((tx) => (
-              <Link
+              <div
                 key={tx.id}
-                href={`/p/${slug}/finance/${tx.id}`}
-                className="surface-card block rounded-2xl p-4 transition-ki-fast hover:border-white/20"
+                className="surface-card rounded-2xl p-4"
               >
+                <Link
+                  href={`/p/${slug}/finance/${tx.id}`}
+                  className="block transition-ki-fast"
+                >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p
@@ -275,8 +268,8 @@ export default async function FinancePage({
                     </p>
                     <p className="text-xs text-muted-white">
                       {formatDate(tx.transactionDate)} · {tx.transactionNumber}
-                      {contractSplitNote(tx) ? ` · ${contractSplitNote(tx)}` : ""}
                     </p>
+                    <ContractSplitMark row={tx} />
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <Badge className={statusTone(tx.status)}>{tx.status}</Badge>
@@ -288,7 +281,16 @@ export default async function FinancePage({
                     </Badge>
                   </div>
                 </div>
-              </Link>
+                </Link>
+                {canEdit ? (
+                  <Link
+                    href={`/p/${slug}/finance/${tx.id}/edit`}
+                    className="mt-3 inline-block text-xs text-mint hover:text-mint-light"
+                  >
+                    Edit
+                  </Link>
+                ) : null}
+              </div>
             ))}
           </div>
         </>

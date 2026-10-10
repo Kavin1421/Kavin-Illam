@@ -5,6 +5,11 @@ import type {
 } from "@prisma/client";
 
 import { AppError } from "@/lib/errors";
+import {
+  computeAdvanceOutstanding,
+  deriveAdvanceStatus,
+} from "@/server/advances/outstanding";
+import { derivePaymentRequestStatus } from "@/server/payments/invariants";
 import { logger } from "@/lib/logger";
 import { formatInrFromPaise, paiseFromRupeeString } from "@/lib/money";
 import { actorLabel, recordAuditEvent } from "@/server/audit/record";
@@ -20,6 +25,7 @@ import { notDeleted } from "@/server/db/soft-delete";
 import {
   createTransactionSchema,
   softDeleteTransactionSchema,
+  updateTransactionSchema,
 } from "@/validators/finance";
 
 import { resolveContractSplit } from "./contract-split";
@@ -130,6 +136,9 @@ export async function getTransaction(slug: string, transactionId: string) {
       },
       createdBy: { select: { id: true, name: true, email: true } },
       paidBy: { select: { id: true, name: true, email: true } },
+      advanceFunding: { select: { id: true } },
+      advanceSettlement: { select: { id: true } },
+      paymentRequests: { select: { id: true }, take: 1 },
     },
   });
 
@@ -334,7 +343,9 @@ export async function createTransaction(slug: string, input: unknown) {
           ? new Date()
           : null,
     },
-  });
+    // Extended Prisma client input types omit newer scalars until the
+    // language service reloads the generated client.
+  } as Parameters<typeof prisma.financialTransaction.create>[0]);
 
   if (proofDocumentIds.length > 0) {
     await linkTransactionProofDocuments(tx.id, proofDocumentIds);
@@ -369,6 +380,256 @@ export async function createTransaction(slug: string, input: unknown) {
   });
 
   return tx;
+}
+
+export async function updateTransaction(
+  slug: string,
+  transactionId: string,
+  input: unknown,
+) {
+  const ctx = await requireProjectPermissionBySlug(slug, "FINANCE_EDIT");
+  const parsed = updateTransactionSchema.safeParse(input);
+  if (!parsed.success) {
+    const contractIssue = parsed.error.issues.find(
+      (issue) =>
+        issue.path[0] === "contractIncludedRupees" ||
+        issue.path[0] === "contractScope",
+    );
+    throw new AppError(
+      "VALIDATION",
+      contractIssue?.message || "Please check the transaction details.",
+    );
+  }
+
+  const existing = await prisma.financialTransaction.findFirst({
+    where: { id: transactionId, projectId: ctx.project.id, ...notDeleted },
+    include: {
+      advanceFunding: {
+        include: {
+          settlements: {
+            select: { id: true, kind: true, amount: true, deletedAt: true },
+          },
+        },
+      },
+      advanceSettlement: {
+        include: {
+          advance: {
+            include: {
+              settlements: {
+                select: { id: true, kind: true, amount: true, deletedAt: true },
+              },
+            },
+          },
+        },
+      },
+      paymentRequests: {
+        select: {
+          id: true,
+          amount: true,
+          paidAmount: true,
+          linkedTransactionId: true,
+          status: true,
+        },
+      },
+    },
+  });
+  if (!existing) {
+    throw new AppError("NOT_FOUND", "Transaction was not found.");
+  }
+  await assertCanViewProjectResource(
+    ctx.project.id,
+    ctx.user.id,
+    toVisibleResource(existing),
+  );
+
+  let amount: number;
+  try {
+    amount = paiseFromRupeeString(parsed.data.amountRupees);
+  } catch {
+    throw new AppError("VALIDATION", "Invalid amount.");
+  }
+  if (amount <= 0) {
+    throw new AppError("VALIDATION", "Amount must be greater than zero.");
+  }
+  const contractSplit = resolveContractSplit({
+    amountPaise: amount,
+    contractScope: parsed.data.contractScope,
+    contractIncludedRupees: parsed.data.contractIncludedRupees,
+  });
+  const transactionDate = new Date(parsed.data.transactionDate);
+  if (Number.isNaN(transactionDate.getTime())) {
+    throw new AppError("VALIDATION", "Invalid transaction date.");
+  }
+
+  const linkedRequests = existing.paymentRequests.filter(
+    (request) => request.linkedTransactionId === existing.id,
+  );
+  for (const request of linkedRequests) {
+    const paidAmount = request.paidAmount + (amount - existing.amount);
+    if (
+      request.status === "PAID" ||
+      request.status === "PARTIALLY_PAID"
+    ) {
+      if (paidAmount <= 0 || paidAmount > request.amount) {
+        throw new AppError(
+          "VALIDATION",
+          "This payment is linked to a request. The new amount cannot exceed what was requested or drop the paid total to zero.",
+        );
+      }
+    }
+  }
+
+  if (existing.advanceFunding) {
+    try {
+      computeAdvanceOutstanding(amount, existing.advanceFunding.settlements);
+    } catch {
+      throw new AppError(
+        "VALIDATION",
+        "This amount is smaller than what has already been settled on the advance.",
+      );
+    }
+  }
+
+  if (existing.advanceSettlement?.advance) {
+    const settlementId = existing.advanceSettlement.id;
+    const settlements = existing.advanceSettlement.advance.settlements.map(
+      (row) =>
+        row.id === settlementId ? { ...row, amount } : row,
+    );
+    try {
+      computeAdvanceOutstanding(
+        existing.advanceSettlement.advance.originalAmount,
+        settlements,
+      );
+    } catch {
+      throw new AppError(
+        "VALIDATION",
+        "This settlement amount is larger than the advance still outstanding.",
+      );
+    }
+  }
+
+  const direction = defaultDirectionForType(parsed.data.type);
+  const updated = await prisma.financialTransaction.update({
+    where: { id: existing.id },
+    data: {
+      type: parsed.data.type,
+      direction,
+      amount,
+      categoryId: parsed.data.categoryId || null,
+      accountId: parsed.data.accountId || null,
+      paidTo: parsed.data.paidTo || null,
+      transactionDate,
+      status: parsed.data.status,
+      paymentMethod:
+        (parsed.data.paymentMethod as PaymentMethod | undefined) ?? null,
+      referenceNumber: parsed.data.referenceNumber || null,
+      description: parsed.data.description || null,
+      notes: parsed.data.notes || null,
+      includeInContract: contractSplit.includeInContract,
+      outOfContractAmount: contractSplit.outOfContractAmount,
+      visibility: parsed.data.visibility as Visibility,
+    },
+  } as Parameters<typeof prisma.financialTransaction.update>[0]);
+
+  if (existing.advanceFunding) {
+    const breakdown = computeAdvanceOutstanding(
+      amount,
+      existing.advanceFunding.settlements,
+    );
+    await prisma.advance.update({
+      where: { id: existing.advanceFunding.id },
+      data: {
+        originalAmount: amount,
+        recipientName: parsed.data.paidTo || null,
+        categoryId: parsed.data.categoryId || null,
+        accountId: parsed.data.accountId || null,
+        issuedAt: transactionDate,
+        description: parsed.data.description || null,
+        notes: parsed.data.notes || null,
+        visibility: parsed.data.visibility as Visibility,
+        status: deriveAdvanceStatus({
+          originalAmount: amount,
+          outstanding: breakdown.outstanding,
+          cancelled: existing.advanceFunding.status === "CANCELLED",
+        }),
+      },
+    });
+  }
+
+  if (existing.advanceSettlement?.advance) {
+    await prisma.advanceSettlement.update({
+      where: { id: existing.advanceSettlement.id },
+      data: {
+        amount,
+        settledAt: transactionDate,
+        description: parsed.data.description || null,
+        notes: parsed.data.notes || null,
+      },
+    });
+    const settlementId = existing.advanceSettlement.id;
+    const settlements = existing.advanceSettlement.advance.settlements.map(
+      (row) => (row.id === settlementId ? { ...row, amount } : row),
+    );
+    const breakdown = computeAdvanceOutstanding(
+      existing.advanceSettlement.advance.originalAmount,
+      settlements,
+    );
+    await prisma.advance.update({
+      where: { id: existing.advanceSettlement.advance.id },
+      data: {
+        status: deriveAdvanceStatus({
+          originalAmount: existing.advanceSettlement.advance.originalAmount,
+          outstanding: breakdown.outstanding,
+          cancelled: existing.advanceSettlement.advance.status === "CANCELLED",
+        }),
+      },
+    });
+  }
+
+  for (const request of linkedRequests) {
+    const paidAmount = request.paidAmount + (amount - existing.amount);
+    if (request.status !== "PAID" && request.status !== "PARTIALLY_PAID") {
+      continue;
+    }
+    await prisma.paymentRequest.update({
+      where: { id: request.id },
+      data: {
+        paidAmount,
+        categoryId: parsed.data.categoryId || null,
+        accountId: parsed.data.accountId || null,
+        payeeName: parsed.data.paidTo || null,
+        status: derivePaymentRequestStatus({
+          requestedAmount: request.amount,
+          paidAmount,
+          hasLinkedTransaction: true,
+        }),
+        paidAt: transactionDate,
+      },
+    });
+  }
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "UPDATE",
+    entityType: "FinancialTransaction",
+    entityId: updated.id,
+    metadata: {
+      transactionNumber: updated.transactionNumber,
+      amount: updated.amount,
+      previousAmount: existing.amount,
+      includeInContract: contractSplit.includeInContract,
+      outOfContractAmount: contractSplit.outOfContractAmount,
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} updated ${updated.transactionNumber}.`,
+      href: `/p/${slug}/finance/${updated.id}`,
+      visibility: updated.visibility,
+    },
+  });
+
+  return updated;
 }
 
 export async function softDeleteTransaction(

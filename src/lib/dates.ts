@@ -23,4 +23,18 @@ export function formatDate(
   }).format(date);
 }
 
+/** `YYYY-MM-DD` for `<input type="date">` in the project timezone. */
+export function formatDateInput(
+  value: Date | string,
+  timeZone: string = DEFAULT_TIME_ZONE,
+): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 export { DEFAULT_TIME_ZONE };

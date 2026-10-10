@@ -7,6 +7,7 @@ import { createAccount } from "@/server/finance/accounts";
 import {
   createTransaction,
   softDeleteTransaction,
+  updateTransaction,
 } from "@/server/finance/transactions";
 
 export type FinanceActionState = {
@@ -26,6 +27,23 @@ export async function createTransactionAction(
   try {
     const tx = await createTransaction(slug, formObject(formData));
     redirect(`/p/${slug}/finance/${tx.id}`);
+  } catch (error) {
+    if (error instanceof AppError) {
+      return { error: error.message };
+    }
+    throw error;
+  }
+}
+
+export async function updateTransactionAction(
+  slug: string,
+  transactionId: string,
+  _prev: FinanceActionState,
+  formData: FormData,
+): Promise<FinanceActionState> {
+  try {
+    await updateTransaction(slug, transactionId, formObject(formData));
+    redirect(`/p/${slug}/finance/${transactionId}`);
   } catch (error) {
     if (error instanceof AppError) {
       return { error: error.message };

@@ -124,6 +124,27 @@ export const createTransactionSchema = z
     refineContractSplit(data, ctx);
   });
 
+export const updateTransactionSchema = z
+  .object({
+    amountRupees: z.string().trim().min(1),
+    type: transactionTypeSchema,
+    categoryId: z.string().optional().or(z.literal("")),
+    accountId: z.string().optional().or(z.literal("")),
+    paidTo: z.string().trim().max(200).optional().or(z.literal("")),
+    paymentMethod: paymentMethodSchema.optional(),
+    referenceNumber: z.string().trim().max(120).optional().or(z.literal("")),
+    description: z.string().trim().max(500).optional().or(z.literal("")),
+    notes: z.string().trim().max(2000).optional().or(z.literal("")),
+    transactionDate: z.string().min(1),
+    status: transactionStatusSchema.default("PAID"),
+    visibility: visibilitySchema.default("PROJECT_SHARED"),
+    contractScope: contractScopeSchema,
+    contractIncludedRupees: z.string().trim().optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    refineContractSplit(data, ctx);
+  });
+
 export const softDeleteTransactionSchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });

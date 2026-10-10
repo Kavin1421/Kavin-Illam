@@ -7,12 +7,9 @@ import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ContractSplitMark } from "@/components/finance/contract-split-mark";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
-import {
-  contractAmountPaise,
-  outOfContractAmountPaise,
-} from "@/server/budget/math";
 import { cn } from "@/lib/utils";
 import { emailPaymentReceiptAction } from "@/server/finance/receipt-actions";
 
@@ -323,13 +320,9 @@ export function TransactionInvoice({
             <p className="mt-2 text-sm text-[#667085]">
               {transaction.currency} · {formatDate(txDate)}
             </p>
-            {outOfContractAmountPaise(transaction) > 0 ? (
-              <p className="mt-3 text-sm text-[#8a5a12]">
-                {contractAmountPaise(transaction) > 0
-                  ? `${formatInrFromPaise(contractAmountPaise(transaction))} in contract · ${formatInrFromPaise(outOfContractAmountPaise(transaction))} out of contract`
-                  : "Out of contract · not added to the contract budget"}
-              </p>
-            ) : null}
+            <div className="mt-3 flex justify-center empty:hidden">
+              <ContractSplitMark row={transaction} surface="paper" />
+            </div>
           </section>
 
           <div className="grid gap-8 sm:grid-cols-2">

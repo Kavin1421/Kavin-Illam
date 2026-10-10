@@ -233,6 +233,14 @@ export async function getProjectDashboard(slug: string) {
   }[] = [];
   let outOfContractSpent = 0;
   let outOfContractCount = 0;
+  const outOfContractItems: {
+    id: string;
+    title: string;
+    amount: number;
+    includeInContract: boolean | null;
+    outOfContractAmount: number | null;
+    at: Date;
+  }[] = [];
   for (const row of sharedTx) {
     if (!isBudgetConsumingLedgerType(row.type)) continue;
     if (!spendStatuses.has(row.status)) continue;
@@ -241,6 +249,14 @@ export async function getProjectDashboard(slug: string) {
     if (outOfContract > 0) {
       outOfContractSpent += outOfContract;
       outOfContractCount += 1;
+      outOfContractItems.push({
+        id: row.id,
+        title: row.description || `${row.type} ${row.transactionNumber}`,
+        amount: row.amount,
+        includeInContract: row.includeInContract,
+        outOfContractAmount: row.outOfContractAmount,
+        at: row.transactionDate ?? row.createdAt,
+      });
     }
     if (inContract <= 0) continue;
     contractSpendRows.push({
@@ -409,6 +425,8 @@ export async function getProjectDashboard(slug: string) {
     title: tx.description || `${tx.type} ${tx.transactionNumber}`,
     categoryName: tx.category?.name ?? "Uncategorized",
     amount: tx.amount,
+    includeInContract: tx.includeInContract,
+    outOfContractAmount: tx.outOfContractAmount,
     status: tx.status,
     type: tx.type,
     direction: tx.direction,
@@ -515,6 +533,7 @@ export async function getProjectDashboard(slug: string) {
     expiringDocuments: expiringDocuments.slice(0, 5),
     activity,
     recentTransactions,
+    outOfContractItems: outOfContractItems.slice(0, 4),
     recentDocuments,
     milestoneProgress: {
       total: milestoneTotal,
