@@ -16,6 +16,7 @@ import {
 } from "@/server/advances/outstanding";
 import {
   computeBudgetRollup,
+  contractAmountPaise,
   isBudgetConsumingLedgerType,
   openCommitmentFromRequest,
 } from "@/server/budget/math";
@@ -269,15 +270,17 @@ export async function buildReportCsv(
           { name: string; code: string; amount: number }
         >();
         for (const tx of shared) {
+          const amount = contractAmountPaise(tx);
+          if (amount <= 0) continue;
           const key = tx.categoryId ?? "__none__";
           const existing = byCat.get(key);
           if (existing) {
-            existing.amount += tx.amount;
+            existing.amount += amount;
           } else {
             byCat.set(key, {
               name: tx.category?.name ?? "Uncategorized",
               code: tx.category?.code ?? "",
-              amount: tx.amount,
+              amount,
             });
           }
         }
@@ -489,6 +492,8 @@ export async function buildReportCsv(
               type: true,
               amount: true,
               categoryId: true,
+              includeInContract: true,
+              outOfContractAmount: true,
               visibility: true,
               createdById: true,
               allowedUserIds: true,
@@ -533,7 +538,11 @@ export async function buildReportCsv(
             budget?.totalPlanned ?? ctx.project.estimatedBudget ?? null,
           paid: sharedTx
             .filter((row) => isBudgetConsumingLedgerType(row.type))
-            .map((row) => ({ categoryId: row.categoryId, amount: row.amount })),
+            .map((row) => ({
+              categoryId: row.categoryId,
+              amount: contractAmountPaise(row),
+            }))
+            .filter((slice) => slice.amount > 0),
           commitments: sharedReq
             .map((row) => ({
               categoryId: row.categoryId,

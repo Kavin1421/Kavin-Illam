@@ -22,6 +22,7 @@ import {
   softDeleteTransactionSchema,
 } from "@/validators/finance";
 
+import { resolveContractSplit } from "./contract-split";
 import { allocateTransactionNumber } from "./numbering";
 import {
   linkTransactionProofDocuments,
@@ -67,6 +68,7 @@ const listSelect = {
   createdAt: true,
   deletedAt: true,
   includeInContract: true,
+  outOfContractAmount: true,
   category: { select: { id: true, name: true, code: true } },
   account: { select: { id: true, name: true } },
 } as const;
@@ -205,9 +207,16 @@ export async function createTransaction(slug: string, input: unknown) {
         issue.path[0] === "cloudinaryPublicId" ||
         issue.path[0] === "paymentProofsJson",
     );
+    const contractIssue = parsed.error.issues.find(
+      (issue) =>
+        issue.path[0] === "contractIncludedRupees" ||
+        issue.path[0] === "contractScope",
+    );
     throw new AppError(
       "VALIDATION",
-      proofIssue?.message || "Please check the transaction details.",
+      proofIssue?.message ||
+        contractIssue?.message ||
+        "Please check the transaction details.",
     );
   }
 
@@ -220,6 +229,11 @@ export async function createTransaction(slug: string, input: unknown) {
   if (amount <= 0) {
     throw new AppError("VALIDATION", "Amount must be greater than zero.");
   }
+  const contractSplit = resolveContractSplit({
+    amountPaise: amount,
+    contractScope: parsed.data.contractScope,
+    contractIncludedRupees: parsed.data.contractIncludedRupees,
+  });
 
   if (parsed.data.status === "PAID" && !parsed.data.transactionDate) {
     throw new AppError(
@@ -306,7 +320,8 @@ export async function createTransaction(slug: string, input: unknown) {
       referenceNumber: parsed.data.referenceNumber || null,
       description: parsed.data.description || null,
       notes: parsed.data.notes || null,
-      includeInContract: parsed.data.contractScope !== "OUT_OF_CONTRACT",
+      includeInContract: contractSplit.includeInContract,
+      outOfContractAmount: contractSplit.outOfContractAmount,
       visibility: parsed.data.visibility as Visibility,
       allowedUserIds: [],
       createdById: ctx.user.id,

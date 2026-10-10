@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   computeBudgetRollup,
+  contractAmountPaise,
   countsTowardContract,
+  outOfContractAmountPaise,
   openCommitmentFromRequest,
 } from "@/server/budget/math";
 
@@ -95,5 +97,35 @@ describe("budget math", () => {
     expect(countsTowardContract({ includeInContract: true })).toBe(true);
     expect(countsTowardContract({ includeInContract: null })).toBe(true);
     expect(countsTowardContract({ includeInContract: false })).toBe(false);
+  });
+
+  it("splits one payment between the contract and the balance outside it", () => {
+    const row = {
+      amount: 10_000_000,
+      includeInContract: true,
+      outOfContractAmount: 5_000_000,
+    };
+    expect(contractAmountPaise(row)).toBe(5_000_000);
+    expect(outOfContractAmountPaise(row)).toBe(5_000_000);
+  });
+
+  it("keeps a fully merged payment inside the contract", () => {
+    const row = { amount: 10_000_000, includeInContract: true };
+    expect(contractAmountPaise(row)).toBe(10_000_000);
+    expect(outOfContractAmountPaise(row)).toBe(0);
+    expect(contractAmountPaise({ amount: 100 })).toBe(100);
+  });
+
+  it("keeps a fully excluded payment out of the contract", () => {
+    const row = { amount: 10_000_000, includeInContract: false };
+    expect(contractAmountPaise(row)).toBe(0);
+    expect(outOfContractAmountPaise(row)).toBe(10_000_000);
+    expect(
+      outOfContractAmountPaise({
+        amount: 10_000_000,
+        includeInContract: false,
+        outOfContractAmount: 1,
+      }),
+    ).toBe(10_000_000);
   });
 });

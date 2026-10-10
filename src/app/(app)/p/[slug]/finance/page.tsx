@@ -14,6 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
+import {
+  contractAmountPaise,
+  outOfContractAmountPaise,
+} from "@/server/budget/math";
 import { cn } from "@/lib/utils";
 import { roleHasPermission } from "@/server/authorization";
 import { listTransactions } from "@/server/finance/transactions";
@@ -21,6 +25,18 @@ import { listTransactions } from "@/server/finance/transactions";
 export const metadata: Metadata = {
   title: "Finance",
 };
+
+function contractSplitNote(tx: {
+  amount: number;
+  includeInContract?: boolean | null;
+  outOfContractAmount?: number | null;
+}): string | null {
+  const outPaise = outOfContractAmountPaise(tx);
+  if (outPaise <= 0) return null;
+  const inPaise = contractAmountPaise(tx);
+  if (inPaise <= 0) return "Out of contract";
+  return `${formatInrFromPaise(inPaise)} in contract · ${formatInrFromPaise(outPaise)} out`;
+}
 
 function statusTone(status: string) {
   switch (status) {
@@ -203,9 +219,9 @@ export default async function FinancePage({
                     </td>
                     <td className="px-4 py-3 text-muted-white">
                       {tx.type}
-                      {tx.includeInContract === false ? (
+                      {contractSplitNote(tx) ? (
                         <span className="mt-1 block text-[11px] tracking-wide text-amber-300 uppercase">
-                          Out of contract
+                          {contractSplitNote(tx)}
                         </span>
                       ) : null}
                     </td>
@@ -259,7 +275,7 @@ export default async function FinancePage({
                     </p>
                     <p className="text-xs text-muted-white">
                       {formatDate(tx.transactionDate)} · {tx.transactionNumber}
-                      {tx.includeInContract === false ? " · Out of contract" : ""}
+                      {contractSplitNote(tx) ? ` · ${contractSplitNote(tx)}` : ""}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">

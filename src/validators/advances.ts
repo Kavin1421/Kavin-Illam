@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   contractScopeSchema,
   paymentMethodSchema,
+  refineContractSplit,
   visibilitySchema,
 } from "@/validators/finance";
 import {
@@ -23,10 +24,12 @@ export const createAdvanceSchema = z
     issuedAt: z.string().min(1),
     visibility: visibilitySchema.default("PROJECT_SHARED"),
     contractScope: contractScopeSchema,
+    contractIncludedRupees: z.string().trim().optional().or(z.literal("")),
   })
   .merge(paymentProofUploadSchema)
   .superRefine((data, ctx) => {
     refineRequirePaymentProofUnlessCash(data, ctx);
+    refineContractSplit(data, ctx);
   });
 
 export const settleAdvanceSchema = z.object({

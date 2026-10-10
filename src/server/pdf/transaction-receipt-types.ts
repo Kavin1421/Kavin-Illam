@@ -20,6 +20,10 @@ export type TransactionReceiptData = {
     status: string;
     amount: number;
     currency: string;
+    /** Paise of this receipt that stay in the contract. Omitted when the whole amount is in. */
+    contractAmount?: number;
+    /** Paise of this receipt kept out of the contract. */
+    outOfContractAmount?: number;
     paidTo?: string | null;
     paymentMethod?: string | null;
     referenceNumber?: string | null;

@@ -1,6 +1,10 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 
 import { logger } from "@/lib/logger";
+import {
+  contractAmountPaise,
+  outOfContractAmountPaise,
+} from "@/server/budget/math";
 import { getTransaction } from "@/server/finance/transactions";
 
 import { TransactionReceiptDocument } from "./transaction-receipt-document";
@@ -30,6 +34,8 @@ function toReceiptData(
       status: transaction.status,
       amount: transaction.amount,
       currency: transaction.currency,
+      contractAmount: contractAmountPaise(transaction),
+      outOfContractAmount: outOfContractAmountPaise(transaction),
       paidTo: transaction.paidTo,
       paymentMethod: transaction.paymentMethod,
       referenceNumber: transaction.referenceNumber,

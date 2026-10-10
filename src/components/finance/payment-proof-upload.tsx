@@ -56,7 +56,7 @@ function friendlyProofFileName(file: File, ordinal: number): string {
     return `Payment-screenshot-${ordinal}${extensionForFile(file)}`;
   }
 
-  return base.slice(0, 180);
+  return base.slice(0, 180); 
 }
 
 async function requestSignature(

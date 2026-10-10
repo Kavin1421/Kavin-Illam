@@ -13,9 +13,10 @@ import {
 } from "@/server/advances/outstanding";
 import {
   computeBudgetRollup,
-  countsTowardContract,
+  contractAmountPaise,
   isBudgetConsumingLedgerType,
   openCommitmentFromRequest,
+  outOfContractAmountPaise,
 } from "@/server/budget/math";
 import { prisma } from "@/server/db/prisma";
 import { notDeleted } from "@/server/db/soft-delete";
@@ -94,6 +95,7 @@ export async function getProjectDashboard(slug: string) {
         allowedUserIds: true,
         deletedAt: true,
         includeInContract: true,
+        outOfContractAmount: true,
         categoryId: true,
         description: true,
         createdAt: true,
@@ -222,23 +224,40 @@ export async function getProjectDashboard(slug: string) {
 
   const financeTotals = sumAuthorizedFinanceTotals(sharedTx);
 
-  const spendSlices = sharedTx
-    .filter(
-      (row) =>
-        isBudgetConsumingLedgerType(row.type) &&
-        countsTowardContract(row) &&
-        (row.status === "PAID" ||
-          row.status === "PARTIALLY_PAID" ||
-          row.status === "APPROVED"),
-    )
-    .map((row) => ({
+  const spendStatuses = new Set(["PAID", "PARTIALLY_PAID", "APPROVED"]);
+  const contractSpendRows: {
+    categoryId: string | null;
+    categoryName: string;
+    amount: number;
+    at: Date;
+  }[] = [];
+  let outOfContractSpent = 0;
+  let outOfContractCount = 0;
+  for (const row of sharedTx) {
+    if (!isBudgetConsumingLedgerType(row.type)) continue;
+    if (!spendStatuses.has(row.status)) continue;
+    const inContract = contractAmountPaise(row);
+    const outOfContract = outOfContractAmountPaise(row);
+    if (outOfContract > 0) {
+      outOfContractSpent += outOfContract;
+      outOfContractCount += 1;
+    }
+    if (inContract <= 0) continue;
+    contractSpendRows.push({
       categoryId: row.categoryId,
       categoryName:
         row.category?.name ??
         categoryName.get(row.categoryId ?? "") ??
         "Uncategorized",
-      amount: row.amount,
-    }));
+      amount: inContract,
+      at: row.transactionDate ?? row.createdAt,
+    });
+  }
+  const spendSlices = contractSpendRows.map((row) => ({
+    categoryId: row.categoryId,
+    categoryName: row.categoryName,
+    amount: row.amount,
+  }));
   const topSpend = rankCategorySpend(spendSlices, 6);
 
   const visibleRequests = paymentRequests.filter((row) =>
@@ -264,29 +283,7 @@ export async function getProjectDashboard(slug: string) {
     }))
     .filter((s) => s.amount > 0);
 
-  const budgetConsumingTx = sharedTx.filter(
-    (row) =>
-      isBudgetConsumingLedgerType(row.type) &&
-      countsTowardContract(row) &&
-      (row.status === "PAID" ||
-        row.status === "PARTIALLY_PAID" ||
-        row.status === "APPROVED"),
-  );
-
-  const outOfContractTx = sharedTx.filter(
-    (row) =>
-      isBudgetConsumingLedgerType(row.type) &&
-      !countsTowardContract(row) &&
-      (row.status === "PAID" ||
-        row.status === "PARTIALLY_PAID" ||
-        row.status === "APPROVED"),
-  );
-  const outOfContractSpent = outOfContractTx.reduce(
-    (sum, row) => sum + row.amount,
-    0,
-  );
-
-  const paidSlices = budgetConsumingTx.map((row) => ({
+  const paidSlices = contractSpendRows.map((row) => ({
     categoryId: row.categoryId,
     amount: row.amount,
   }));
@@ -299,8 +296,8 @@ export async function getProjectDashboard(slug: string) {
   );
 
   const monthlySpend = buildMonthlyMoneySeries(
-    budgetConsumingTx.map((row) => ({
-      at: row.transactionDate ?? row.createdAt,
+    contractSpendRows.map((row) => ({
+      at: row.at,
       amount: row.amount,
     })),
     sharedRequests
@@ -492,7 +489,7 @@ export async function getProjectDashboard(slug: string) {
     summary: {
       spent: financeTotals.totalExpenses - outOfContractSpent,
       outOfContractSpent,
-      outOfContractCount: outOfContractTx.length,
+      outOfContractCount,
       income: financeTotals.totalIncome,
       netCashFlow: financeTotals.netCashFlow,
       outstandingAdvances,

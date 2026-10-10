@@ -419,8 +419,11 @@ model FinancialTransaction {
   referenceNumber   String?
   description       String?
   notes             String?
-  /// When false, paid amount is tracked separately and does not reduce the contract budget.
+  /// When false, the whole paid amount is tracked separately and does not reduce the contract budget.
   includeInContract Boolean              @default(true)
+  /// Paise of `amount` kept out of the contract when the rest is merged. Zero when fully merged.
+  /// Ignored when includeInContract is false, because the whole amount is already out.
+  outOfContractAmount Int                @default(0)
   /// Primary screenshot / UTR proof (first upload). Required when paymentMethod is not CASH.
   proofDocumentId   String?              @db.ObjectId
   /// Additional payment proof document IDs (up to 5 total including primary).

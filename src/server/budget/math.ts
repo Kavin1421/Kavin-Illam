@@ -94,6 +94,40 @@ export function countsTowardContract(row: {
   return row.includeInContract !== false;
 }
 
+export type ContractSplitRow = {
+  amount: number;
+  includeInContract?: boolean | null;
+  /** Paise of `amount` excluded from the contract. Missing means none. */
+  outOfContractAmount?: number | null;
+};
+
+function excludedPaise(row: ContractSplitRow): number {
+  if (!Number.isInteger(row.amount) || row.amount < 0) return 0;
+  const raw = row.outOfContractAmount ?? 0;
+  if (!Number.isInteger(raw) || raw <= 0) return 0;
+  return Math.min(raw, row.amount);
+}
+
+/**
+ * Paise of this payment that reduce the contract budget.
+ * A fully out-of-contract row contributes nothing. A split row contributes the remainder.
+ */
+export function contractAmountPaise(row: ContractSplitRow): number {
+  if (!Number.isInteger(row.amount) || row.amount < 0) return 0;
+  if (!countsTowardContract(row)) return 0;
+  return row.amount - excludedPaise(row);
+}
+
+/**
+ * Paise of this payment tracked outside the contract.
+ * A fully out-of-contract row contributes its whole amount.
+ */
+export function outOfContractAmountPaise(row: ContractSplitRow): number {
+  if (!Number.isInteger(row.amount) || row.amount < 0) return 0;
+  if (!countsTowardContract(row)) return row.amount;
+  return excludedPaise(row);
+}
+
 export function computeBudgetRollup(params: {
   lines: readonly BudgetLineInput[];
   /** When set, overrides sum of line planned amounts */

@@ -104,4 +104,42 @@ describe("payment proof requirement", () => {
     });
     expect(parsed.success).toBe(false);
   });
+
+  it("accepts a split where part of the payment stays in the contract", () => {
+    const parsed = createTransactionSchema.safeParse({
+      amountRupees: "100000",
+      type: "EXPENSE",
+      paymentMethod: "CASH",
+      transactionDate: "2026-09-14",
+      status: "PAID",
+      visibility: "PROJECT_SHARED",
+      contractScope: "SPLIT",
+      contractIncludedRupees: "50000",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects a split that is the whole amount or empty", () => {
+    const whole = createTransactionSchema.safeParse({
+      amountRupees: "100000",
+      type: "EXPENSE",
+      paymentMethod: "CASH",
+      transactionDate: "2026-09-14",
+      status: "PAID",
+      visibility: "PROJECT_SHARED",
+      contractScope: "SPLIT",
+      contractIncludedRupees: "100000",
+    });
+    const missing = createTransactionSchema.safeParse({
+      amountRupees: "100000",
+      type: "EXPENSE",
+      paymentMethod: "CASH",
+      transactionDate: "2026-09-14",
+      status: "PAID",
+      visibility: "PROJECT_SHARED",
+      contractScope: "SPLIT",
+    });
+    expect(whole.success).toBe(false);
+    expect(missing.success).toBe(false);
+  });
 });

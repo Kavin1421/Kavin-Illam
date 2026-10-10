@@ -329,6 +329,13 @@ export function TransactionReceiptDocument({
           <Text style={styles.amountMeta}>
             {transaction.currency} · {formatDate(transaction.transactionDate)}
           </Text>
+          {(transaction.outOfContractAmount ?? 0) > 0 ? (
+            <Text style={styles.amountMeta}>
+              {(transaction.contractAmount ?? 0) > 0
+                ? `${formatInrFromPaise(transaction.contractAmount ?? 0)} in contract · ${formatInrFromPaise(transaction.outOfContractAmount ?? 0)} out of contract`
+                : "Out of contract"}
+            </Text>
+          ) : null}
         </View>
 
         <View style={[styles.block, styles.twoCol]}>

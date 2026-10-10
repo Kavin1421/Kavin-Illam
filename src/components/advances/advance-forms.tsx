@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 
+import { ContractScopeFields } from "@/components/finance/contract-scope-fields";
 import { PaymentProofUpload } from "@/components/finance/payment-proof-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ export function CreateAdvanceForm({
   const action = createAdvanceAction.bind(null, slug);
   const [state, formAction, pending] = useActionState(action, initialState);
   const [paymentMethod, setPaymentMethod] = useState("BANK_TRANSFER");
+  const [amountRupees, setAmountRupees] = useState("");
 
   return (
     <form action={formAction} className="space-y-4">
@@ -42,6 +44,8 @@ export function CreateAdvanceForm({
             required
             placeholder="500000"
             inputMode="decimal"
+            value={amountRupees}
+            onChange={(event) => setAmountRupees(event.target.value)}
           />
         </div>
         <div className="space-y-2">
@@ -144,24 +148,7 @@ export function CreateAdvanceForm({
           <option value="RESTRICTED">Restricted</option>
         </select>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="contractScope">Contract</Label>
-        <select
-          id="contractScope"
-          name="contractScope"
-          defaultValue="MERGED"
-          className="border-input bg-background h-8 w-full rounded-lg border px-2 text-sm"
-        >
-          <option value="MERGED">Merge into contract</option>
-          <option value="OUT_OF_CONTRACT">
-            Out of contract (do not add to budget)
-          </option>
-        </select>
-        <p className="text-muted-foreground text-xs">
-          Out of contract amounts stay off the main contract total and show
-          separately on the dashboard.
-        </p>
-      </div>
+      <ContractScopeFields amountRupees={amountRupees} />
       {state.error ? (
         <p className="text-destructive text-sm" role="alert">
           {state.error}

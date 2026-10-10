@@ -16,6 +16,7 @@ import {
 } from "@/server/authorization";
 import { prisma } from "@/server/db/prisma";
 import { notDeleted } from "@/server/db/soft-delete";
+import { resolveContractSplit } from "@/server/finance/contract-split";
 import {
   allocateAdvanceNumber,
   allocateTransactionNumber,
@@ -206,9 +207,16 @@ export async function createAdvance(slug: string, input: unknown) {
         issue.path[0] === "cloudinaryPublicId" ||
         issue.path[0] === "paymentProofsJson",
     );
+    const contractIssue = parsed.error.issues.find(
+      (issue) =>
+        issue.path[0] === "contractIncludedRupees" ||
+        issue.path[0] === "contractScope",
+    );
     throw new AppError(
       "VALIDATION",
-      proofIssue?.message || "Please check the advance details.",
+      proofIssue?.message ||
+        contractIssue?.message ||
+        "Please check the advance details.",
     );
   }
 
@@ -221,6 +229,11 @@ export async function createAdvance(slug: string, input: unknown) {
   if (amount <= 0) {
     throw new AppError("VALIDATION", "Amount must be greater than zero.");
   }
+  const contractSplit = resolveContractSplit({
+    amountPaise: amount,
+    contractScope: parsed.data.contractScope,
+    contractIncludedRupees: parsed.data.contractIncludedRupees,
+  });
 
   const issuedAt = new Date(parsed.data.issuedAt);
   if (Number.isNaN(issuedAt.getTime())) {
@@ -293,7 +306,8 @@ export async function createAdvance(slug: string, input: unknown) {
       referenceNumber: parsed.data.referenceNumber || null,
       description: parsed.data.description || "Advance issued",
       notes: parsed.data.notes || null,
-      includeInContract: parsed.data.contractScope !== "OUT_OF_CONTRACT",
+      includeInContract: contractSplit.includeInContract,
+      outOfContractAmount: contractSplit.outOfContractAmount,
       visibility: parsed.data.visibility as Visibility,
       allowedUserIds: [],
       createdById: ctx.user.id,

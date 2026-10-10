@@ -9,6 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
+import {
+  contractAmountPaise,
+  outOfContractAmountPaise,
+} from "@/server/budget/math";
 import { cn } from "@/lib/utils";
 import { emailPaymentReceiptAction } from "@/server/finance/receipt-actions";
 
@@ -37,6 +41,8 @@ export type TransactionInvoiceProps = {
     status: string;
     amount: number;
     currency: string;
+    includeInContract?: boolean | null;
+    outOfContractAmount?: number | null;
     paidTo?: string | null;
     paymentMethod?: string | null;
     referenceNumber?: string | null;
@@ -317,6 +323,13 @@ export function TransactionInvoice({
             <p className="mt-2 text-sm text-[#667085]">
               {transaction.currency} · {formatDate(txDate)}
             </p>
+            {outOfContractAmountPaise(transaction) > 0 ? (
+              <p className="mt-3 text-sm text-[#8a5a12]">
+                {contractAmountPaise(transaction) > 0
+                  ? `${formatInrFromPaise(contractAmountPaise(transaction))} in contract · ${formatInrFromPaise(outOfContractAmountPaise(transaction))} out of contract`
+                  : "Out of contract · not added to the contract budget"}
+              </p>
+            ) : null}
           </section>
 
           <div className="grid gap-8 sm:grid-cols-2">

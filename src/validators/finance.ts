@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { paiseFromRupeeString } from "@/lib/money";
 import {
   paymentProofUploadSchema,
   refineRequirePaymentProofUnlessCash,
@@ -44,10 +45,54 @@ export const visibilitySchema = z.enum([
   "RESTRICTED",
 ]);
 
-/** MERGED counts toward the contract budget. OUT_OF_CONTRACT is tracked separately. */
+/** MERGED counts fully. OUT_OF_CONTRACT is tracked separately. SPLIT divides one payment. */
 export const contractScopeSchema = z
-  .enum(["MERGED", "OUT_OF_CONTRACT"])
+  .enum(["MERGED", "OUT_OF_CONTRACT", "SPLIT"])
   .default("MERGED");
+
+export function refineContractSplit(
+  data: {
+    amountRupees: string;
+    contractScope: "MERGED" | "OUT_OF_CONTRACT" | "SPLIT";
+    contractIncludedRupees?: string;
+  },
+  ctx: z.RefinementCtx,
+) {
+  if (data.contractScope !== "SPLIT") return;
+
+  const raw = data.contractIncludedRupees?.trim() ?? "";
+  if (!raw) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Enter how much of this payment is included in the contract.",
+      path: ["contractIncludedRupees"],
+    });
+    return;
+  }
+
+  let total: number;
+  let included: number;
+  try {
+    total = paiseFromRupeeString(data.amountRupees);
+    included = paiseFromRupeeString(raw);
+  } catch {
+    ctx.addIssue({
+      code: "custom",
+      message: "Enter a valid amount included in the contract.",
+      path: ["contractIncludedRupees"],
+    });
+    return;
+  }
+
+  if (included <= 0 || included >= total) {
+    ctx.addIssue({
+      code: "custom",
+      message:
+        "The contract portion must be more than zero and less than the full amount.",
+      path: ["contractIncludedRupees"],
+    });
+  }
+}
 
 export const createTransactionSchema = z
   .object({
@@ -64,6 +109,7 @@ export const createTransactionSchema = z
     status: transactionStatusSchema.default("PAID"),
     visibility: visibilitySchema.default("PROJECT_SHARED"),
     contractScope: contractScopeSchema,
+    contractIncludedRupees: z.string().trim().optional().or(z.literal("")),
   })
   .merge(paymentProofUploadSchema)
   .superRefine((data, ctx) => {
@@ -75,6 +121,7 @@ export const createTransactionSchema = z
       });
     }
     refineRequirePaymentProofUnlessCash(data, ctx);
+    refineContractSplit(data, ctx);
   });
 
 export const softDeleteTransactionSchema = z.object({
