@@ -20,7 +20,49 @@ type SignedUpload = {
   fileSize: number;
 };
 
-async function requestSignature(slug: string, file: File): Promise<SignedUpload> {
+const UUID_FILE_STEM =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function extensionForFile(file: File): string {
+  const fromName = file.name.split(".").pop()?.toLowerCase();
+  if (
+    fromName &&
+    fromName !== file.name.toLowerCase() &&
+    fromName.length <= 5
+  ) {
+    return `.${fromName}`;
+  }
+  const mime = (file.type || "").toLowerCase();
+  if (mime === "image/jpeg") return ".jpg";
+  if (mime === "image/png") return ".png";
+  if (mime === "image/webp") return ".webp";
+  if (mime === "image/gif") return ".gif";
+  if (mime === "application/pdf") return ".pdf";
+  return ".jpg";
+}
+
+/** Prefer a human label — mobile cameras often send UUID keys as File.name. */
+function friendlyProofFileName(file: File, ordinal: number): string {
+  const base = (file.name.split(/[/\\]/).pop() || "").trim();
+  const stem = base.replace(/\.[^.]+$/, "");
+  const looksLikeKey =
+    !stem ||
+    UUID_FILE_STEM.test(stem) ||
+    /^image$/i.test(stem) ||
+    /^blob$/i.test(stem) ||
+    /^untitled$/i.test(stem);
+
+  if (looksLikeKey) {
+    return `Payment-screenshot-${ordinal}${extensionForFile(file)}`;
+  }
+
+  return base.slice(0, 180);
+}
+
+async function requestSignature(
+  slug: string,
+  file: File,
+): Promise<SignedUpload> {
   const res = await fetch(`/api/p/${slug}/documents/sign`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -120,14 +162,21 @@ export function PaymentProofUpload({
     setUploading(true);
     try {
       const uploaded: PaymentProofMeta[] = [];
+      let ordinal = items.length;
       for (const file of toUpload) {
-        const signed = await requestSignature(slug, file);
-        const result = await uploadToCloudinary(file, signed);
+        ordinal += 1;
+        const displayName = friendlyProofFileName(file, ordinal);
+        const namedFile = new File([file], displayName, {
+          type: file.type || "application/octet-stream",
+          lastModified: file.lastModified,
+        });
+        const signed = await requestSignature(slug, namedFile);
+        const result = await uploadToCloudinary(namedFile, signed);
         uploaded.push({
           cloudinaryPublicId: result.public_id,
           cloudinaryResourceType: result.resource_type || signed.resourceType,
           cloudinaryDeliveryType: "authenticated",
-          proofFileName: signed.fileName,
+          proofFileName: displayName,
           proofMimeType: signed.mimeType,
           proofFileSize: result.bytes || signed.fileSize,
           proofFormat: result.format || "",
@@ -177,7 +226,10 @@ export function PaymentProofUpload({
               key={`${item.cloudinaryPublicId}-${index}`}
               className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs"
             >
-              <span className="truncate text-emerald-500">
+              <span
+                className="min-w-0 truncate text-emerald-500"
+                title={item.proofFileName}
+              >
                 {index + 1}. {item.proofFileName}
               </span>
               <Button

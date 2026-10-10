@@ -158,6 +158,24 @@ export function CreateTransactionForm({
           <option value="RESTRICTED">Restricted</option>
         </select>
       </div>
+      <div className="space-y-2">
+        <Label htmlFor="contractScope">Contract</Label>
+        <select
+          id="contractScope"
+          name="contractScope"
+          defaultValue="MERGED"
+          className="border-input bg-background h-8 w-full rounded-lg border px-2 text-sm"
+        >
+          <option value="MERGED">Merge into contract</option>
+          <option value="OUT_OF_CONTRACT">
+            Out of contract (do not add to budget)
+          </option>
+        </select>
+        <p className="text-muted-foreground text-xs">
+          Out of contract expenses are tracked on the dashboard separately and
+          are not added to the main contract spend.
+        </p>
+      </div>
       <input type="hidden" name="status" value="PAID" />
       {state.error ? (
         <p className="text-destructive text-sm" role="alert">

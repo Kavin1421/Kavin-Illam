@@ -84,6 +84,16 @@ export function isBudgetConsumingLedgerType(type: string): boolean {
   return type === "EXPENSE" || type === "ADVANCE";
 }
 
+/**
+ * Missing/true means the row is part of the contract.
+ * Explicit false is out-of-contract and must not roll into the main budget.
+ */
+export function countsTowardContract(row: {
+  includeInContract?: boolean | null;
+}): boolean {
+  return row.includeInContract !== false;
+}
+
 export function computeBudgetRollup(params: {
   lines: readonly BudgetLineInput[];
   /** When set, overrides sum of line planned amounts */

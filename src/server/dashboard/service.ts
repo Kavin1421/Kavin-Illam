@@ -13,6 +13,7 @@ import {
 } from "@/server/advances/outstanding";
 import {
   computeBudgetRollup,
+  countsTowardContract,
   isBudgetConsumingLedgerType,
   openCommitmentFromRequest,
 } from "@/server/budget/math";
@@ -92,6 +93,7 @@ export async function getProjectDashboard(slug: string) {
         createdById: true,
         allowedUserIds: true,
         deletedAt: true,
+        includeInContract: true,
         categoryId: true,
         description: true,
         createdAt: true,
@@ -224,6 +226,7 @@ export async function getProjectDashboard(slug: string) {
     .filter(
       (row) =>
         isBudgetConsumingLedgerType(row.type) &&
+        countsTowardContract(row) &&
         (row.status === "PAID" ||
           row.status === "PARTIALLY_PAID" ||
           row.status === "APPROVED"),
@@ -264,9 +267,23 @@ export async function getProjectDashboard(slug: string) {
   const budgetConsumingTx = sharedTx.filter(
     (row) =>
       isBudgetConsumingLedgerType(row.type) &&
+      countsTowardContract(row) &&
       (row.status === "PAID" ||
         row.status === "PARTIALLY_PAID" ||
         row.status === "APPROVED"),
+  );
+
+  const outOfContractTx = sharedTx.filter(
+    (row) =>
+      isBudgetConsumingLedgerType(row.type) &&
+      !countsTowardContract(row) &&
+      (row.status === "PAID" ||
+        row.status === "PARTIALLY_PAID" ||
+        row.status === "APPROVED"),
+  );
+  const outOfContractSpent = outOfContractTx.reduce(
+    (sum, row) => sum + row.amount,
+    0,
   );
 
   const paidSlices = budgetConsumingTx.map((row) => ({
@@ -473,7 +490,9 @@ export async function getProjectDashboard(slug: string) {
       canCreateFinance: roleHasPermission(ctx.role, "FINANCE_CREATE"),
     },
     summary: {
-      spent: financeTotals.totalExpenses,
+      spent: financeTotals.totalExpenses - outOfContractSpent,
+      outOfContractSpent,
+      outOfContractCount: outOfContractTx.length,
       income: financeTotals.totalIncome,
       netCashFlow: financeTotals.netCashFlow,
       outstandingAdvances,

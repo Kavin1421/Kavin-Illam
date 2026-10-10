@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   computeBudgetRollup,
+  countsTowardContract,
   openCommitmentFromRequest,
 } from "@/server/budget/math";
 
@@ -87,5 +88,12 @@ describe("budget math", () => {
         commitments: [],
       }),
     ).toThrow(/integer/i);
+  });
+
+  it("treats only an explicit false as out of contract", () => {
+    expect(countsTowardContract({})).toBe(true);
+    expect(countsTowardContract({ includeInContract: true })).toBe(true);
+    expect(countsTowardContract({ includeInContract: null })).toBe(true);
+    expect(countsTowardContract({ includeInContract: false })).toBe(false);
   });
 });

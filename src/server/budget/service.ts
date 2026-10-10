@@ -17,6 +17,7 @@ import { z } from "zod";
 
 import {
   computeBudgetRollup,
+  countsTowardContract,
   isBudgetConsumingLedgerType,
   openCommitmentFromRequest,
 } from "./math";
@@ -66,6 +67,7 @@ export async function getBudgetDashboard(slug: string) {
         createdById: true,
         allowedUserIds: true,
         deletedAt: true,
+        includeInContract: true,
         projectId: true,
         status: true,
       },
@@ -99,7 +101,10 @@ export async function getBudgetDashboard(slug: string) {
   );
 
   const paidSlices = sharedTx
-    .filter((row) => isBudgetConsumingLedgerType(row.type))
+    .filter(
+      (row) =>
+        isBudgetConsumingLedgerType(row.type) && countsTowardContract(row),
+    )
     .map((row) => ({
       categoryId: row.categoryId,
       amount: row.amount,

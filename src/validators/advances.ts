@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { paymentMethodSchema, visibilitySchema } from "@/validators/finance";
+import {
+  contractScopeSchema,
+  paymentMethodSchema,
+  visibilitySchema,
+} from "@/validators/finance";
 import {
   paymentProofUploadSchema,
   refineRequirePaymentProofUnlessCash,
@@ -18,6 +22,7 @@ export const createAdvanceSchema = z
     notes: z.string().trim().max(2000).optional().or(z.literal("")),
     issuedAt: z.string().min(1),
     visibility: visibilitySchema.default("PROJECT_SHARED"),
+    contractScope: contractScopeSchema,
   })
   .merge(paymentProofUploadSchema)
   .superRefine((data, ctx) => {

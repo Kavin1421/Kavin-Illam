@@ -201,7 +201,14 @@ export default async function FinancePage({
                     <td className="px-4 py-3 font-mono text-xs text-muted-white">
                       {tx.transactionNumber}
                     </td>
-                    <td className="px-4 py-3 text-muted-white">{tx.type}</td>
+                    <td className="px-4 py-3 text-muted-white">
+                      {tx.type}
+                      {tx.includeInContract === false ? (
+                        <span className="mt-1 block text-[11px] tracking-wide text-amber-300 uppercase">
+                          Out of contract
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-3 text-white/90">
                       {tx.category?.name ?? "—"}
                     </td>
@@ -252,6 +259,7 @@ export default async function FinancePage({
                     </p>
                     <p className="text-xs text-muted-white">
                       {formatDate(tx.transactionDate)} · {tx.transactionNumber}
+                      {tx.includeInContract === false ? " · Out of contract" : ""}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">

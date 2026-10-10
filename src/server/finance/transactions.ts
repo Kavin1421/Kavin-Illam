@@ -66,6 +66,7 @@ const listSelect = {
   createdById: true,
   createdAt: true,
   deletedAt: true,
+  includeInContract: true,
   category: { select: { id: true, name: true, code: true } },
   account: { select: { id: true, name: true } },
 } as const;
@@ -305,6 +306,7 @@ export async function createTransaction(slug: string, input: unknown) {
       referenceNumber: parsed.data.referenceNumber || null,
       description: parsed.data.description || null,
       notes: parsed.data.notes || null,
+      includeInContract: parsed.data.contractScope !== "OUT_OF_CONTRACT",
       visibility: parsed.data.visibility as Visibility,
       allowedUserIds: [],
       createdById: ctx.user.id,

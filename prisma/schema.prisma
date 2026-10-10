@@ -419,6 +419,8 @@ model FinancialTransaction {
   referenceNumber   String?
   description       String?
   notes             String?
+  /// When false, paid amount is tracked separately and does not reduce the contract budget.
+  includeInContract Boolean              @default(true)
   /// Primary screenshot / UTR proof (first upload). Required when paymentMethod is not CASH.
   proofDocumentId   String?              @db.ObjectId
   /// Additional payment proof document IDs (up to 5 total including primary).

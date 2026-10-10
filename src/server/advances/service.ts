@@ -293,6 +293,7 @@ export async function createAdvance(slug: string, input: unknown) {
       referenceNumber: parsed.data.referenceNumber || null,
       description: parsed.data.description || "Advance issued",
       notes: parsed.data.notes || null,
+      includeInContract: parsed.data.contractScope !== "OUT_OF_CONTRACT",
       visibility: parsed.data.visibility as Visibility,
       allowedUserIds: [],
       createdById: ctx.user.id,

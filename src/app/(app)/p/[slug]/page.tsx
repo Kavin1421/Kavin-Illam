@@ -221,7 +221,7 @@ export default async function ProjectDashboardPage({
       </section>
 
       {/* Metrics */}
-      <section className="stagger-in grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="stagger-in grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           label="Total project budget"
           paise={summary.planned}
@@ -231,16 +231,27 @@ export default async function ProjectDashboardPage({
           spark={sparkFromMonthly("committed")}
         />
         <MetricCard
-          label="Total spent (shared)"
+          label="Contract spent"
           paise={summary.spent}
           hint={
             summary.planned > 0
-              ? `${(spentOfBudgetBps / 100).toFixed(1)}% of budget`
-              : "Shared expenses + advances"
+              ? `${(spentOfBudgetBps / 100).toFixed(1)}% of budget · excludes out of contract`
+              : "Merged expenses + advances"
           }
           accent="green"
           icon={<Banknote className="size-4" />}
           spark={sparkFromMonthly("spent")}
+        />
+        <MetricCard
+          label="Out of contract"
+          paise={summary.outOfContractSpent}
+          hint={
+            summary.outOfContractCount > 0
+              ? `${summary.outOfContractCount} payment${summary.outOfContractCount === 1 ? "" : "s"} · not in contract total`
+              : "Not added to the contract budget"
+          }
+          accent="amber"
+          icon={<Wallet className="size-4" />}
         />
         <MetricCard
           label="Outstanding advances"

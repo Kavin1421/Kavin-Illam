@@ -44,6 +44,11 @@ export const visibilitySchema = z.enum([
   "RESTRICTED",
 ]);
 
+/** MERGED counts toward the contract budget. OUT_OF_CONTRACT is tracked separately. */
+export const contractScopeSchema = z
+  .enum(["MERGED", "OUT_OF_CONTRACT"])
+  .default("MERGED");
+
 export const createTransactionSchema = z
   .object({
     amountRupees: z.string().trim().min(1),
@@ -58,6 +63,7 @@ export const createTransactionSchema = z
     transactionDate: z.string().min(1),
     status: transactionStatusSchema.default("PAID"),
     visibility: visibilitySchema.default("PROJECT_SHARED"),
+    contractScope: contractScopeSchema,
   })
   .merge(paymentProofUploadSchema)
   .superRefine((data, ctx) => {
