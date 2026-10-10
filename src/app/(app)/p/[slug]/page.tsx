@@ -222,7 +222,7 @@ export default async function ProjectDashboardPage({
       </section>
 
       {/* Metrics */}
-      <section className="stagger-in grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="stagger-in grid grid-cols-1 gap-3 min-[520px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
         <MetricCard
           label="Total project budget"
           paise={summary.planned}
@@ -274,37 +274,39 @@ export default async function ProjectDashboardPage({
 
       {data.outOfContractItems.length > 0 ? (
         <section className="surface-card overflow-hidden rounded-[1.125rem]">
-          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/10 px-5 py-4">
-            <div>
+          <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="min-w-0">
               <p className="text-[11px] font-medium tracking-[0.16em] text-amber-200/80 uppercase">
                 Outside the contract
               </p>
               <h3 className="text-section mt-1">Kept off the main budget</h3>
             </div>
-            <p className="font-tabular text-xl font-semibold text-amber-100">
+            <p className="w-fit rounded-full border border-amber-300/25 bg-amber-400/10 px-3 py-1 font-tabular text-sm font-semibold text-amber-100">
               {formatInrFromPaise(summary.outOfContractSpent)}
             </p>
           </div>
-          <ul className="grid sm:grid-cols-2">
+          <ul
+            className={cn(
+              "grid gap-3 p-3 sm:p-4",
+              data.outOfContractItems.length > 1 && "md:grid-cols-2",
+            )}
+          >
             {data.outOfContractItems.map((item) => (
-              <li
-                key={item.id}
-                className="border-b border-white/[0.06] sm:[&:nth-child(odd)]:border-r"
-              >
+              <li key={item.id} className="min-w-0">
                 <Link
                   href={`/p/${slug}/finance/${item.id}`}
-                  className="flex items-center justify-between gap-4 px-5 py-4 transition-ki-fast hover:bg-white/[0.035]"
+                  className="flex h-full flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-ki-fast hover:border-amber-300/30 hover:bg-white/[0.05] sm:flex-row sm:items-center sm:justify-between"
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-medium text-white">
                       {item.title}
                     </span>
-                    <span className="mt-0.5 block text-xs text-muted-white">
+                    <span className="mt-1 block text-xs text-muted-white">
                       {formatDate(item.at)}
                     </span>
                     <ContractSplitMark row={item} />
                   </span>
-                  <span className="shrink-0 text-right font-tabular text-sm font-semibold text-white">
+                  <span className="shrink-0 font-tabular text-base font-semibold text-white sm:text-right">
                     {formatInrFromPaise(item.amount)}
                   </span>
                 </Link>
@@ -314,9 +316,9 @@ export default async function ProjectDashboardPage({
         </section>
       ) : null}
 
-      {/* Charts + milestones — ~50 / 25 / 25 */}
-      <section className="grid gap-4 xl:grid-cols-12 xl:gap-5">
-        <div className="surface-card space-y-4 rounded-[1.125rem] p-5 xl:col-span-6">
+      {/* Charts + milestones */}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-12 2xl:gap-5">
+        <div className="surface-card space-y-4 rounded-[1.125rem] p-4 sm:p-5 lg:col-span-2 2xl:col-span-6">
           <div>
             <h3 className="text-section">Spending overview</h3>
             <p className="mt-1 text-sm text-muted-white">
@@ -329,9 +331,9 @@ export default async function ProjectDashboardPage({
           />
         </div>
 
-        <div className="surface-card space-y-4 rounded-[1.125rem] p-5 xl:col-span-3">
+        <div className="surface-card min-w-0 space-y-4 rounded-[1.125rem] p-4 sm:p-5 2xl:col-span-3">
           <div className="flex items-end justify-between gap-2">
-            <div>
+            <div className="min-w-0">
               <h3 className="text-section">Expense by category</h3>
               <p className="mt-1 text-sm text-muted-white">
                 Shared spend mix
@@ -347,9 +349,9 @@ export default async function ProjectDashboardPage({
           <SpendDonut slices={data.topSpend} totalPaise={summary.spent} />
         </div>
 
-        <div className="surface-card space-y-4 rounded-[1.125rem] p-5 xl:col-span-3">
+        <div className="surface-card min-w-0 space-y-4 rounded-[1.125rem] p-4 sm:p-5 2xl:col-span-3">
           <div className="flex items-end justify-between gap-2">
-            <div>
+            <div className="min-w-0">
               <h3 className="text-section">Upcoming milestones</h3>
               <p className="mt-1 text-sm text-muted-white">Build roadmap</p>
             </div>
@@ -380,8 +382,10 @@ export default async function ProjectDashboardPage({
                         !done && !current && "bg-white/25",
                       )}
                     />
-                    <Link href={`/p/${slug}/milestones/${ms.id}`} className="block">
-                      <p className="text-sm font-medium text-white">{ms.title}</p>
+                    <Link href={`/p/${slug}/milestones/${ms.id}`} className="block min-w-0">
+                      <p className="text-sm leading-snug font-medium text-white">
+                        {ms.title}
+                      </p>
                       <Badge className={cn("mt-1", statusTone(ms.status))}>
                         {ms.status.replaceAll("_", " ")}
                       </Badge>

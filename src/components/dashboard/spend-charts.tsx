@@ -38,9 +38,10 @@ export function SpendDonut({
   }
 
   return (
-    <div className={cn("flex flex-col items-center gap-5 sm:flex-row sm:items-center", className)}>
+    <div className={cn("@container w-full", className)}>
+      <div className="flex flex-col items-center gap-5 @min-[24rem]:flex-row @min-[24rem]:items-center">
       <div
-        className="relative size-40 shrink-0 rounded-full shadow-[0_0_40px_rgba(0,208,132,0.12)]"
+        className="relative size-32 shrink-0 rounded-full shadow-[0_0_40px_rgba(0,208,132,0.12)] @min-[24rem]:size-40"
         style={{
           background: `conic-gradient(from -90deg, ${stops.join(", ")})`,
         }}
@@ -48,7 +49,7 @@ export function SpendDonut({
         aria-label="Spend by category"
       >
         <div className="absolute inset-[18%] flex flex-col items-center justify-center rounded-full border border-white/10 bg-[color-mix(in_srgb,var(--ki-surface)_92%,black)] text-center">
-          <p className="text-metric-sm text-white">
+          <p className="px-1 text-center text-xs leading-tight font-semibold text-white @min-[24rem]:text-sm">
             {formatInrFromPaise(totalPaise)}
           </p>
           <p className="text-meta mt-1 text-[10px] text-muted-white">
@@ -86,6 +87,7 @@ export function SpendDonut({
           ))
         )}
       </ul>
+      </div>
     </div>
   );
 }

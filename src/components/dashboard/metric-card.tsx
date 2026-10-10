@@ -57,7 +57,7 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        "surface-card group/card relative overflow-hidden rounded-[1.125rem] p-5 transition-ki hover:-translate-y-0.5 hover:border-white/15",
+        "surface-card group/card relative min-w-0 overflow-hidden rounded-[1.125rem] p-4 transition-ki hover:-translate-y-0.5 hover:border-white/15 sm:p-5",
         styles.glow,
       )}
     >
@@ -68,12 +68,12 @@ export function MetricCard({
           styles.bar,
         )}
       />
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-meta text-[var(--ki-muted)]">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-meta min-w-0 text-[var(--ki-muted)]">{label}</p>
         {icon ? (
           <span
             className={cn(
-              "flex size-11 items-center justify-center rounded-[0.75rem] shadow-ki-sm",
+              "flex size-9 shrink-0 items-center justify-center rounded-xl shadow-ki-sm",
               styles.icon,
             )}
           >
@@ -81,20 +81,22 @@ export function MetricCard({
           </span>
         ) : null}
       </div>
-      <div className="mt-3 flex items-end justify-between gap-3">
-        <p className="text-metric-lg min-w-0">
+      <div className="mt-3 flex items-end justify-between gap-2">
+        <p className="min-w-0 text-[clamp(1.15rem,2.5vw,1.75rem)] leading-none font-bold tracking-tight text-white">
           <AnimatedMoney paise={paise} />
         </p>
         {spark && spark.length > 0 ? (
           <MiniSparkBars
             values={spark}
             color={styles.spark}
-            className="shrink-0 opacity-90"
+            className="hidden shrink-0 opacity-90 sm:block"
           />
         ) : null}
       </div>
       {hint ? (
-        <p className="mt-2 text-xs text-[var(--ki-muted)]">{hint}</p>
+        <p className="mt-2 line-clamp-2 text-xs leading-snug text-[var(--ki-muted)]">
+          {hint}
+        </p>
       ) : null}
     </div>
   );
