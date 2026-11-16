@@ -8,6 +8,10 @@ export const PERMISSIONS = [
   "FINANCE_EDIT",
   "FINANCE_APPROVE",
   "FINANCE_DELETE",
+  "LOAN_VIEW",
+  "LOAN_CREATE",
+  "LOAN_EDIT",
+  "LOAN_DELETE",
   "DOCUMENT_VIEW",
   "DOCUMENT_UPLOAD",
   "DOCUMENT_EDIT",
@@ -32,6 +36,7 @@ const ALL: Permission[] = [...PERMISSIONS];
 const VIEWER: Permission[] = [
   "PROJECT_VIEW",
   "FINANCE_VIEW",
+  "LOAN_VIEW",
   "DOCUMENT_VIEW",
   "BUDGET_VIEW",
   "TASK_VIEW",
@@ -41,6 +46,7 @@ const VIEWER: Permission[] = [
 const ENGINEER: Permission[] = [
   ...VIEWER,
   "FINANCE_CREATE",
+  "LOAN_CREATE",
   "DOCUMENT_UPLOAD",
   "DOCUMENT_EDIT",
   "PAYMENT_REQUEST_CREATE",
@@ -53,6 +59,8 @@ const ACCOUNTANT: Permission[] = [
   "FINANCE_CREATE",
   "FINANCE_EDIT",
   "FINANCE_APPROVE",
+  "LOAN_CREATE",
+  "LOAN_EDIT",
   "PAYMENT_REQUEST_APPROVE",
   "BUDGET_EDIT",
   "DOCUMENT_UPLOAD",
@@ -78,7 +86,9 @@ const CONTRACTOR: Permission[] = [
   "MEMBER_VIEW",
 ];
 
-const ADMIN: Permission[] = ALL.filter((p) => p !== "FINANCE_DELETE");
+const ADMIN: Permission[] = ALL.filter(
+  (p) => p !== "FINANCE_DELETE" && p !== "LOAN_DELETE",
+);
 
 export const ROLE_PERMISSIONS: Record<ProjectRole, readonly Permission[]> = {
   OWNER: ALL,
@@ -103,6 +113,8 @@ export function engineerForbiddenPermissions(): Permission[] {
     "PROJECT_EDIT",
     "FINANCE_APPROVE",
     "FINANCE_DELETE",
+    "LOAN_EDIT",
+    "LOAN_DELETE",
     "PAYMENT_REQUEST_APPROVE",
     "BUDGET_EDIT",
     "MEMBER_INVITE",
@@ -117,6 +129,8 @@ export function engineerAllowedSamplePermissions(): Permission[] {
     "PROJECT_VIEW",
     "FINANCE_VIEW",
     "FINANCE_CREATE",
+    "LOAN_VIEW",
+    "LOAN_CREATE",
     "PAYMENT_REQUEST_CREATE",
     "DOCUMENT_VIEW",
     "DOCUMENT_UPLOAD",

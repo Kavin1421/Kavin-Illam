@@ -10,6 +10,7 @@ import {
   FolderOpen,
   HandCoins,
   Inbox,
+  Landmark,
   LayoutDashboard,
   PiggyBank,
   Settings,
@@ -68,6 +69,7 @@ export function projectNavGroups(slug: string): ShellNavGroup[] {
       label: "Money",
       items: [
         { href: `${base}/finance`, label: "Finance", icon: Wallet },
+        { href: `${base}/loans`, label: "Home loan", icon: Landmark },
         { href: `${base}/budget`, label: "Budget", icon: PiggyBank },
         { href: `${base}/advances`, label: "Advances", icon: HandCoins },
         {

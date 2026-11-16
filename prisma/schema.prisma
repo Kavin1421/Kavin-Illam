@@ -194,6 +194,9 @@ model User {
   activities Activity[] @relation("ActivityActor")
   accessRequestsRequested ProjectAccessRequest[] @relation("AccessRequestRequester")
   accessRequestsReviewed  ProjectAccessRequest[] @relation("AccessRequestReviewer")
+  loanFacilitiesCreated LoanFacility[] @relation("LoanFacilityCreator")
+  loanTransactionsCreated LoanTransaction[] @relation("LoanTransactionCreator")
+  loanTransactionsDeleted LoanTransaction[] @relation("LoanTransactionDeleter")
 }
 
 model Account {
@@ -267,6 +270,8 @@ model Project {
   auditLogs AuditLog[]
   activities Activity[]
   accessRequests ProjectAccessRequest[]
+  loanFacility LoanFacility?
+  loanTransactions LoanTransaction[]
 
   @@index([ownerId, status])
   @@index([status, updatedAt])
@@ -630,6 +635,7 @@ model Document {
   versions   DocumentVersion[]
   access     DocumentAccess[]
   proofForTransactions FinancialTransaction[] @relation("TransactionProof")
+  proofForLoanTransactions LoanTransaction[] @relation("LoanTransactionProof")
 
   @@unique([projectId, documentNumber])
   @@index([projectId, category])
@@ -850,6 +856,95 @@ model AuditLog {
   @@index([projectId, createdAt])
   @@index([projectId, entityType, entityId])
   @@index([projectId, action, createdAt])
+}
+
+enum LoanFacilityKind {
+  HOME_LOAN
+}
+
+enum LoanFacilityStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum LoanTransactionType {
+  DISBURSEMENT
+  DEBIT_CONSTRUCTION
+  DEBIT_OTHER
+  CREDIT_REPAYMENT
+}
+
+/// One Home Loan facility per project. Independent of Finance / Budget ledgers.
+model LoanFacility {
+  id                String             @id @default(auto()) @map("_id") @db.ObjectId
+  projectId         String             @unique @db.ObjectId
+  kind              LoanFacilityKind   @default(HOME_LOAN)
+  lenderName        String?
+  /// Sanctioned principal in paise.
+  sanctionedAmount  Int
+  /// Annual interest rate in basis points (850 = 8.50%). Display only in v1.
+  interestRateBps   Int?
+  /// Tenure in months. Display only in v1.
+  tenureMonths      Int?
+  currency          String             @default("INR")
+  status            LoanFacilityStatus @default(ACTIVE)
+  notes             String?
+  createdById       String             @db.ObjectId
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+  deletedById       String?            @db.ObjectId
+
+  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    User              @relation("LoanFacilityCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  transactions LoanTransaction[]
+
+  @@index([projectId, status])
+}
+
+/// Principal movements on the Home Loan wallet. Never posts into FinancialTransaction.
+model LoanTransaction {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  projectId         String              @db.ObjectId
+  facilityId        String              @db.ObjectId
+  loanNumber        String
+  type              LoanTransactionType
+  /// Amount in paise.
+  amount            Int
+  currency          String              @default("INR")
+  transactionDate   DateTime
+  paidTo            String?
+  paymentMethod     PaymentMethod?
+  referenceNumber   String?
+  description       String?
+  notes             String?
+  /// Required for CREDIT_REPAYMENT — points at the DEBIT_OTHER being repaid.
+  linkedDebitId     String?             @db.ObjectId
+  proofDocumentId   String?             @db.ObjectId
+  proofDocumentIds  String[]            @db.ObjectId @default([])
+  visibility        Visibility          @default(PROJECT_SHARED)
+  allowedUserIds    String[]            @db.ObjectId
+  createdById       String              @db.ObjectId
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  deletedAt         DateTime?
+  deletedById       String?             @db.ObjectId
+  deletionReason    String?
+
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  facility    LoanFacility     @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  linkedDebit LoanTransaction? @relation("LoanRepaymentLink", fields: [linkedDebitId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  repayments  LoanTransaction[] @relation("LoanRepaymentLink")
+  proofDocument Document?      @relation("LoanTransactionProof", fields: [proofDocumentId], references: [id], onDelete: SetNull)
+  createdBy   User             @relation("LoanTransactionCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  deletedBy   User?            @relation("LoanTransactionDeleter", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, loanNumber])
+  @@index([projectId, transactionDate])
+  @@index([facilityId, type])
+  @@index([linkedDebitId])
+  @@index([projectId, visibility, createdById])
+  @@index([proofDocumentId])
 }
 
 /// Human-readable project feed. Visibility mirrors the related resource.

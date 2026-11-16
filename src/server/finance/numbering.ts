@@ -173,3 +173,30 @@ export async function allocateMilestoneNumber(params: {
   const seq = String(counter.value).padStart(6, "0");
   return `${code}-MS-${seq}`;
 }
+
+/** Human-readable home-loan ledger numbers (KIL-LN-000001). */
+export async function allocateLoanNumber(params: {
+  projectId: string;
+  projectSlug: string;
+}): Promise<string> {
+  const counter = await prisma.projectCounter.upsert({
+    where: {
+      projectId_key: {
+        projectId: params.projectId,
+        key: "LN",
+      },
+    },
+    create: {
+      projectId: params.projectId,
+      key: "LN",
+      value: 1,
+    },
+    update: {
+      value: { increment: 1 },
+    },
+  });
+
+  const code = projectCodeFromSlug(params.projectSlug);
+  const seq = String(counter.value).padStart(6, "0");
+  return `${code}-LN-${seq}`;
+}

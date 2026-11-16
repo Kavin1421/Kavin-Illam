@@ -7,7 +7,7 @@ import { rewriteSoftDeleteArgs } from "@/server/db/soft-delete";
  * Bump when adding Prisma models so Next.js HMR does not keep a stale
  * global client missing new delegates.
  */
-const PRISMA_CLIENT_REV = 7;
+const PRISMA_CLIENT_REV = 9;
 
 type PrismaClientExtended = ReturnType<typeof createPrismaClient>;
 
@@ -37,7 +37,13 @@ function isUsable(client: PrismaClientExtended | undefined): client is PrismaCli
     !!client &&
     typeof (
       client as { projectAccessRequest?: { findMany?: unknown } }
-    ).projectAccessRequest?.findMany === "function"
+    ).projectAccessRequest?.findMany === "function" &&
+    typeof (
+      client as { loanFacility?: { findFirst?: unknown } }
+    ).loanFacility?.findFirst === "function" &&
+    typeof (
+      client as { loanTransaction?: { findMany?: unknown } }
+    ).loanTransaction?.findMany === "function"
   );
 }
 
@@ -64,7 +70,7 @@ function getClient(): PrismaClientExtended {
   const client = createPrismaClient();
   if (!isUsable(client)) {
     throw new Error(
-      "Prisma Client is missing ProjectAccessRequest. Run `pnpm exec prisma generate` and restart the dev server.",
+      "Prisma Client is missing LoanFacility (or ProjectAccessRequest). Run `pnpm exec prisma generate` and restart the dev server.",
     );
   }
 
