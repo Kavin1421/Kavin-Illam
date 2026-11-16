@@ -23,6 +23,7 @@ import {
   loanTxnListInclude,
   type LoanFacility,
   type LoanLedgerRow,
+  type LoanTxnDetail,
   type LoanTxnListItem,
 } from "@/server/loans/types";
 import {
@@ -37,18 +38,25 @@ import {
 } from "@/validators/loans";
 
 /** Minimal typed surface — avoids stale Prisma.*Delegate names in the IDE. */
+type LoanTxnWriteResult = {
+  id: string;
+  loanNumber: string;
+  type: string;
+  amount: number;
+};
+
 type LoanDb = {
   loanFacility: {
-    findFirst: (args?: Record<string, unknown>) => Promise<LoanFacility | null>;
-    create: (args: Record<string, unknown>) => Promise<LoanFacility>;
-    update: (args: Record<string, unknown>) => Promise<LoanFacility>;
+    findFirst: (args?: object) => Promise<LoanFacility | null>;
+    create: (args: object) => Promise<LoanFacility>;
+    update: (args: object) => Promise<LoanFacility>;
   };
   loanTransaction: {
-    findFirst: (args?: Record<string, unknown>) => Promise<LoanTxnListItem | null>;
-    findMany: (args?: Record<string, unknown>) => Promise<LoanTxnListItem[]>;
-    create: (args: Record<string, unknown>) => Promise<LoanTxnListItem>;
-    update: (args: Record<string, unknown>) => Promise<LoanTxnListItem>;
-    count: (args?: Record<string, unknown>) => Promise<number>;
+    findFirst: (args?: object) => Promise<LoanTxnDetail | null>;
+    findMany: (args?: object) => Promise<LoanTxnListItem[]>;
+    create: (args: object) => Promise<LoanTxnWriteResult>;
+    update: (args: object) => Promise<LoanTxnWriteResult>;
+    count: (args?: object) => Promise<number>;
   };
 };
 
@@ -57,14 +65,14 @@ const loanDb = prisma as unknown as LoanDb;
 function toVisibleResource(row: {
   projectId: string;
   createdById: string;
-  visibility: Visibility;
+  visibility: Visibility | LoanTxnListItem["visibility"];
   allowedUserIds: string[];
   deletedAt?: Date | null;
 }): VisibleResource {
   return {
     projectId: row.projectId,
     createdById: row.createdById,
-    visibility: row.visibility,
+    visibility: row.visibility as Visibility,
     allowedUserIds: row.allowedUserIds,
     deletedAt: row.deletedAt ?? null,
   };
@@ -124,18 +132,17 @@ export type { LoanLedgerRow };
 async function loadLoanTxnList(
   facilityId: string,
 ): Promise<LoanTxnListItem[]> {
-  const rows = await loanDb.loanTransaction.findMany({
+  return loanDb.loanTransaction.findMany({
     where: { facilityId, ...notDeleted },
     include: loanTxnListInclude,
     orderBy: [{ transactionDate: "desc" }, { createdAt: "desc" }],
   });
-  return rows as LoanTxnListItem[];
 }
 
 async function loadFacilityOrThrow(projectId: string): Promise<LoanFacility> {
-  const facility = (await loanDb.loanFacility.findFirst({
+  const facility = await loanDb.loanFacility.findFirst({
     where: { projectId, ...notDeleted },
-  })) as LoanFacility | null;
+  });
   if (!facility) {
     throw new AppError(
       "NOT_FOUND",
@@ -175,14 +182,14 @@ async function loadActiveTxnRows(
     },
     orderBy: { transactionDate: "desc" },
   });
-  return rows as ActiveLoanTxnRow[];
+  return rows as unknown as ActiveLoanTxnRow[];
 }
 
 export async function getLoanOverview(slug: string) {
   const ctx = await requireProjectPermissionBySlug(slug, "LOAN_VIEW");
-  const facility = (await loanDb.loanFacility.findFirst({
+  const facility = await loanDb.loanFacility.findFirst({
     where: { projectId: ctx.project.id, ...notDeleted },
-  })) as LoanFacility | null;
+  });
 
   if (!facility) {
     const empty: LoanLedgerRow[] = [];
