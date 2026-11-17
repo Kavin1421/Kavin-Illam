@@ -183,12 +183,15 @@ export function LoanTransactionForm({
   initial,
   typeLocked,
   cloudinaryReady = false,
+  existingProofCount = 0,
 }: {
   slug: string;
   openDiversions: OpenDiversion[];
   transactionId?: string;
   typeLocked?: boolean;
   cloudinaryReady?: boolean;
+  /** Already attached screenshots (edit). New uploads fill remaining slots up to max 3. */
+  existingProofCount?: number;
   initial?: {
     type?: string;
     amountRupees?: string;
@@ -350,17 +353,41 @@ export function LoanTransactionForm({
             className={paperInput}
           />
         </div>
-        {!transactionId ? (
-          <div className="sm:col-span-2">
-            <PaymentProofUpload
-              slug={slug}
-              paymentMethod={paymentMethod}
-              cloudinaryReady={cloudinaryReady}
-              maxFiles={MAX_LOAN_PAYMENT_PROOFS}
-              surface="paper"
-            />
-          </div>
-        ) : null}
+        {(() => {
+          const remainingSlots = Math.max(
+            0,
+            MAX_LOAN_PAYMENT_PROOFS - existingProofCount,
+          );
+          if (transactionId && remainingSlots <= 0) {
+            return (
+              <p className="text-xs text-slate-500 sm:col-span-2">
+                {existingProofCount}/{MAX_LOAN_PAYMENT_PROOFS} payment
+                screenshots attached (limit reached).
+              </p>
+            );
+          }
+          return (
+            <div className="sm:col-span-2 space-y-2">
+              {transactionId && existingProofCount > 0 ? (
+                <p className="text-xs text-slate-500">
+                  {existingProofCount} already attached · you can add up to{" "}
+                  {remainingSlots} more.
+                </p>
+              ) : null}
+              <PaymentProofUpload
+                slug={slug}
+                paymentMethod={paymentMethod}
+                cloudinaryReady={cloudinaryReady}
+                maxFiles={
+                  transactionId ? remainingSlots : MAX_LOAN_PAYMENT_PROOFS
+                }
+                surface="paper"
+                required={!transactionId}
+                forceVisible={Boolean(transactionId)}
+              />
+            </div>
+          );
+        })()}
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="description" className={paperLabel}>
             Description

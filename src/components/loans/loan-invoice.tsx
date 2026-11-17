@@ -68,7 +68,9 @@ export type LoanInvoiceProps = {
       fileName: string;
       mimeType?: string | null;
     } | null;
+    linkedFinanceTransactionId?: string | null;
   };
+  canApplyToFinance?: boolean;
 };
 
 function typeTitle(type: string): string {
@@ -106,6 +108,7 @@ export function LoanInvoice({
   defaultRecipientEmail,
   facility,
   transaction,
+  canApplyToFinance = false,
 }: LoanInvoiceProps) {
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -187,6 +190,28 @@ export function LoanInvoice({
           >
             Email
           </Button>
+        ) : null}
+        {transaction.type === "DEBIT_CONSTRUCTION" &&
+        transaction.linkedFinanceTransactionId ? (
+          <Link
+            href={`/p/${slug}/finance/${transaction.linkedFinanceTransactionId}`}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "border-[#d0ddd8] text-[#063f3a]",
+            )}
+          >
+            View in Finance
+          </Link>
+        ) : null}
+        {canApplyToFinance &&
+        transaction.type === "DEBIT_CONSTRUCTION" &&
+        !transaction.linkedFinanceTransactionId ? (
+          <Link
+            href={`/p/${slug}/finance/new?fromLoanTxn=${transaction.id}`}
+            className={cn(buttonVariants({ size: "sm" }))}
+          >
+            Apply to Finance
+          </Link>
         ) : null}
       </div>
 

@@ -43,6 +43,8 @@ export function CreateTransactionForm({
   transactionId,
   initial,
   typeLocked = false,
+  sourceLoanTransactionId,
+  sourceLoanNumber,
 }: {
   slug: string;
   categories: Option[];
@@ -51,6 +53,9 @@ export function CreateTransactionForm({
   transactionId?: string;
   initial?: TransactionFormInitial;
   typeLocked?: boolean;
+  /** Soft-links this Finance expense back to a Home Loan construction debit. */
+  sourceLoanTransactionId?: string;
+  sourceLoanNumber?: string;
 }) {
   const action = transactionId
     ? updateTransactionAction.bind(null, slug, transactionId)
@@ -63,6 +68,20 @@ export function CreateTransactionForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      {sourceLoanTransactionId ? (
+        <>
+          <input
+            type="hidden"
+            name="sourceLoanTransactionId"
+            value={sourceLoanTransactionId}
+          />
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100">
+            Linked from Home Loan
+            {sourceLoanNumber ? ` · ${sourceLoanNumber}` : ""}. Ledgers stay
+            separate — this only creates an audit pointer.
+          </div>
+        </>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="amountRupees">Amount (₹)</Label>

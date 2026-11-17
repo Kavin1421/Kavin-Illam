@@ -5,6 +5,7 @@ import {
   loanTypeBadgeClass,
   loanTypeShortLabel,
 } from "@/components/loans/loan-labels";
+import { LoanLedgerToolbar } from "@/components/loans/loan-ledger-toolbar";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
 import { formatInrFromPaise, rupeeInputFromPaise } from "@/lib/money";
@@ -15,24 +16,59 @@ import {
   tenureLabel,
 } from "@/server/loans/math";
 import { getLoanOverview } from "@/server/loans/service";
+import { OPEN_DIVERSION_REMINDER_DAYS } from "@/validators/loans";
 
 export const metadata: Metadata = {
   title: "Home loan",
 };
+
+function buildLoansHref(
+  slug: string,
+  next: {
+    filter?: string;
+    q?: string;
+    method?: string;
+    from?: string;
+    to?: string;
+  },
+) {
+  const params = new URLSearchParams();
+  if (next.filter && next.filter !== "all") params.set("filter", next.filter);
+  if (next.q) params.set("q", next.q);
+  if (next.method) params.set("method", next.method);
+  if (next.from) params.set("from", next.from);
+  if (next.to) params.set("to", next.to);
+  const qs = params.toString();
+  return qs ? `/p/${slug}/loans?${qs}` : `/p/${slug}/loans`;
+}
 
 export default async function LoansPage({
   params,
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{
+    filter?: string;
+    q?: string;
+    method?: string;
+    from?: string;
+    to?: string;
+  }>;
 }) {
   const { slug } = await params;
-  const { filter = "all" } = await searchParams;
+  const {
+    filter = "all",
+    q = "",
+    method = "",
+    from = "",
+    to = "",
+  } = await searchParams;
+  const query = q.trim().toLowerCase();
   const { role, facility, balances, transactions, openDiversions } =
     await getLoanOverview(slug);
   const canCreate = roleHasPermission(role, "LOAN_CREATE");
   const canEdit = roleHasPermission(role, "LOAN_EDIT");
+  const canRemind = roleHasPermission(role, "LOAN_VIEW");
 
   if (!facility || !balances) {
     return (
@@ -69,18 +105,51 @@ export default async function LoansPage({
     );
   }
 
+  const fromTime = from ? Date.parse(`${from}T00:00:00+05:30`) : null;
+  const toTime = to ? Date.parse(`${to}T23:59:59.999+05:30`) : null;
+
   const filtered = transactions.filter((row) => {
-    if (filter === "construction") return row.type === "DEBIT_CONSTRUCTION";
+    if (filter === "construction" && row.type !== "DEBIT_CONSTRUCTION") {
+      return false;
+    }
     if (filter === "open") {
-      return row.type === "DEBIT_OTHER" && row.rotationalStatus !== "REPAID";
+      if (row.type !== "DEBIT_OTHER" || row.rotationalStatus === "REPAID") {
+        return false;
+      }
     }
     if (filter === "repaid") {
-      return (
-        row.type === "DEBIT_OTHER" && row.rotationalStatus === "REPAID"
-      );
+      if (row.type !== "DEBIT_OTHER" || row.rotationalStatus !== "REPAID") {
+        return false;
+      }
+    }
+    if (method && row.paymentMethod !== method) return false;
+    if (fromTime != null && !Number.isNaN(fromTime)) {
+      if (row.transactionDate.getTime() < fromTime) return false;
+    }
+    if (toTime != null && !Number.isNaN(toTime)) {
+      if (row.transactionDate.getTime() > toTime) return false;
+    }
+    if (query) {
+      const haystack = [
+        row.loanNumber,
+        row.paidTo,
+        row.referenceNumber,
+        row.description,
+        row.notes,
+        row.paymentMethod,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(query)) return false;
     }
     return true;
   });
+
+  const overdueCount = openDiversions.filter((row) => row.overdue).length;
+  const now = new Date();
+  const statementYear = now.getFullYear();
+  const statementMonth = now.getMonth() + 1;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
@@ -124,8 +193,21 @@ export default async function LoansPage({
             {formatInrFromPaise(balances.openRotational)}
           </strong>{" "}
           still open on rotational diversions
-          {openDiversions.length === 1 ? " (1 payment)" : ` (${openDiversions.length} payments)`}
+          {openDiversions.length === 1
+            ? " (1 payment)"
+            : ` (${openDiversions.length} payments)`}
           . Credit these back into the loan account when you repay them.
+          {overdueCount > 0 ? (
+            <span className="mt-1 block text-amber-100/90">
+              {overdueCount} open for {OPEN_DIVERSION_REMINDER_DAYS}+ days
+              {openDiversions
+                .filter((row) => row.overdue)
+                .slice(0, 3)
+                .map((row) => ` · ${row.loanNumber} (${row.daysOpen}d)`)
+                .join("")}
+              .
+            </span>
+          ) : null}
         </div>
       ) : null}
 
@@ -190,11 +272,13 @@ export default async function LoansPage({
             ].map(([key, label]) => (
               <Link
                 key={key}
-                href={
-                  key === "all"
-                    ? `/p/${slug}/loans`
-                    : `/p/${slug}/loans?filter=${key}`
-                }
+                href={buildLoansHref(slug, {
+                  filter: key,
+                  q,
+                  method,
+                  from,
+                  to,
+                })}
                 className={cn(
                   "rounded-full px-3 py-1 text-xs font-medium transition",
                   filter === key
@@ -208,9 +292,24 @@ export default async function LoansPage({
           </div>
         </div>
 
+        <LoanLedgerToolbar
+          slug={slug}
+          overdueCount={overdueCount}
+          canRemind={canRemind}
+          initial={{
+            filter,
+            q,
+            method,
+            from,
+            to,
+            year: statementYear,
+            month: statementMonth,
+          }}
+        />
+
         {filtered.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-slate-500">
-            No transactions in this filter yet.
+            No transactions match these filters.
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
@@ -260,6 +359,11 @@ export default async function LoansPage({
                               : `${row.proofDocumentIds.length} proofs`}
                           </span>
                         ) : null}
+                        {row.linkedFinanceTransactionId ? (
+                          <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-violet-800 uppercase">
+                            In Finance
+                          </span>
+                        ) : null}
                         <span className="font-mono text-xs text-slate-400">
                           {row.loanNumber}
                         </span>
@@ -271,6 +375,9 @@ export default async function LoansPage({
                       </p>
                       <p className="text-xs text-slate-500">
                         {formatDate(row.transactionDate)}
+                        {row.paymentMethod
+                          ? ` · ${row.paymentMethod.replaceAll("_", " ")}`
+                          : ""}
                         {row.linkedDebit
                           ? ` · linked ${row.linkedDebit.loanNumber}`
                           : ""}

@@ -122,6 +122,7 @@ export function PaymentProofUpload({
   required = true,
   maxFiles = MAX_PAYMENT_PROOFS,
   surface = "dark",
+  forceVisible = false,
 }: {
   slug: string;
   paymentMethod: string;
@@ -131,6 +132,8 @@ export function PaymentProofUpload({
   maxFiles?: number;
   /** Match parent shell — paper for light MediCore cards. */
   surface?: "dark" | "paper";
+  /** Show uploader even when method is cash/empty (edit append). */
+  forceVisible?: boolean;
 }) {
   const needsProof = Boolean(paymentMethod && paymentMethod !== "CASH");
   const [uploading, setUploading] = useState(false);
@@ -138,7 +141,7 @@ export function PaymentProofUpload({
   const [items, setItems] = useState<PaymentProofMeta[]>([]);
   const cap = Math.max(1, Math.min(maxFiles, MAX_PAYMENT_PROOFS));
 
-  if (!needsProof) {
+  if (!needsProof && !forceVisible) {
     return null;
   }
 
@@ -223,8 +226,9 @@ export function PaymentProofUpload({
         Payment screenshots{required ? " *" : ""}
       </Label>
       <p className={hintClass}>
-        Required for UPI, bank transfer, and other non-cash methods. Upload 1–
-        {cap} clear screenshots or PDF confirmations.
+        {forceVisible && !needsProof
+          ? `Optional. Upload up to ${cap} clear screenshot${cap === 1 ? "" : "s"} or PDF confirmation${cap === 1 ? "" : "s"}.`
+          : `Required for UPI, bank transfer, and other non-cash methods. Upload 1–${cap} clear screenshots or PDF confirmations.`}
       </p>
       <Input
         id="paymentProof"

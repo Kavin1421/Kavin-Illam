@@ -6,6 +6,7 @@ import { LoanPaperShell } from "@/components/loans/loan-paper-shell";
 import { formatDateInput } from "@/lib/dates";
 import { rupeeInputFromPaise } from "@/lib/money";
 import { roleHasPermission } from "@/server/authorization";
+import { isCloudinaryConfigured } from "@/server/documents/cloudinary";
 import { getLoanTransaction } from "@/server/loans/service";
 
 export const metadata: Metadata = {
@@ -21,11 +22,15 @@ export default async function EditLoanTransactionPage({
   const { role, transaction } = await getLoanTransaction(slug, txnId);
   if (!roleHasPermission(role, "LOAN_EDIT")) notFound();
 
+  const existingProofCount =
+    transaction.proofDocuments?.length ??
+    (transaction.proofDocumentId ? 1 : 0);
+
   return (
     <LoanPaperShell
       eyebrow="Home loan"
       title={`Edit ${transaction.loanNumber}`}
-      description="Update amount, date, or notes. Type stays locked for this row."
+      description="Update amount, date, notes, or add payment screenshots. Type stays locked."
       backHref={`/p/${slug}/loans/${txnId}`}
       backLabel="Cancel"
     >
@@ -33,6 +38,8 @@ export default async function EditLoanTransactionPage({
         slug={slug}
         transactionId={txnId}
         typeLocked
+        cloudinaryReady={isCloudinaryConfigured()}
+        existingProofCount={existingProofCount}
         openDiversions={[]}
         initial={{
           type: transaction.type,

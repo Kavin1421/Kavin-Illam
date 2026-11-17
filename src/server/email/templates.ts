@@ -235,3 +235,48 @@ export function paymentRequestNotifyTemplate(params: {
 
   return { subject, text, html };
 }
+
+export function openLoanDiversionReminderTemplate(params: {
+  href: string;
+  projectName: string;
+  reminderDays: number;
+  totalOpenAmount: string;
+  items: Array<{
+    loanNumber: string;
+    amount: string;
+    daysOpen: number;
+    label: string;
+  }>;
+}): { subject: string; text: string; html: string } {
+  const count = params.items.length;
+  const subject = `[${params.projectName}] ${count} open loan diversion${count === 1 ? "" : "s"}`;
+  const lines = params.items
+    .map(
+      (item) =>
+        `• ${item.loanNumber} · ${item.amount} · ${item.daysOpen}d open · ${item.label}`,
+    )
+    .join("\n");
+  const text = `${count} rotational diversion${count === 1 ? "" : "s"} on ${params.projectName} ${count === 1 ? "has" : "have"} been open for ${params.reminderDays}+ days (total ${params.totalOpenAmount}).\n\n${lines}\n\nReview: ${params.href}\n\n— Kavin Illam`;
+
+  const listHtml = params.items
+    .map(
+      (item) =>
+        `<li style="margin:0 0 8px;font-family:'Comic Neue',Georgia,serif;font-size:15px;line-height:1.45;color:${BRAND.muted};"><strong style="color:${BRAND.text};">${escapeHtml(item.loanNumber)}</strong> · ${escapeHtml(item.amount)} · ${item.daysOpen}d · ${escapeHtml(item.label)}</li>`,
+    )
+    .join("");
+
+  const html = layout({
+    preheader: `Open Home Loan diversions need attention on ${params.projectName}.`,
+    title: "Open loan diversions",
+    bodyHtml: [
+      paragraph(
+        `<strong style="color:${BRAND.cta};">${escapeHtml(params.totalOpenAmount)}</strong> is still open across ${count} rotational diversion${count === 1 ? "" : "s"} (${params.reminderDays}+ days).`,
+      ),
+      `<ul style="margin:0 0 12px;padding-left:18px;">${listHtml}</ul>`,
+      ctaButton(params.href, "Open Home loan"),
+    ].join(""),
+    footerNote: `${params.projectName} · Home loan · Kavin Illam`,
+  });
+
+  return { subject, text, html };
+}

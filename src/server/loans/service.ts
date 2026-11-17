@@ -1,5 +1,6 @@
 import type { PaymentMethod, Visibility } from "@prisma/client";
 
+import { formatDateInput } from "@/lib/dates";
 import { AppError } from "@/lib/errors";
 import { formatInrFromPaise } from "@/lib/money";
 import { actorLabel, recordAuditEvent } from "@/server/audit/record";
@@ -20,6 +21,7 @@ import {
   type LoanTxnRow,
   type RotationalStatus,
 } from "@/server/loans/math";
+import { notifyOpenLoanDiversions } from "@/server/loans/notify";
 import {
   loanTxnListInclude,
   type LoanFacility,
@@ -32,6 +34,7 @@ import {
   createLoanFacilitySchema,
   createLoanTransactionSchema,
   MAX_LOAN_PAYMENT_PROOFS,
+  OPEN_DIVERSION_REMINDER_DAYS,
   parseInterestRateBps,
   parsePositivePaise,
   parseTenureMonths,
@@ -51,6 +54,7 @@ type LoanTxnWriteResult = {
 type LoanDb = {
   loanFacility: {
     findFirst: (args?: object) => Promise<LoanFacility | null>;
+    findMany: (args?: object) => Promise<LoanFacility[]>;
     create: (args: object) => Promise<LoanFacility>;
     update: (args: object) => Promise<LoanFacility>;
   };
@@ -178,6 +182,24 @@ function annotateTxn<T extends LoanTxnRow>(row: T, txnRows: LoanTxnRow[]) {
   return { repaid, outstanding, rotationalStatus };
 }
 
+/** Whole calendar days open in Asia/Kolkata. */
+export function calendarDaysOpen(
+  transactionDate: Date,
+  now: Date = new Date(),
+): number {
+  const start = formatDateInput(transactionDate);
+  const end = formatDateInput(now);
+  const a = Date.parse(`${start}T00:00:00+05:30`);
+  const b = Date.parse(`${end}T00:00:00+05:30`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+  return Math.max(0, Math.floor((b - a) / 86_400_000));
+}
+
+export type OpenDiversionAlert = LoanLedgerRow & {
+  daysOpen: number;
+  overdue: boolean;
+};
+
 export type { LoanLedgerRow };
 
 async function loadLoanTxnList(
@@ -243,14 +265,15 @@ export async function getLoanOverview(slug: string) {
   });
 
   if (!facility) {
-    const empty: LoanLedgerRow[] = [];
+    const emptyTxns: LoanLedgerRow[] = [];
+    const emptyOpen: OpenDiversionAlert[] = [];
     return {
       project: ctx.project,
       role: ctx.role,
       facility: null,
       balances: null,
-      transactions: empty,
-      openDiversions: empty,
+      transactions: emptyTxns,
+      openDiversions: emptyOpen,
     };
   }
 
@@ -272,12 +295,21 @@ export async function getLoanOverview(slug: string) {
     }),
   );
 
-  const openDiversions = transactions.filter(
-    (row: LoanLedgerRow) =>
-      row.type === "DEBIT_OTHER" &&
-      row.rotationalStatus !== "REPAID" &&
-      row.outstanding > 0,
-  );
+  const openDiversions: OpenDiversionAlert[] = transactions
+    .filter(
+      (row: LoanLedgerRow) =>
+        row.type === "DEBIT_OTHER" &&
+        row.rotationalStatus !== "REPAID" &&
+        row.outstanding > 0,
+    )
+    .map((row) => {
+      const daysOpen = calendarDaysOpen(row.transactionDate);
+      return {
+        ...row,
+        daysOpen,
+        overdue: daysOpen >= OPEN_DIVERSION_REMINDER_DAYS,
+      };
+    });
 
   return {
     project: ctx.project,
@@ -287,6 +319,169 @@ export async function getLoanOverview(slug: string) {
     transactions,
     openDiversions,
   };
+}
+
+export async function sendOpenDiversionReminders(slug: string) {
+  const ctx = await requireProjectPermissionBySlug(slug, "LOAN_VIEW");
+  const overview = await getLoanOverview(slug);
+  const overdue = overview.openDiversions.filter((row) => row.overdue);
+  if (overdue.length === 0) {
+    return {
+      emailed: 0,
+      overdueCount: 0,
+      message: `No diversions open for ${OPEN_DIVERSION_REMINDER_DAYS}+ days.`,
+    };
+  }
+
+  const result = await notifyOpenLoanDiversions({
+    projectId: ctx.project.id,
+    projectSlug: ctx.project.slug,
+    projectName: ctx.project.name,
+    items: overdue.map((row) => ({
+      loanNumber: row.loanNumber,
+      outstanding: row.outstanding,
+      daysOpen: row.daysOpen,
+      label: row.description || row.paidTo || "Rotational diversion",
+    })),
+  });
+
+  await recordAuditEvent({
+    projectId: ctx.project.id,
+    actorId: ctx.user.id,
+    action: "EXPORT",
+    entityType: "LoanFacility",
+    entityId: overview.facility?.id ?? ctx.project.id,
+    metadata: {
+      overdueCount: overdue.length,
+      emailed: result.emailed,
+      kind: "open_diversion_reminder",
+    },
+    activity: {
+      message: `${actorLabel(ctx.user)} sent open-diversion reminders (${overdue.length}).`,
+      href: `/p/${slug}/loans?filter=open`,
+    },
+  });
+
+  return {
+    emailed: result.emailed,
+    overdueCount: overdue.length,
+    message:
+      result.emailed > 0
+        ? `Reminder emailed to ${result.emailed} recipient${result.emailed === 1 ? "" : "s"}.`
+        : "No email recipients found for this project.",
+  };
+}
+
+/**
+ * Cron entry: email reminders for every project with overdue open diversions.
+ */
+export async function runOpenDiversionReminderCron(): Promise<{
+  projectsChecked: number;
+  projectsNotified: number;
+  emailsQueued: number;
+}> {
+  const facilities = await loanDb.loanFacility.findMany({
+    where: { ...notDeleted, status: "ACTIVE" },
+  });
+
+  const projects = await prisma.project.findMany({
+    where: {
+      id: { in: facilities.map((row) => row.projectId) },
+    },
+    select: { id: true, slug: true, name: true },
+  });
+  const projectById = new Map(projects.map((row) => [row.id, row]));
+
+  let projectsChecked = 0;
+  let projectsNotified = 0;
+  let emailsQueued = 0;
+
+  for (const facility of facilities) {
+    const project = projectById.get(facility.projectId);
+    if (!project) continue;
+    projectsChecked += 1;
+
+    const openDebits = await loanDb.loanTransaction.findMany({
+      where: {
+        facilityId: facility.id,
+        type: "DEBIT_OTHER",
+        ...notDeleted,
+      },
+    });
+    const allRows = await loadActiveTxnRows(facility.id);
+    const allTxnRows = asTxnRows(allRows);
+
+    const overdue = openDebits
+      .filter((row) => row.type === "DEBIT_OTHER")
+      .map((row) => {
+        const outstanding = outstandingOnDebitPaise(
+          toLoanTxnRow(row),
+          allTxnRows,
+        );
+        const daysOpen = calendarDaysOpen(row.transactionDate);
+        return {
+          loanNumber: row.loanNumber,
+          outstanding,
+          daysOpen,
+          label: row.description || row.paidTo || "Rotational diversion",
+          overdue:
+            outstanding > 0 && daysOpen >= OPEN_DIVERSION_REMINDER_DAYS,
+        };
+      })
+      .filter((row) => row.overdue);
+
+    if (overdue.length === 0) continue;
+
+    const result = await notifyOpenLoanDiversions({
+      projectId: project.id,
+      projectSlug: project.slug,
+      projectName: project.name,
+      items: overdue,
+    });
+    if (result.emailed > 0) {
+      projectsNotified += 1;
+      emailsQueued += result.emailed;
+    }
+  }
+
+  return { projectsChecked, projectsNotified, emailsQueued };
+}
+
+/**
+ * Soft-link a construction debit to a Finance expense (audit pointer only).
+ */
+export async function linkLoanTransactionToFinance(params: {
+  projectId: string;
+  loanTransactionId: string;
+  financeTransactionId: string;
+}): Promise<void> {
+  const loan = await loanDb.loanTransaction.findFirst({
+    where: {
+      id: params.loanTransactionId,
+      projectId: params.projectId,
+      ...notDeleted,
+    },
+  });
+  if (!loan) {
+    throw new AppError("NOT_FOUND", "Loan transaction was not found.");
+  }
+  if (loan.type !== "DEBIT_CONSTRUCTION") {
+    throw new AppError(
+      "VALIDATION",
+      "Only construction debits can link to Finance.",
+    );
+  }
+  if (loan.linkedFinanceTransactionId) {
+    throw new AppError(
+      "CONFLICT",
+      "This diversion is already linked to a Finance transaction.",
+    );
+  }
+
+  await loanDb.loanTransaction.update({
+    where: { id: loan.id },
+    data: { linkedFinanceTransactionId: params.financeTransactionId },
+  });
 }
 
 export async function getLoanTransaction(slug: string, transactionId: string) {
@@ -747,17 +942,55 @@ export async function updateLoanTransaction(
     }
   }
 
+  const existingProofIds = Array.from(
+    new Set(
+      [existing.proofDocumentId, ...readProofDocumentIds(existing)].filter(
+        (id): id is string => Boolean(id),
+      ),
+    ),
+  );
+  const remainingProofSlots = Math.max(
+    0,
+    MAX_LOAN_PAYMENT_PROOFS - existingProofIds.length,
+  );
+  const paymentMethod = paymentMethodOrNull(parsed.data.paymentMethod);
+  const newProofIds =
+    remainingProofSlots > 0
+      ? await resolvePaymentProofDocumentIds({
+          actor: {
+            projectId: ctx.project.id,
+            projectSlug: ctx.project.slug,
+            userId: ctx.user.id,
+            userName: ctx.user.name,
+            userEmail: ctx.user.email,
+          },
+          paymentMethod,
+          proof: parsed.data,
+          visibility: parsed.data.visibility,
+          title: `Loan payment proof · ${existing.loanNumber}`,
+          description: parsed.data.description?.trim() || null,
+          maxProofs: remainingProofSlots,
+          optional: true,
+        })
+      : [];
+  const proofDocumentIds = [...existingProofIds, ...newProofIds].slice(
+    0,
+    MAX_LOAN_PAYMENT_PROOFS,
+  );
+
   const updated = await loanDb.loanTransaction.update({
     where: { id: existing.id },
     data: {
       amount,
       transactionDate,
       paidTo: parsed.data.paidTo?.trim() || null,
-      paymentMethod: paymentMethodOrNull(parsed.data.paymentMethod),
+      paymentMethod,
       referenceNumber: parsed.data.referenceNumber?.trim() || null,
       description: parsed.data.description?.trim() || null,
       notes: parsed.data.notes?.trim() || null,
       visibility: parsed.data.visibility,
+      proofDocumentId: proofDocumentIds[0] ?? null,
+      proofDocumentIds,
     },
   });
 

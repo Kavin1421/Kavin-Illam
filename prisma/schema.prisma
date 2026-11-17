@@ -903,6 +903,7 @@ model LoanFacility {
 }
 
 /// Principal movements on the Home Loan wallet. Never posts into FinancialTransaction.
+/// Optional `linkedFinanceTransactionId` is a soft audit pointer only (construction debit → Finance expense).
 model LoanTransaction {
   id                String              @id @default(auto()) @map("_id") @db.ObjectId
   projectId         String              @db.ObjectId
@@ -920,6 +921,8 @@ model LoanTransaction {
   notes             String?
   /// Required for CREDIT_REPAYMENT — points at the DEBIT_OTHER being repaid.
   linkedDebitId     String?             @db.ObjectId
+  /// Soft pointer to a construction Finance expense (audit only; ledgers stay separate).
+  linkedFinanceTransactionId String?    @db.ObjectId
   proofDocumentId   String?             @db.ObjectId
   proofDocumentIds  String[]            @db.ObjectId @default([])
   visibility        Visibility          @default(PROJECT_SHARED)
@@ -943,6 +946,7 @@ model LoanTransaction {
   @@index([projectId, transactionDate])
   @@index([facilityId, type])
   @@index([linkedDebitId])
+  @@index([linkedFinanceTransactionId])
   @@index([projectId, visibility, createdById])
   @@index([proofDocumentId])
 }

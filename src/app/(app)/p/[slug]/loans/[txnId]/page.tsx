@@ -25,6 +25,7 @@ export default async function LoanTransactionPage({
   );
   const canEdit = roleHasPermission(role, "LOAN_EDIT");
   const canDelete = roleHasPermission(role, "LOAN_DELETE");
+  const canApplyToFinance = roleHasPermission(role, "FINANCE_CREATE");
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8 sm:px-6">
@@ -80,6 +81,7 @@ export default async function LoanTransactionPage({
           sanctionedAmount: facility.sanctionedAmount,
         }}
         transaction={transaction}
+        canApplyToFinance={canApplyToFinance}
       />
     </div>
   );

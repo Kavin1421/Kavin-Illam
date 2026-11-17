@@ -139,8 +139,11 @@ export async function resolvePaymentProofDocumentIds(params: {
   title: string;
   description?: string | null;
   maxProofs?: number;
+  /** When true, proofs are attached only if present (edit / append flows). */
+  optional?: boolean;
 }): Promise<string[]> {
-  if (!paymentMethodRequiresProof(params.paymentMethod)) {
+  const optional = Boolean(params.optional);
+  if (!optional && !paymentMethodRequiresProof(params.paymentMethod)) {
     return [];
   }
 
@@ -157,6 +160,7 @@ export async function resolvePaymentProofDocumentIds(params: {
   }
 
   if (proofs.length === 0) {
+    if (optional) return [];
     throw new AppError(
       "VALIDATION",
       "Upload at least one payment screenshot when the payment method is not cash.",

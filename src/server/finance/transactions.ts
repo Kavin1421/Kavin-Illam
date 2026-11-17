@@ -351,6 +351,27 @@ export async function createTransaction(slug: string, input: unknown) {
     await linkTransactionProofDocuments(tx.id, proofDocumentIds);
   }
 
+  const sourceLoanTransactionId =
+    parsed.data.sourceLoanTransactionId?.trim() || "";
+  if (sourceLoanTransactionId) {
+    try {
+      const { linkLoanTransactionToFinance } = await import(
+        "@/server/loans/service"
+      );
+      await linkLoanTransactionToFinance({
+        projectId: ctx.project.id,
+        loanTransactionId: sourceLoanTransactionId,
+        financeTransactionId: tx.id,
+      });
+    } catch (error) {
+      logger.warn("Could not link Finance txn to Home Loan debit", {
+        financeTransactionId: tx.id,
+        sourceLoanTransactionId,
+        error: error instanceof Error ? error.message : "unknown",
+      });
+    }
+  }
+
   logger.info("Transaction created", {
     projectId: ctx.project.id,
     transactionId: tx.id,
@@ -371,6 +392,7 @@ export async function createTransaction(slug: string, input: unknown) {
       status: tx.status,
       visibility: tx.visibility,
       transactionNumber: tx.transactionNumber,
+      sourceLoanTransactionId: sourceLoanTransactionId || undefined,
     },
     activity: {
       message: `${actorLabel(ctx.user)} recorded ${formatInrFromPaise(tx.amount)} (${tx.transactionNumber}).`,

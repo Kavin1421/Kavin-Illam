@@ -35,6 +35,7 @@ export type LoanTxnListItem = {
   description: string | null;
   notes: string | null;
   linkedDebitId: string | null;
+  linkedFinanceTransactionId?: string | null;
   proofDocumentId: string | null;
   proofDocumentIds: string[];
   visibility: "PRIVATE" | "PROJECT_SHARED" | "RESTRICTED";

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { paiseFromRupeeString } from "@/lib/money";
 import { paymentMethodSchema, visibilitySchema } from "@/validators/finance";
 import {
+  extractPaymentProofs,
   paymentProofUploadSchema,
   refineRequirePaymentProofUnlessCash,
 } from "@/validators/payment-proof";
@@ -54,16 +55,36 @@ export const createLoanTransactionSchema = z
     refineRequirePaymentProofUnlessCash(data, ctx, MAX_LOAN_PAYMENT_PROOFS);
   });
 
-export const updateLoanTransactionSchema = z.object({
-  amountRupees: z.string().trim().min(1, "Enter an amount."),
-  transactionDate: z.string().trim().min(1, "Enter a date."),
-  paidTo: z.string().trim().max(200).optional().or(z.literal("")),
-  paymentMethod: z.union([paymentMethodSchema, z.literal("")]).optional(),
-  referenceNumber: z.string().trim().max(120).optional().or(z.literal("")),
-  description: z.string().trim().max(500).optional().or(z.literal("")),
-  notes: z.string().trim().max(2000).optional().or(z.literal("")),
-  visibility: visibilitySchema.default("PROJECT_SHARED"),
-});
+export const updateLoanTransactionSchema = z
+  .object({
+    amountRupees: z.string().trim().min(1, "Enter an amount."),
+    transactionDate: z.string().trim().min(1, "Enter a date."),
+    paidTo: z.string().trim().max(200).optional().or(z.literal("")),
+    paymentMethod: z.union([paymentMethodSchema, z.literal("")]).optional(),
+    referenceNumber: z.string().trim().max(120).optional().or(z.literal("")),
+    description: z.string().trim().max(500).optional().or(z.literal("")),
+    notes: z.string().trim().max(2000).optional().or(z.literal("")),
+    visibility: visibilitySchema.default("PROJECT_SHARED"),
+  })
+  .merge(paymentProofUploadSchema)
+  .superRefine((data, ctx) => {
+    // Additional screenshots on edit are optional; still validate payload shape/cap.
+    try {
+      extractPaymentProofs(data, MAX_LOAN_PAYMENT_PROOFS);
+    } catch (error) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Upload valid payment screenshots.",
+        path: ["paymentProofsJson"],
+      });
+    }
+  });
+
+/** Days before an open rotational diversion is treated as overdue for reminders. */
+export const OPEN_DIVERSION_REMINDER_DAYS = 7;
 
 export const softDeleteLoanTransactionSchema = z.object({
   deletionReason: z.string().trim().max(500).optional().or(z.literal("")),

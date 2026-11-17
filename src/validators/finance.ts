@@ -110,6 +110,13 @@ export const createTransactionSchema = z
     visibility: visibilitySchema.default("PROJECT_SHARED"),
     contractScope: contractScopeSchema,
     contractIncludedRupees: z.string().trim().optional().or(z.literal("")),
+    /** Optional soft link from a Home Loan construction debit. */
+    sourceLoanTransactionId: z
+      .string()
+      .trim()
+      .max(40)
+      .optional()
+      .or(z.literal("")),
   })
   .merge(paymentProofUploadSchema)
   .superRefine((data, ctx) => {

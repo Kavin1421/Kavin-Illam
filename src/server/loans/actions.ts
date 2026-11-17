@@ -6,6 +6,7 @@ import { AppError, toUserMessage } from "@/lib/errors";
 import {
   createLoanFacility,
   createLoanTransaction,
+  sendOpenDiversionReminders,
   softDeleteLoanTransaction,
   updateLoanFacility,
   updateLoanTransaction,
@@ -89,4 +90,15 @@ export async function softDeleteLoanTransactionAction(
 ): Promise<void> {
   await softDeleteLoanTransaction(slug, transactionId, formObject(formData));
   redirect(`/p/${slug}/loans`);
+}
+
+export async function sendOpenDiversionRemindersAction(
+  slug: string,
+): Promise<LoanActionState> {
+  try {
+    const result = await sendOpenDiversionReminders(slug);
+    return { success: result.message };
+  } catch (error) {
+    return { error: toUserMessage(error) };
+  }
 }
