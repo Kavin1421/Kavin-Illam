@@ -11,6 +11,7 @@ import {
 import { prisma } from "@/server/db/prisma";
 import { notDeleted } from "@/server/db/soft-delete";
 import { allocateLoanNumber } from "@/server/finance/numbering";
+import { resolvePaymentProofDocumentIds } from "@/server/finance/payment-proof";
 import {
   computeLoanBalances,
   outstandingOnDebitPaise,
@@ -23,12 +24,14 @@ import {
   loanTxnListInclude,
   type LoanFacility,
   type LoanLedgerRow,
+  type LoanProofDocument,
   type LoanTxnDetail,
   type LoanTxnListItem,
 } from "@/server/loans/types";
 import {
   createLoanFacilitySchema,
   createLoanTransactionSchema,
+  MAX_LOAN_PAYMENT_PROOFS,
   parseInterestRateBps,
   parsePositivePaise,
   parseTenureMonths,
@@ -116,6 +119,54 @@ function paymentMethodOrNull(value?: string): PaymentMethod | null {
   if (!value || value.trim() === "") return null;
   return value as PaymentMethod;
 }
+
+function readProofDocumentIds(row: unknown): string[] {
+  if (!row || typeof row !== "object") return [];
+  const value = (row as { proofDocumentIds?: unknown }).proofDocumentIds;
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (id): id is string => typeof id === "string" && id.length > 0,
+  );
+}
+
+async function loadOrderedProofDocuments(
+  projectId: string,
+  row: { proofDocumentId?: string | null },
+): Promise<LoanProofDocument[]> {
+  const proofIds = Array.from(
+    new Set(
+      [row.proofDocumentId, ...readProofDocumentIds(row)].filter(
+        (id): id is string => Boolean(id),
+      ),
+    ),
+  );
+  if (proofIds.length === 0) return [];
+
+  const docs = await prisma.document.findMany({
+    where: { id: { in: proofIds }, projectId },
+    select: {
+      id: true,
+      title: true,
+      documentNumber: true,
+      fileName: true,
+      mimeType: true,
+    },
+  });
+  const byId = new Map(docs.map((doc) => [doc.id, doc]));
+  return proofIds
+    .map((id) => byId.get(id))
+    .filter((doc): doc is (typeof docs)[number] => Boolean(doc))
+    .map(
+      (doc): LoanProofDocument => ({
+        id: doc.id,
+        title: doc.title,
+        documentNumber: doc.documentNumber,
+        fileName: doc.fileName,
+        mimeType: doc.mimeType ?? null,
+      }),
+    );
+}
+
 
 function annotateTxn<T extends LoanTxnRow>(row: T, txnRows: LoanTxnRow[]) {
   const repaid =
@@ -321,6 +372,8 @@ export async function getLoanTransaction(slug: string, transactionId: string) {
     rotationalStatus = rotationalStatusForDebit(debitRow, txnRows);
   }
 
+  const proofDocuments = await loadOrderedProofDocuments(ctx.project.id, txn);
+
   return {
     project: ctx.project,
     role: ctx.role,
@@ -328,6 +381,8 @@ export async function getLoanTransaction(slug: string, transactionId: string) {
     balances,
     transaction: {
       ...txn,
+      proofDocument: proofDocuments[0] ?? txn.proofDocument,
+      proofDocuments,
       repaid,
       outstanding,
       rotationalStatus,
@@ -528,9 +583,26 @@ export async function createLoanTransaction(slug: string, input: unknown) {
     }
   }
 
+  const paymentMethod = paymentMethodOrNull(parsed.data.paymentMethod);
   const loanNumber = await allocateLoanNumber({
     projectId: ctx.project.id,
     projectSlug: ctx.project.slug,
+  });
+
+  const proofDocumentIds = await resolvePaymentProofDocumentIds({
+    actor: {
+      projectId: ctx.project.id,
+      projectSlug: ctx.project.slug,
+      userId: ctx.user.id,
+      userName: ctx.user.name,
+      userEmail: ctx.user.email,
+    },
+    paymentMethod,
+    proof: parsed.data,
+    visibility: parsed.data.visibility,
+    title: `Loan payment proof · ${loanNumber}`,
+    description: parsed.data.description?.trim() || null,
+    maxProofs: MAX_LOAN_PAYMENT_PROOFS,
   });
 
   const txn = await loanDb.loanTransaction.create({
@@ -542,7 +614,7 @@ export async function createLoanTransaction(slug: string, input: unknown) {
       amount,
       transactionDate,
       paidTo: parsed.data.paidTo?.trim() || null,
-      paymentMethod: paymentMethodOrNull(parsed.data.paymentMethod),
+      paymentMethod,
       referenceNumber: parsed.data.referenceNumber?.trim() || null,
       description: parsed.data.description?.trim() || null,
       notes: parsed.data.notes?.trim() || null,
@@ -550,6 +622,8 @@ export async function createLoanTransaction(slug: string, input: unknown) {
       visibility: parsed.data.visibility,
       allowedUserIds: [],
       createdById: ctx.user.id,
+      proofDocumentId: proofDocumentIds[0] ?? null,
+      proofDocumentIds,
     },
   });
 
@@ -559,7 +633,12 @@ export async function createLoanTransaction(slug: string, input: unknown) {
     action: "CREATE",
     entityType: "LoanTransaction",
     entityId: txn.id,
-    metadata: { type, amount, loanNumber },
+    metadata: {
+      type,
+      amount,
+      loanNumber,
+      proofCount: proofDocumentIds.length,
+    },
     activity: {
       message: `${actorLabel(ctx.user)} recorded ${formatInrFromPaise(amount)} loan ${typeLabel(type)} (${loanNumber}).`,
       href: `/p/${slug}/loans/${txn.id}`,

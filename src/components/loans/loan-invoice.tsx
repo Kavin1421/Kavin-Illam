@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate, formatDateTime } from "@/lib/dates";
@@ -54,6 +54,20 @@ export type LoanInvoiceProps = {
       transactionDate: Date | string;
       description?: string | null;
     }>;
+    proofDocuments?: Array<{
+      id: string;
+      title: string;
+      documentNumber: string;
+      fileName: string;
+      mimeType?: string | null;
+    }>;
+    proofDocument?: {
+      id: string;
+      title: string;
+      documentNumber: string;
+      fileName: string;
+      mimeType?: string | null;
+    } | null;
   };
 };
 
@@ -107,6 +121,12 @@ export function LoanInvoice({
           Math.round(((transaction.repaid ?? 0) / transaction.amount) * 100),
         )
       : null;
+  const proofDocuments =
+    transaction.proofDocuments && transaction.proofDocuments.length > 0
+      ? transaction.proofDocuments
+      : transaction.proofDocument
+        ? [transaction.proofDocument]
+        : [];
 
   async function downloadPdf() {
     setDownloading(true);
@@ -350,6 +370,37 @@ export function LoanInvoice({
             <p className="mt-1 text-sm text-[#667085]">{transaction.notes}</p>
           </section>
         ) : null}
+
+        {proofDocuments.length > 0 ? (
+          <section className="space-y-2" data-print-hide>
+            <p className="text-[11px] tracking-[0.14em] text-[#667085] uppercase">
+              Payment screenshots
+            </p>
+            <ul className="space-y-1.5">
+              {proofDocuments.map((doc, index) => (
+                <li key={doc.id}>
+                  <Link
+                    href={`/p/${slug}/documents/${doc.id}`}
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                      "border-[#d0ddd8] text-[#063f3a] hover:bg-[#eef7f2]",
+                    )}
+                  >
+                    {proofDocuments.length > 1
+                      ? `${index + 1}. ${doc.fileName}`
+                      : "View payment screenshot"}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : (
+          <p className="text-xs text-[#667085]" data-print-hide>
+            {transaction.paymentMethod === "CASH"
+              ? "Cash payment — no screenshot required."
+              : "No payment screenshot attached."}
+          </p>
+        )}
       </div>
 
       {emailOpen ? (

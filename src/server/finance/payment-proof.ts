@@ -138,6 +138,7 @@ export async function resolvePaymentProofDocumentIds(params: {
   visibility: Visibility;
   title: string;
   description?: string | null;
+  maxProofs?: number;
 }): Promise<string[]> {
   if (!paymentMethodRequiresProof(params.paymentMethod)) {
     return [];
@@ -145,7 +146,7 @@ export async function resolvePaymentProofDocumentIds(params: {
 
   let proofs: PaymentProofItem[];
   try {
-    proofs = extractPaymentProofs(params.proof);
+    proofs = extractPaymentProofs(params.proof, params.maxProofs);
   } catch (error) {
     throw new AppError(
       "VALIDATION",

@@ -68,12 +68,14 @@ export function hasPaymentProofUpload(
 }
 
 /**
- * Normalize form payload into 0–5 validated proof items.
+ * Normalize form payload into validated proof items.
  * Prefers JSON array; falls back to legacy single-file fields.
  */
 export function extractPaymentProofs(
   data: PaymentProofUpload,
+  maxProofs: number = MAX_PAYMENT_PROOFS,
 ): PaymentProofItem[] {
+  const cap = Math.max(1, Math.min(maxProofs, MAX_PAYMENT_PROOFS));
   const raw = data.paymentProofsJson?.trim();
   if (raw) {
     let parsed: unknown;
@@ -85,9 +87,9 @@ export function extractPaymentProofs(
     if (!Array.isArray(parsed)) {
       throw new Error("Payment proofs must be a list.");
     }
-    if (parsed.length > MAX_PAYMENT_PROOFS) {
+    if (parsed.length > cap) {
       throw new Error(
-        `You can upload at most ${MAX_PAYMENT_PROOFS} payment screenshots.`,
+        `You can upload at most ${cap} payment screenshots.`,
       );
     }
     const items: PaymentProofItem[] = [];
@@ -120,12 +122,12 @@ export function extractPaymentProofs(
 
 export function refineRequirePaymentProofUnlessCash<
   T extends { paymentMethod?: string } & PaymentProofUpload,
->(data: T, ctx: z.RefinementCtx) {
+>(data: T, ctx: z.RefinementCtx, maxProofs: number = MAX_PAYMENT_PROOFS) {
   if (!paymentMethodRequiresProof(data.paymentMethod)) return;
 
   let proofs: PaymentProofItem[] = [];
   try {
-    proofs = extractPaymentProofs(data);
+    proofs = extractPaymentProofs(data, maxProofs);
   } catch (error) {
     ctx.addIssue({
       code: "custom",

@@ -85,9 +85,24 @@ export type LoanTxnDetail = LoanTxnListItem & {
     fileName: string;
     mimeType: string | null;
   } | null;
+  proofDocuments?: Array<{
+    id: string;
+    title: string;
+    documentNumber: string;
+    fileName: string;
+    mimeType: string | null;
+  }>;
   repaid: number;
   outstanding: number;
   rotationalStatus: RotationalStatus | null;
+};
+
+export type LoanProofDocument = {
+  id: string;
+  title: string;
+  documentNumber: string;
+  fileName: string;
+  mimeType: string | null;
 };
 
 /** Shared include object for list queries (runtime only). */

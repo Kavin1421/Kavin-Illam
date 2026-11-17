@@ -1,6 +1,7 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 
 import { logger } from "@/lib/logger";
+import { absoluteUrl } from "@/server/email/send";
 import { getLoanTransaction } from "@/server/loans/service";
 
 import { LoanReceiptDocument } from "./loan-receipt-document";
@@ -16,13 +17,25 @@ export type GeneratedLoanReceipt = {
   loanNumber: string;
 };
 
+function proofHref(slug: string, documentId: string): string {
+  return absoluteUrl(`/p/${slug}/documents/${documentId}`);
+}
+
 function toReceiptData(
+  slug: string,
   projectName: string,
   facility: { lenderName?: string | null; sanctionedAmount: number },
   transaction: Awaited<
     ReturnType<typeof getLoanTransaction>
   >["transaction"],
 ): LoanReceiptData {
+  const proofs =
+    transaction.proofDocuments && transaction.proofDocuments.length > 0
+      ? transaction.proofDocuments
+      : transaction.proofDocument
+        ? [transaction.proofDocument]
+        : [];
+
   return {
     projectName,
     lenderName: facility.lenderName,
@@ -60,6 +73,14 @@ function toReceiptData(
         amount: row.amount,
         transactionDate: row.transactionDate,
       })),
+      proofDocuments: proofs.map((doc) => ({
+        id: doc.id,
+        title: doc.title,
+        documentNumber: doc.documentNumber,
+        fileName: doc.fileName,
+        mimeType: doc.mimeType,
+        href: proofHref(slug, doc.id),
+      })),
     },
   };
 }
@@ -72,7 +93,7 @@ export async function generateLoanReceiptPdf(
     slug,
     transactionId,
   );
-  const data = toReceiptData(project.name, facility, transaction);
+  const data = toReceiptData(slug, project.name, facility, transaction);
 
   const bytes = await renderToBuffer(
     <LoanReceiptDocument data={data} /> as Parameters<

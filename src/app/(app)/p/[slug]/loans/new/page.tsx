@@ -6,6 +6,7 @@ import { LoanPaperShell } from "@/components/loans/loan-paper-shell";
 import { formatDateInput } from "@/lib/dates";
 import { formatInrFromPaise } from "@/lib/money";
 import { roleHasPermission } from "@/server/authorization";
+import { isCloudinaryConfigured } from "@/server/documents/cloudinary";
 import { getLoanOverview } from "@/server/loans/service";
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default async function NewLoanTransactionPage({
     >
       <LoanTransactionForm
         slug={slug}
+        cloudinaryReady={isCloudinaryConfigured()}
         openDiversions={openDiversions.map((row) => ({
           id: row.id,
           loanNumber: row.loanNumber,

@@ -1,3 +1,12 @@
+export type LoanReceiptProof = {
+  id: string;
+  title: string;
+  documentNumber: string;
+  fileName: string;
+  mimeType?: string | null;
+  href?: string;
+};
+
 export type LoanReceiptData = {
   projectName: string;
   lenderName?: string | null;
@@ -30,6 +39,7 @@ export type LoanReceiptData = {
       amount: number;
       transactionDate: Date;
     }>;
+    proofDocuments?: LoanReceiptProof[];
   };
 };
 

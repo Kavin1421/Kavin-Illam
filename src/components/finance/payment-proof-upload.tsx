@@ -112,7 +112,7 @@ export type PaymentProofMeta = {
 };
 
 /**
- * Multi-file payment screenshot upload (1–5) for non-cash methods.
+ * Multi-file payment screenshot upload for non-cash methods.
  * Posts `paymentProofsJson` for the parent form.
  */
 export function PaymentProofUpload({
@@ -120,22 +120,44 @@ export function PaymentProofUpload({
   paymentMethod,
   cloudinaryReady,
   required = true,
+  maxFiles = MAX_PAYMENT_PROOFS,
+  surface = "dark",
 }: {
   slug: string;
   paymentMethod: string;
   cloudinaryReady: boolean;
   required?: boolean;
+  /** Cap uploads (Finance default 5; Home Loan uses 3). */
+  maxFiles?: number;
+  /** Match parent shell — paper for light MediCore cards. */
+  surface?: "dark" | "paper";
 }) {
   const needsProof = Boolean(paymentMethod && paymentMethod !== "CASH");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<PaymentProofMeta[]>([]);
+  const cap = Math.max(1, Math.min(maxFiles, MAX_PAYMENT_PROOFS));
 
   if (!needsProof) {
     return null;
   }
 
-  const remaining = MAX_PAYMENT_PROOFS - items.length;
+  const remaining = cap - items.length;
+  const isPaper = surface === "paper";
+  const shellClass = isPaper
+    ? "space-y-2 rounded-xl border border-[#d8e2dc] bg-[#f8faf9] p-3"
+    : "space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3";
+  const itemClass = isPaper
+    ? "flex items-center justify-between gap-2 rounded-lg border border-[#d8e2dc] bg-white px-2.5 py-1.5 text-xs text-[#17202a]"
+    : "flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs";
+  const hintClass = isPaper ? "text-xs text-[#667085]" : "text-muted-foreground text-xs";
+  const metaClass = isPaper
+    ? "text-[11px] text-[#667085]"
+    : "text-muted-foreground text-[11px]";
+  const labelClass = isPaper ? "text-[#17202a]" : undefined;
+  const nameClass = isPaper
+    ? "min-w-0 truncate text-[#0f6b4c]"
+    : "min-w-0 truncate text-emerald-500";
 
   async function onFileChange(fileList: FileList | null) {
     setError(null);
@@ -146,16 +168,16 @@ export function PaymentProofUpload({
     }
 
     const selected = Array.from(fileList);
-    const slots = MAX_PAYMENT_PROOFS - items.length;
+    const slots = cap - items.length;
     if (slots <= 0) {
-      setError(`You can upload at most ${MAX_PAYMENT_PROOFS} screenshots.`);
+      setError(`You can upload at most ${cap} screenshots.`);
       return;
     }
 
     const toUpload = selected.slice(0, slots);
     if (selected.length > slots) {
       setError(
-        `Only ${slots} more screenshot${slots === 1 ? "" : "s"} allowed (max ${MAX_PAYMENT_PROOFS}).`,
+        `Only ${slots} more screenshot${slots === 1 ? "" : "s"} allowed (max ${cap}).`,
       );
     }
 
@@ -182,7 +204,7 @@ export function PaymentProofUpload({
           proofFormat: result.format || "",
         });
       }
-      setItems((prev) => [...prev, ...uploaded].slice(0, MAX_PAYMENT_PROOFS));
+      setItems((prev) => [...prev, ...uploaded].slice(0, cap));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -196,13 +218,13 @@ export function PaymentProofUpload({
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-      <Label htmlFor="paymentProof">
+    <div className={shellClass}>
+      <Label htmlFor="paymentProof" className={labelClass}>
         Payment screenshots{required ? " *" : ""}
       </Label>
-      <p className="text-muted-foreground text-xs">
+      <p className={hintClass}>
         Required for UPI, bank transfer, and other non-cash methods. Upload 1–
-        {MAX_PAYMENT_PROOFS} clear screenshots or PDF confirmations.
+        {cap} clear screenshots or PDF confirmations.
       </p>
       <Input
         id="paymentProof"
@@ -211,31 +233,32 @@ export function PaymentProofUpload({
         multiple
         required={required && items.length === 0}
         disabled={uploading || !cloudinaryReady || remaining === 0}
+        className={
+          isPaper
+            ? "border-[#cfd9d3] bg-white text-[#17202a] file:mr-3 file:rounded-md file:border-0 file:bg-[#e8f5ef] file:px-2 file:py-1 file:text-[#0f6b4c]"
+            : undefined
+        }
         onChange={(event) => {
           void onFileChange(event.target.files);
           event.target.value = "";
         }}
       />
-      {uploading ? (
-        <p className="text-muted-foreground text-xs">Uploading…</p>
-      ) : null}
+      {uploading ? <p className={hintClass}>Uploading…</p> : null}
       {items.length > 0 ? (
         <ul className="space-y-1.5" aria-label="Uploaded payment proofs">
           {items.map((item, index) => (
             <li
               key={`${item.cloudinaryPublicId}-${index}`}
-              className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs"
+              className={itemClass}
             >
-              <span
-                className="min-w-0 truncate text-emerald-500"
-                title={item.proofFileName}
-              >
+              <span className={nameClass} title={item.proofFileName}>
                 {index + 1}. {item.proofFileName}
               </span>
               <Button
                 type="button"
                 variant="ghost"
                 size="xs"
+                className={isPaper ? "text-[#667085]" : undefined}
                 onClick={() => removeAt(index)}
                 aria-label={`Remove ${item.proofFileName}`}
               >
@@ -245,8 +268,8 @@ export function PaymentProofUpload({
           ))}
         </ul>
       ) : null}
-      <p className="text-muted-foreground text-[11px]">
-        {items.length}/{MAX_PAYMENT_PROOFS} uploaded
+      <p className={metaClass}>
+        {items.length}/{cap} uploaded
         {remaining > 0 ? ` · ${remaining} remaining` : " · limit reached"}
       </p>
       {error ? (

@@ -2,6 +2,13 @@ import { z } from "zod";
 
 import { paiseFromRupeeString } from "@/lib/money";
 import { paymentMethodSchema, visibilitySchema } from "@/validators/finance";
+import {
+  paymentProofUploadSchema,
+  refineRequirePaymentProofUnlessCash,
+} from "@/validators/payment-proof";
+
+/** Screenshots per Home Loan transaction (stricter than Finance). */
+export const MAX_LOAN_PAYMENT_PROOFS = 3;
 
 export const loanTransactionTypeSchema = z.enum([
   "DISBURSEMENT",
@@ -35,6 +42,7 @@ export const createLoanTransactionSchema = z
     linkedDebitId: z.string().trim().max(40).optional().or(z.literal("")),
     visibility: visibilitySchema.default("PROJECT_SHARED"),
   })
+  .merge(paymentProofUploadSchema)
   .superRefine((data, ctx) => {
     if (data.type === "CREDIT_REPAYMENT" && !data.linkedDebitId?.trim()) {
       ctx.addIssue({
@@ -43,6 +51,7 @@ export const createLoanTransactionSchema = z
         path: ["linkedDebitId"],
       });
     }
+    refineRequirePaymentProofUnlessCash(data, ctx, MAX_LOAN_PAYMENT_PROOFS);
   });
 
 export const updateLoanTransactionSchema = z.object({

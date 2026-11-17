@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 
+import { PaymentProofUpload } from "@/components/finance/payment-proof-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,7 @@ import {
   updateLoanTransactionAction,
   type LoanActionState,
 } from "@/server/loans/actions";
+import { MAX_LOAN_PAYMENT_PROOFS } from "@/validators/loans";
 
 const initialState: LoanActionState = {};
 
@@ -180,11 +182,13 @@ export function LoanTransactionForm({
   transactionId,
   initial,
   typeLocked,
+  cloudinaryReady = false,
 }: {
   slug: string;
   openDiversions: OpenDiversion[];
   transactionId?: string;
   typeLocked?: boolean;
+  cloudinaryReady?: boolean;
   initial?: {
     type?: string;
     amountRupees?: string;
@@ -202,6 +206,9 @@ export function LoanTransactionForm({
     : createLoanTransactionAction.bind(null, slug);
   const [state, formAction, pending] = useActionState(action, initialState);
   const [type, setType] = useState(initial?.type ?? "DISBURSEMENT");
+  const [paymentMethod, setPaymentMethod] = useState(
+    initial?.paymentMethod ?? "",
+  );
 
   return (
     <form action={formAction} className="space-y-6 text-slate-900">
@@ -321,7 +328,8 @@ export function LoanTransactionForm({
             id="paymentMethod"
             name="paymentMethod"
             className={paperSelect}
-            defaultValue={initial?.paymentMethod ?? ""}
+            value={paymentMethod}
+            onChange={(event) => setPaymentMethod(event.target.value)}
           >
             <option value="">—</option>
             {METHODS.map((method) => (
@@ -342,6 +350,17 @@ export function LoanTransactionForm({
             className={paperInput}
           />
         </div>
+        {!transactionId ? (
+          <div className="sm:col-span-2">
+            <PaymentProofUpload
+              slug={slug}
+              paymentMethod={paymentMethod}
+              cloudinaryReady={cloudinaryReady}
+              maxFiles={MAX_LOAN_PAYMENT_PROOFS}
+              surface="paper"
+            />
+          </div>
+        ) : null}
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="description" className={paperLabel}>
             Description

@@ -1,4 +1,4 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { formatInrForPdf } from "@/lib/money";
@@ -117,6 +117,34 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   footerText: { fontSize: 8, color: colors.muted, lineHeight: 1.4 },
+  proofList: {
+    marginTop: 4,
+    gap: 6,
+  },
+  proofBox: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    padding: 8,
+    backgroundColor: colors.white,
+  },
+  proofNameLink: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: colors.primary,
+    textDecoration: "none",
+  },
+  proofMeta: {
+    fontSize: 8,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  proofLink: {
+    fontSize: 8,
+    color: colors.primary,
+    marginTop: 4,
+    textDecoration: "underline",
+  },
 });
 
 export function LoanReceiptDocument({ data }: { data: LoanReceiptData }) {
@@ -264,6 +292,42 @@ export function LoanReceiptDocument({ data }: { data: LoanReceiptData }) {
           <View style={{ marginTop: 12 }}>
             <Text style={styles.sectionLabel}>Notes</Text>
             <Text style={{ color: colors.muted }}>{transaction.notes}</Text>
+          </View>
+        ) : null}
+
+        {(transaction.proofDocuments ?? []).length > 0 ? (
+          <View style={{ marginTop: 12 }}>
+            <Text style={styles.sectionLabel}>
+              Payment screenshot
+              {(transaction.proofDocuments ?? []).length > 1 ? "s" : ""}
+            </Text>
+            <View style={styles.proofList}>
+              {(transaction.proofDocuments ?? []).map((doc, index) => {
+                const proofs = transaction.proofDocuments ?? [];
+                const label = `${proofs.length > 1 ? `${index + 1}. ` : ""}${doc.fileName}`;
+                return (
+                  <View key={doc.id} style={styles.proofBox} wrap={false}>
+                    {doc.href ? (
+                      <Link src={doc.href} style={styles.proofNameLink}>
+                        {label}
+                      </Link>
+                    ) : (
+                      <Text style={styles.proofNameLink}>{label}</Text>
+                    )}
+                    <Text style={styles.proofMeta}>
+                      {[doc.title, doc.documentNumber, doc.mimeType]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </Text>
+                    {doc.href ? (
+                      <Link src={doc.href} style={styles.proofLink}>
+                        Open in portal
+                      </Link>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
           </View>
         ) : null}
 

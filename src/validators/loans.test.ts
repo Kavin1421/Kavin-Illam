@@ -38,4 +38,57 @@ describe("loan validators", () => {
     });
     expect(parsed.success).toBe(true);
   });
+
+  it("requires payment screenshots for non-cash methods", () => {
+    const parsed = createLoanTransactionSchema.safeParse({
+      type: "DISBURSEMENT",
+      amountRupees: "100000",
+      transactionDate: "2026-10-11",
+      paymentMethod: "UPI",
+      visibility: "PROJECT_SHARED",
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("rejects more than three loan payment screenshots", () => {
+    const items = Array.from({ length: 4 }, (_, index) => ({
+      cloudinaryPublicId: `proofs/loan-${index}`,
+      cloudinaryResourceType: "image",
+      cloudinaryDeliveryType: "authenticated",
+      proofFileName: `Payment-screenshot-${index + 1}.jpg`,
+      proofMimeType: "image/jpeg",
+      proofFileSize: 12_000,
+      proofFormat: "jpg",
+    }));
+    const parsed = createLoanTransactionSchema.safeParse({
+      type: "DISBURSEMENT",
+      amountRupees: "100000",
+      transactionDate: "2026-10-11",
+      paymentMethod: "UPI",
+      paymentProofsJson: JSON.stringify(items),
+      visibility: "PROJECT_SHARED",
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("accepts up to three loan payment screenshots", () => {
+    const items = Array.from({ length: 3 }, (_, index) => ({
+      cloudinaryPublicId: `proofs/loan-${index}`,
+      cloudinaryResourceType: "image",
+      cloudinaryDeliveryType: "authenticated",
+      proofFileName: `Payment-screenshot-${index + 1}.jpg`,
+      proofMimeType: "image/jpeg",
+      proofFileSize: 12_000,
+      proofFormat: "jpg",
+    }));
+    const parsed = createLoanTransactionSchema.safeParse({
+      type: "DISBURSEMENT",
+      amountRupees: "100000",
+      transactionDate: "2026-10-11",
+      paymentMethod: "UPI",
+      paymentProofsJson: JSON.stringify(items),
+      visibility: "PROJECT_SHARED",
+    });
+    expect(parsed.success).toBe(true);
+  });
 });

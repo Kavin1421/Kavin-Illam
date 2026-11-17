@@ -252,6 +252,14 @@ export default async function LoansPage({
                             {row.rotationalStatus.replaceAll("_", " ")}
                           </span>
                         ) : null}
+                        {(row.proofDocumentIds?.length ?? 0) > 0 ||
+                        row.proofDocumentId ? (
+                          <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-sky-800 uppercase">
+                            {(row.proofDocumentIds?.length || 1) === 1
+                              ? "1 proof"
+                              : `${row.proofDocumentIds.length} proofs`}
+                          </span>
+                        ) : null}
                         <span className="font-mono text-xs text-slate-400">
                           {row.loanNumber}
                         </span>
